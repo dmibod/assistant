@@ -10,7 +10,7 @@ public class MainController : ControllerBase
     {
         new Person { Name = "Ana" },
         new Person { Name = "Felipe" },
-        new Person { Name = "Emillia" }
+        new Person { Name = "Emilia" }
     };
 
     [HttpGet]
