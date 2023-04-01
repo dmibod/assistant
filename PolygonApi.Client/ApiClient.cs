@@ -16,7 +16,7 @@ public class ApiClient : IDisposable
         this.httpClient = httpClient;
         this.httpClient.BaseAddress = ApiUri;
 
-        var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvVar) ?? DefaultApiKey;
+        var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvVar, EnvironmentVariableTarget.Machine) ?? DefaultApiKey;
         
         this.httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
     }
@@ -32,6 +32,47 @@ public class ApiClient : IDisposable
         var content = await response.Content.ReadAsStringAsync();
 
         return JsonSerializer.Deserialize<PrevCloseResponse>(content);
+    }
+
+    public async Task<OptionChainResponse> OptionChainAsync(OptionChainRequest request)
+    {
+        // https://api.polygon.io/v3/snapshot/options/AAPL?apiKey=gpoaGtajTlrCLYIFRAqeMK7rAS7QfRdl
+        var requestUri = $"/v3/snapshot/options/{request.Ticker}";
+        
+        using var response = await this.httpClient.GetAsync(requestUri);
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        return JsonSerializer.Deserialize<OptionChainResponse>(content);
+    }
+
+    public async IAsyncEnumerable<OptionChainResponse?> OptionChainStreamAsync(OptionChainRequest request)
+    {
+        // https://api.polygon.io/v3/snapshot/options/AAPL?apiKey=gpoaGtajTlrCLYIFRAqeMK7rAS7QfRdl
+        var requestUri = $"/v3/snapshot/options/{request.Ticker}";
+
+        do
+        {
+            using var response = await this.httpClient.GetAsync(requestUri);
+
+            response.EnsureSuccessStatusCode();
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            var chainResponse = JsonSerializer.Deserialize<OptionChainResponse>(content);
+
+            if (chainResponse == null)
+            {
+                break;
+            }
+
+            requestUri = chainResponse.NextUrl;
+                
+            yield return chainResponse;
+
+        } while (!string.IsNullOrEmpty(requestUri));
     }
 
     public void Dispose()
