@@ -8,5 +8,5 @@
 # Output dir
 bin/
 obj/
-launchSettings.json
+/launchSettings.json
 
