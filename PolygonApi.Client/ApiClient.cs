@@ -1,6 +1,7 @@
 ﻿namespace Polygon.Client;
 
 using System.Text.Json;
+using Polygon.Client.Utils;
 
 public class ApiClient : IDisposable
 {
@@ -22,7 +23,7 @@ public class ApiClient : IDisposable
 
     public async Task<PrevCloseResponse?> PrevCloseAsync(PrevCloseRequest request)
     {
-        var requestUri = $"/v2/aggs/ticker/O:{request.Ticker}{request.Expiration}{request.Side}{this.FormatStrike(request.Strike)}/prev?adjusted=true";
+        var requestUri = $"/v2/aggs/ticker/O:{request.Ticker}{request.Expiration}{request.Side}{Formatting.FormatStrike(request.Strike)}/prev?adjusted=true";
         
         using var response = await this.httpClient.GetAsync(requestUri);
 
@@ -31,19 +32,6 @@ public class ApiClient : IDisposable
         var content = await response.Content.ReadAsStringAsync();
 
         return JsonSerializer.Deserialize<PrevCloseResponse>(content);
-    }
-
-    private string FormatStrike(decimal strike)
-    {
-        var value = $"{Math.Round(strike * 1000, 0)}";
-        var leadingZeroes = 8 - value.Length;
-
-        if (leadingZeroes < 0)
-        {
-            leadingZeroes = 0;
-        }
-
-        return new string('0', leadingZeroes) + value;
     }
 
     public void Dispose()
