@@ -4,6 +4,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KanbanApi.Client", "KanbanA
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KanbanApi.Client.Tests", "KanbanApi.Client.Tests\KanbanApi.Client.Tests.csproj", "{8C38787D-80FD-4320-8E50-422C6FFA56E8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolygonApi.Client", "PolygonApi.Client\PolygonApi.Client.csproj", "{5E38BA20-9D38-4486-AB82-138373AD8F5B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolygonApi.Client.Tests", "PolygonApi.Client.Tests\PolygonApi.Client.Tests.csproj", "{EC37987B-BC70-4E39-BA5D-0D3F84078C9B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +22,13 @@ Global
 		{8C38787D-80FD-4320-8E50-422C6FFA56E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C38787D-80FD-4320-8E50-422C6FFA56E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C38787D-80FD-4320-8E50-422C6FFA56E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E38BA20-9D38-4486-AB82-138373AD8F5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E38BA20-9D38-4486-AB82-138373AD8F5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E38BA20-9D38-4486-AB82-138373AD8F5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E38BA20-9D38-4486-AB82-138373AD8F5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC37987B-BC70-4E39-BA5D-0D3F84078C9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC37987B-BC70-4E39-BA5D-0D3F84078C9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC37987B-BC70-4E39-BA5D-0D3F84078C9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC37987B-BC70-4E39-BA5D-0D3F84078C9B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
