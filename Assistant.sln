@@ -8,6 +8,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolygonApi.Client", "Polygo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolygonApi.Client.Tests", "PolygonApi.Client.Tests\PolygonApi.Client.Tests.csproj", "{EC37987B-BC70-4E39-BA5D-0D3F84078C9B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoricalDataApi.Client", "HistoricalDataApi.Client\HistoricalDataApi.Client.csproj", "{0B287209-F0DA-4812-B9E1-0FEA376C964E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoricalDataApi.Client.Tests", "HistoricalDataApi.Client.Tests\HistoricalDataApi.Client.Tests.csproj", "{A8FF6358-C7B0-407A-8727-CF2DA4E69418}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +34,13 @@ Global
 		{EC37987B-BC70-4E39-BA5D-0D3F84078C9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EC37987B-BC70-4E39-BA5D-0D3F84078C9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC37987B-BC70-4E39-BA5D-0D3F84078C9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B287209-F0DA-4812-B9E1-0FEA376C964E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B287209-F0DA-4812-B9E1-0FEA376C964E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B287209-F0DA-4812-B9E1-0FEA376C964E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B287209-F0DA-4812-B9E1-0FEA376C964E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8FF6358-C7B0-407A-8727-CF2DA4E69418}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8FF6358-C7B0-407A-8727-CF2DA4E69418}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8FF6358-C7B0-407A-8727-CF2DA4E69418}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8FF6358-C7B0-407A-8727-CF2DA4E69418}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
