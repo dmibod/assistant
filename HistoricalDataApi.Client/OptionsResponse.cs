@@ -95,13 +95,13 @@ public class OptionContractData
     public decimal LastPrice { get; set; }
     
     [JsonPropertyName("bid")] 
-    public decimal Bid { get; set; }
+    public decimal? Bid { get; set; }
     
     [JsonPropertyName("ask")] 
-    public decimal Ask { get; set; }
+    public decimal? Ask { get; set; }
     
     [JsonPropertyName("change")] 
-    public decimal Change { get; set; }
+    public decimal? Change { get; set; }
     
     [JsonPropertyName("changePercent")] 
     public decimal? ChangePercent { get; set; }
