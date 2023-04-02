@@ -1,6 +1,7 @@
 namespace PolygonApi.Client.Tests;
 
-using Polygon.Client;
+using PolygonApi.Client;
+using PolygonApi.Client.Utils;
 
 [TestClass]
 public class ApiClientTests
@@ -27,10 +28,10 @@ public class ApiClientTests
         // Arrange
         var request = new PrevCloseRequest
         {
-            Ticker = "ZIM",
-            Expiration = "230421",
+            Ticker = "SPY",
+            Expiration = Formatting.ToExpiration(Formatting.GetNextWeekday(DayOfWeek.Wednesday)),
             Side = "P",
-            Strike = 15
+            Strike = 400
         };
         
         // Act

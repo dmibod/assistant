@@ -1,4 +1,4 @@
-﻿namespace Polygon.Client;
+﻿namespace PolygonApi.Client;
 
 using System.Text.Json.Serialization;
 
