@@ -1,6 +1,7 @@
 ﻿namespace KanbanApi.Client;
 
 using System.Net.Http.Json;
+using KanbanApi.Client.Abstract;
 using KanbanApi.Client.Extensions;
 using KanbanApi.Client.Serialization;
 
@@ -15,7 +16,7 @@ public class ApiClient : IDisposable
 
     #region Board Api
     
-    public async Task<IEnumerable<Board>?> GetBoardsAsync(string? owner = null)
+    public async Task<IEnumerable<Board>?> GetBoardsAsync(string? owner)
     {
         using var response = await this.httpClient.GetAsync(string.IsNullOrEmpty(owner) ? "board" : $"board?owner={owner}");
 
@@ -104,25 +105,45 @@ public class ApiClient : IDisposable
     #endregion
     #region Lane Api
 
-    public async Task<IEnumerable<Lane>?> GetLanesAsync(Board board)
+    public Task<IEnumerable<CardLane>?> GetCardLanesAsync(Board board)
     {
-        using var response = await this.httpClient.GetAsync($"board/{board.Id}/lanes");
+        return this.GetLanesAsync<CardLane>(board.Id);
+    }
+
+    public Task<IEnumerable<Lane>?> GetLanesAsync(Board board)
+    {
+        return this.GetLanesAsync<Lane>(board.Id);
+    }
+
+    public Task<IEnumerable<Lane>?> GetLanesAsync(Board board, Lane lane)
+    {
+        return this.GetLanesAsync<Lane>(board, lane.Id);
+    }
+
+    public Task<IEnumerable<CardLane>?> GetCardLanesAsync(Board board, Lane lane)
+    {
+        return this.GetLanesAsync<CardLane>(board, lane.Id);
+    }
+
+    private async Task<IEnumerable<T>?> GetLanesAsync<T>(string boardId) where T : BaseLane
+    {
+        using var response = await this.httpClient.GetAsync($"board/{boardId}/lanes");
 
         response.EnsureSuccessStatusCode();
 
-        return await response.AsJsonAsync<Lane[]>(SerializationDefaults.Options);
+        return await response.AsJsonAsync<T[]>(SerializationDefaults.Options);
     }
 
-    public async Task<IEnumerable<Lane>?> GetLanesAsync(Board board, Lane lane)
+    private async Task<IEnumerable<T>?> GetLanesAsync<T>(Board board, string parentId) where T : BaseLane
     {
-        using var response = await this.httpClient.GetAsync($"board/{board.Id}/lanes/{lane.Id}/lanes");
+        using var response = await this.httpClient.GetAsync($"board/{board.Id}/lanes/{parentId}/lanes");
 
         response.EnsureSuccessStatusCode();
 
-        return await response.AsJsonAsync<Lane[]>(SerializationDefaults.Options);
+        return await response.AsJsonAsync<T[]>(SerializationDefaults.Options);
     }
 
-    public Task DescribeLaneAsync(Board board, Lane lane, string description)
+    public Task DescribeLaneAsync(Board board, BaseLane lane, string description)
     {
         var command = CommandTypes.DescribeLaneCommand
             .LaneCommand(board, lane)
@@ -133,29 +154,36 @@ public class ApiClient : IDisposable
     
     public Task<Lane> CreateLaneAsync(Board board, string parentId, string name, string description, LayoutTypes layout)
     {
-        return this.CreateLaneAsync(board, parentId, LaneTypes.L, name, description, layout);
-    }
-
-    public Task<Lane> CreateCardLaneAsync(Board board, string parentId, string name, string description)
-    {
-        return this.CreateLaneAsync(board, parentId, LaneTypes.C, name, description, LayoutTypes.H);
-    }
-
-    private async Task<Lane> CreateLaneAsync(Board board, string parentId, LaneTypes type, string name, string description, LayoutTypes layout)
-    {
         var request = new Lane
         {
             Name = name, 
             Description = description, 
-            Type = type, 
+            Type = LaneTypes.L, 
             Layout = layout
         };
-        
+
+        return this.CreateLaneAsync(board, parentId, request);
+    }
+
+    public Task<CardLane> CreateCardLaneAsync(Board board, string parentId, string name, string description)
+    {
+        var request = new CardLane
+        {
+            Name = name, 
+            Description = description, 
+            Type = LaneTypes.C
+        };
+
+        return this.CreateLaneAsync(board, parentId, request);
+    }
+
+    private async Task<T> CreateLaneAsync<T>(Board board, string parentId, T request) where T : BaseLane
+    {
         using var response = await this.httpClient.PostAsJsonAsync($"board/{board.Id}/lanes", request, SerializationDefaults.Options);
 
         response.EnsureSuccessStatusCode();
         
-        var lane = await response.AsJsonAsync<Lane>(SerializationDefaults.Options);
+        var lane = await response.AsJsonAsync<T>(SerializationDefaults.Options);
 
         await this.AttachAsync(board.Id, lane.Id, parentId);
         
@@ -165,7 +193,7 @@ public class ApiClient : IDisposable
     #endregion
     #region Card Api
     
-    public async Task<IEnumerable<Card>?> GetCardsAsync(Board board, Lane lane)
+    public async Task<IEnumerable<Card>?> GetCardsAsync(Board board, CardLane lane)
     {
         using var response = await this.httpClient.GetAsync($"board/{board.Id}/lanes/{lane.Id}/cards");
 
@@ -183,7 +211,7 @@ public class ApiClient : IDisposable
         return this.CommandAsync(command);
     }
 
-    public async Task<Card> CreateCardAsync(Board board, Lane lane, string name, string description)
+    public async Task<Card> CreateCardAsync(Board board, CardLane lane, string name, string description)
     {
         var request = new Card
         {
@@ -205,13 +233,13 @@ public class ApiClient : IDisposable
     #endregion
     #region Common Api
     
-    public async Task<HttpResponseMessage> CommandAsync(Command command)
+    public async Task<CommandResponse?> CommandAsync(Command command)
     {
         using var response = await this.httpClient.PostAsJsonAsync($"command/{command.BoardId}", new[] { command }, SerializationDefaults.Options);
 
         response.EnsureSuccessStatusCode();
 
-        return response;
+        return await response.AsJsonAsync<CommandResponse>(SerializationDefaults.Options);
     }
 
     private async Task<CommandResponse?> AttachAsync(string boardId, string id, string parentId)
@@ -220,9 +248,7 @@ public class ApiClient : IDisposable
             .Command(boardId, id)
             .WithPayload("parent_id", parentId);
 
-        var response = await this.CommandAsync(command);
-        
-        return await response.AsJsonAsync<CommandResponse>(SerializationDefaults.Options);
+        return await this.CommandAsync(command);
     }
     
     #endregion

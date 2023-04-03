@@ -3,8 +3,8 @@
 using System.Text.Json.Serialization;
 using KanbanApi.Client.Abstract;
 
-public class Lane : LayoutAwareEntity
+public class Lane : BaseLane
 {
-    [JsonPropertyName("type")]
-    public LaneTypes Type { get; set; }
+    [JsonPropertyName("layout")]
+    public LayoutTypes Layout { get; set; }
 }

@@ -27,7 +27,7 @@ public class ApiClientTests
     public async Task GetBoardsAsync_ReturnsExpectedResult()
     {
         // Arrange & Act
-        var boards = await client.GetBoardsAsync();
+        var boards = await client.GetBoardsAsync(Owner);
 
         // Assert
         Assert.IsNotNull(boards);

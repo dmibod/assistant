@@ -1,5 +1,7 @@
 ﻿namespace KanbanApi.Client.Extensions;
 
+using KanbanApi.Client.Abstract;
+
 public static class CommandExtensions
 {
     public static Command Command(this CommandTypes type, string boardId, string entityId)
@@ -22,7 +24,7 @@ public static class CommandExtensions
         };
     }
     
-    public static Command LaneCommand(this CommandTypes type, Board board, Lane lane)
+    public static Command LaneCommand(this CommandTypes type, Board board, BaseLane lane)
     {
         return new Command
         {
