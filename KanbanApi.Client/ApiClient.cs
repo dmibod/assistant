@@ -152,6 +152,15 @@ public class ApiClient : IDisposable
         return this.CommandAsync(command);
     }
     
+    public Task RemoveLaneAsync(Board board, Lane lane, string parentId)
+    {
+        var command = CommandTypes.RemoveLaneCommand
+            .LaneCommand(board, lane)
+            .WithPayload("parent_id", parentId);
+
+        return this.CommandAsync(command);
+    }
+    
     public Task<Lane> CreateLaneAsync(Board board, string parentId, string name, string description, LayoutTypes layout)
     {
         var request = new Lane
