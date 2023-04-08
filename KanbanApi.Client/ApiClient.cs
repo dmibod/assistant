@@ -66,7 +66,16 @@ public class ApiClient : IDisposable
         return this.CommandAsync(command);
     }
 
-    public Task ResetBoardLoadingStateAsync(Board board)
+    public Task SetBoardProgressStateAsync(Board board, int progress)
+    {
+        var command = CommandTypes.StateBoardCommand
+            .BoardCommand(board)
+            .WithPayload("state", $"progress:{progress}");
+
+        return this.CommandAsync(command);
+    }
+
+    public Task ResetBoardStateAsync(Board board)
     {
         var command = CommandTypes.StateBoardCommand
             .BoardCommand(board)
