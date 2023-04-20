@@ -9,4 +9,6 @@
 bin/
 obj/
 
+# App settings
+appsettings.Development.json
 

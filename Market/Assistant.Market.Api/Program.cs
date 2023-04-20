@@ -1,3 +1,4 @@
+using Assistant.Market.Api.Configuration;
 using Assistant.Market.Api.Services;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Services;
@@ -11,9 +12,10 @@ builder.Services.AddHostedService<FeedTimerService>();
 builder.Services.AddHostedService<FeedWorkerService>();
 builder.Services.AddNatsClient(options =>
 {
-    options.User = "ruser";
-    options.Password = "T0pS3cr3tcurl";
-    options.Url = "nats://46.101.154.144:4444";
+    var settings = builder.Configuration.GetSection("NatsSettings").Get<NatsSettings>();
+    options.User = settings.User;
+    options.Password = settings.Password;
+    options.Url = settings.Url;
 });
 builder.Services.AddHttpClient<PolygonApi.Client.ApiClient>("PolygonApiClient");
 builder.Services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>

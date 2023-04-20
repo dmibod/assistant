@@ -80,7 +80,7 @@ public class FeedService : IFeedService
         var timeStamp = Formatting.FromNanosecondsTimestamp(item.Day.LastUpdated);
         var time = Formatting.ToPriceBarDateTime(timeStamp);
 
-        this.logger.LogInformation("{}");
+        this.logger.LogInformation("{Asset}", item.Details.Ticker);
 
         return new Stock
         {
