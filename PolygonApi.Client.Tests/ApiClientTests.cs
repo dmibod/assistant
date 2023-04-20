@@ -26,7 +26,7 @@ public class ApiClientTests
     public async Task PrevCloseAsync_ReturnsExpectedResult()
     {
         // Arrange
-        var request = new PrevCloseRequest
+        var request = new PrevCloseOptionRequest
         {
             Ticker = "SPY",
             Expiration = Formatting.ToExpiration(Formatting.GetNextWeekday(DayOfWeek.Wednesday)),
