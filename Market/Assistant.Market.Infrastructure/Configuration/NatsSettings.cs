@@ -1,4 +1,4 @@
-﻿namespace Assistant.Market.Api.Configuration;
+﻿namespace Assistant.Market.Infrastructure.Configuration;
 
 public class NatsSettings
 {

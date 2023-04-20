@@ -2,27 +2,25 @@
 
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Services;
+using Assistant.Market.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
 
 public class StockService : IStockService
 {
+    private readonly StockRepository repository;
     private readonly ILogger<StockService> logger;
 
-    public StockService(ILogger<StockService> logger)
+    public StockService(StockRepository repository, ILogger<StockService> logger)
     {
+        this.repository = repository;
         this.logger = logger;
     }
 
     public async Task<Stock?> FindOutdatedWithLagAsync(TimeSpan lag)
     {
-        this.logger.LogInformation("{Method} with lag {Argument}", nameof(this.FindOutdatedWithLagAsync), lag.ToString());
+        this.logger.LogInformation("{Method} with lag {Argument}", nameof(this.FindOutdatedWithLagAsync),
+            lag.ToString());
 
-        await Task.Delay(TimeSpan.FromSeconds(1));
-        
-        return new Stock
-        {
-            Ticker = "AAPL",
-            LastRefresh = DateTime.UtcNow.Subtract(lag)
-        };
+        return this.repository.FindOutdatedWithLagAsync(lag);
     }
 }

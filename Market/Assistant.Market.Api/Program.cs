@@ -1,7 +1,5 @@
-using Assistant.Market.Api.Configuration;
 using Assistant.Market.Api.Services;
-using Assistant.Market.Core.Services;
-using Assistant.Market.Infrastructure.Services;
+using Assistant.Market.Infrastructure.Configuration;
 using NATS.Client;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,13 +15,7 @@ builder.Services.AddNatsClient(options =>
     options.Password = settings.Password;
     options.Url = settings.Url;
 });
-builder.Services.AddHttpClient<PolygonApi.Client.ApiClient>("PolygonApiClient");
-builder.Services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>
-{
-    client.BaseAddress = new Uri("https://dmitrybodnar.com/v1/api/");
-});
-builder.Services.AddSingleton<IFeedService, FeedService>();
-builder.Services.AddSingleton<IStockService, StockService>();
+builder.Services.ConfigureInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 app.UseSwagger();

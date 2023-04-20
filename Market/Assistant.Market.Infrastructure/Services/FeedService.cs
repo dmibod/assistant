@@ -24,7 +24,6 @@ public class FeedService : IFeedService
         this.logger.LogInformation("{Method} with lag {Argument}", nameof(this.FeedAsync), lag.ToString());
 
         var stock = await this.stockService.FindOutdatedWithLagAsync(lag);
-
         if (stock != null)
         {
             await this.UpdateStockAsync(stock);
