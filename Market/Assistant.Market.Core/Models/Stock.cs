@@ -9,10 +9,6 @@ public class Stock
     public decimal? Ask { get; set; }
     
     public decimal? Last { get; set; }
-
-    public string[] Strikes { get; set; }
     
-    public string[] Expirations { get; set; }
-    
-    public DateTime? LastRefresh { get; set; }
+    public DateTime LastRefresh { get; set; }
 }

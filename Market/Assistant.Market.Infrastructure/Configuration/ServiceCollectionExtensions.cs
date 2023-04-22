@@ -1,5 +1,6 @@
 ﻿namespace Assistant.Market.Infrastructure.Configuration;
 
+using Assistant.Market.Core.Repositories;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Repositories;
 using Assistant.Market.Infrastructure.Services;
@@ -17,9 +18,10 @@ public static class ServiceCollectionExtensions
             client.BaseAddress = new Uri("https://dmitrybodnar.com/v1/api/");
         });
 
+        services.AddSingleton<IMarketDataService, MarketDataService>();
         services.AddSingleton<IFeedService, FeedService>();
         services.AddSingleton<IStockService, StockService>();
-        services.AddSingleton<StockRepository>();
+        services.AddSingleton<IStockRepository, StockRepository>();
 
         return services;
     }

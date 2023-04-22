@@ -4,5 +4,9 @@ using Assistant.Market.Core.Models;
 
 public interface IStockService
 {
-    Task<Stock?> FindOutdatedWithLagAsync(TimeSpan lag);
+    Task<Stock> GetOrCreateAsync(string ticker);
+
+    Task UpdateAsync(Stock stock);
+    
+    Task<Stock?> FindOldestAsync(TimeSpan olderThan);
 }
