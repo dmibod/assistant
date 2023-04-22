@@ -1,18 +1,21 @@
 ﻿namespace Assistant.Market.Api.Services;
 
+using Assistant.Market.Infrastructure.Configuration;
+using Microsoft.Extensions.Options;
 using NATS.Client;
 
 public class FeedTimerService : IHostedService, IDisposable
 {
     private readonly TimeSpan interval = TimeSpan.FromMinutes(1);
     private readonly IConnection connection;
-    private readonly Msg feedRequest = new("feed.stock.request");
+    private readonly Msg feedRequest;
     private readonly ILogger<FeedTimerService> logger;
     private Timer? timer;
 
-    public FeedTimerService(IConnection connection, ILogger<FeedTimerService> logger)
+    public FeedTimerService(IConnection connection, IOptions<NatsSettings> options, ILogger<FeedTimerService> logger)
     {
         this.connection = connection;
+        this.feedRequest = new Msg(options.Value.FeedStockRequestTopic);
         this.logger = logger;
     }
 

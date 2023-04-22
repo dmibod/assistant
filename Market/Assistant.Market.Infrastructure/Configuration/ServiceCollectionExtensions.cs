@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
             options.Password = settings.Password;
             options.Url = settings.Url;
         });
+        services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
         services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
         services.AddHttpClient<PolygonApi.Client.ApiClient>("PolygonApiClient");
         services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>

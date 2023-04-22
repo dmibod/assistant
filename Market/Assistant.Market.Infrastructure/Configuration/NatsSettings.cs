@@ -7,4 +7,6 @@ public class NatsSettings
     public string User { get; set; } = null!;
 
     public string Password { get; set; } = null!;
+
+    public string FeedStockRequestTopic { get; set; } = null!;
 }

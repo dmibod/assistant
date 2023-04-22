@@ -30,8 +30,8 @@ public class OptionRepository : IOptionRepository
 
     public Task<bool> ExistsAsync(string ticker, string expiration)
     {
-        this.logger.LogInformation("{Method} with arguments {Argument}", nameof(this.ExistsAsync),
-            $"{ticker}, {expiration}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ExistsAsync),
+            $"{ticker}-{expiration}");
 
         return this.collection.Find(doc => doc.Ticker == ticker && doc.Expiration == expiration).AnyAsync();
     }
