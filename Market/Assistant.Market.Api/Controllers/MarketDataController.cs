@@ -15,8 +15,22 @@ public class MarketDataController : ControllerBase
         this.stockService = stockService;
     }
 
-    [HttpPost("Add")]
-    public Task<Stock> CreateAsync(string ticker)
+    [HttpGet("Stocks")]
+    public async Task<ActionResult> GetStocksAsync()
+    {
+        var stocks = await this.stockService.FindAllAsync();
+
+        var result = new
+        {
+            Count = stocks.Count(),
+            Items = stocks.OrderByDescending(stock => stock.LastRefresh).ToArray()
+        };
+
+        return this.Ok(result);
+    }
+
+    [HttpPost("AddStock")]
+    public Task<Stock> AddStockAsync(string ticker)
     {
         return this.stockService.GetOrCreateAsync(ticker);
     }

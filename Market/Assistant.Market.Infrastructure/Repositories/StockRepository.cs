@@ -27,11 +27,11 @@ public class StockRepository : IStockRepository
 
         this.logger = logger;
     }
-    
+
     public Task<bool> ExistsAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ExistsAsync), ticker);
-        
+
         return this.collection.Find(doc => doc.Ticker == ticker).AnyAsync();
     }
 
@@ -55,13 +55,13 @@ public class StockRepository : IStockRepository
 
         var filter = Builders<StockEntity>.Filter
             .Eq(item => item.Ticker, stock.Ticker);
-        
+
         var update = Builders<StockEntity>.Update
             .Set(item => item.Ask, stock.Ask)
             .Set(item => item.Bid, stock.Bid)
             .Set(item => item.Last, stock.Last)
             .Set(item => item.LastRefresh, stock.LastRefresh);
-        
+
         return this.collection.UpdateOneAsync(filter, update);
     }
 
@@ -78,6 +78,15 @@ public class StockRepository : IStockRepository
             .FirstOrDefault(item => item.LastRefresh < outdated);
 
         return Task.FromResult(entity as Stock);
+    }
+
+    public async Task<IEnumerable<Stock>> FindAllAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.FindAllAsync));
+
+        var list = await this.collection.Find(_ => true).ToListAsync();
+
+        return list;
     }
 }
 

@@ -18,12 +18,14 @@ public class StockService : IStockService
     public async Task<Stock> GetOrCreateAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.GetOrCreateAsync), ticker);
+
+        ticker = ticker.ToUpper();
         
         if (!await this.repository.ExistsAsync(ticker))
         {
             await this.repository.CreateAsync(new Stock
             {
-                Ticker = ticker.ToUpper(),
+                Ticker = ticker,
                 LastRefresh = DateTime.UnixEpoch
             });
         }
@@ -49,5 +51,12 @@ public class StockService : IStockService
             olderThan.ToString());
 
         return this.repository.FindOldestAsync(olderThan);
+    }
+
+    public Task<IEnumerable<Stock>> FindAllAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.FindAllAsync));
+
+        return this.repository.FindAllAsync();
     }
 }

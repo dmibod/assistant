@@ -9,4 +9,6 @@ public interface IStockService
     Task UpdateAsync(Stock stock);
     
     Task<Stock?> FindOldestAsync(TimeSpan olderThan);
+    
+    Task<IEnumerable<Stock>> FindAllAsync();
 }
