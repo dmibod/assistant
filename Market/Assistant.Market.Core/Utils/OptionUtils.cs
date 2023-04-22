@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 public static class OptionUtils
 {
-    const string Pattern = @"(.+)(\d{8})([C|P])(\d{8})";
+    private const string Pattern = @"(.+)(\d{8})([C|P])(\d{8})";
 
     public static string OptionTicker(string stockTicker, string expiration, string strike, bool isCall)
     {
