@@ -9,10 +9,12 @@ using Microsoft.AspNetCore.Mvc;
 public class MarketDataController : ControllerBase
 {
     private readonly IStockService stockService;
+    private readonly IOptionService optionService;
 
-    public MarketDataController(IStockService stockService)
+    public MarketDataController(IStockService stockService, IOptionService optionService)
     {
         this.stockService = stockService;
+        this.optionService = optionService;
     }
 
     [HttpGet("Stocks")]
@@ -27,6 +29,14 @@ public class MarketDataController : ControllerBase
         };
 
         return this.Ok(result);
+    }
+
+    [HttpGet("OptionChain")]
+    public async Task<ActionResult> GetOptionChainAsync(string ticker)
+    {
+        var chain = await this.optionService.FindAsync(ticker);
+
+        return this.Ok(chain);
     }
 
     [HttpPost("AddStock")]

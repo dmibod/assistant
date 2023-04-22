@@ -5,14 +5,16 @@ using Microsoft.Extensions.Logging;
 
 public class FeedService : IFeedService
 {
-    private readonly IStockService stockService;
     private readonly IMarketDataService marketDataService;
+    private readonly IStockService stockService;
+    private readonly IOptionService optionService;
     private readonly ILogger<FeedService> logger;
 
-    public FeedService(IStockService stockService, IMarketDataService marketDataService, ILogger<FeedService> logger)
+    public FeedService(IMarketDataService marketDataService, IStockService stockService, IOptionService optionService, ILogger<FeedService> logger)
     {
-        this.stockService = stockService;
         this.marketDataService = marketDataService;
+        this.stockService = stockService;
+        this.optionService = optionService;
         this.logger = logger;
     }
 
@@ -45,7 +47,7 @@ public class FeedService : IFeedService
 
         if (optionChain != null)
         {
-            //todo save to db
+            await this.optionService.UpdateAsync(optionChain);
         }
     }
 }

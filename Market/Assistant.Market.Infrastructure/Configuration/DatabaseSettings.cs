@@ -8,5 +8,5 @@ public class DatabaseSettings
 
     public string StockCollectionName { get; set; } = null!;
     
-    public string OptionPriceCollectionName { get; set; } = null!;
+    public string OptionCollectionName { get; set; } = null!;
 }

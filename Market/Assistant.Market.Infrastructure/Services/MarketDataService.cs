@@ -2,8 +2,8 @@
 
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Services;
+using Assistant.Market.Core.Utils;
 using Microsoft.Extensions.Logging;
-using MongoDB.Driver;
 using PolygonApi.Client;
 using PolygonApi.Client.Utils;
 
@@ -70,7 +70,7 @@ public class MarketDataService : IMarketDataService
                     var price = ToPriceHistory(call);
                     resultContracts.Call = new OptionContract
                     {
-                        Ticker = $"{ticker}{expiration}C{Formatting.FormatStrike(strikePrice)}",
+                        Ticker = OptionUtils.OptionTicker(ticker, expiration, Formatting.FormatStrike(strikePrice), true),
                         Ask = price.Ask,
                         Bid = price.Bid,
                         Last = price.Last
@@ -84,7 +84,7 @@ public class MarketDataService : IMarketDataService
                     var price = ToPriceHistory(put);
                     resultContracts.Put = new OptionContract
                     {
-                        Ticker = $"{ticker}{expiration}P{Formatting.FormatStrike(strikePrice)}",
+                        Ticker = OptionUtils.OptionTicker(ticker, expiration, Formatting.FormatStrike(strikePrice), false),
                         Ask = price.Ask,
                         Bid = price.Bid,
                         Last = price.Last
