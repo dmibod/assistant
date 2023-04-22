@@ -7,6 +7,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<FeedTimerService>();
 builder.Services.AddHostedService<FeedWorkerService>();
+builder.Services.AddHostedService<PublishMarketDataService>();
 builder.Services.ConfigureInfrastructure(builder.Configuration);
 
 var app = builder.Build();

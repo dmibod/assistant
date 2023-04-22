@@ -20,6 +20,8 @@ public class MarketDataService : IMarketDataService
 
     public async Task<AssetPrice?> GetStockPriceAsync(string ticker)
     {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.GetStockPriceAsync), ticker);
+        
         var response = await this.apiClient.PrevCloseAsync(new PrevCloseRequest
         {
             Ticker = ticker
@@ -30,6 +32,8 @@ public class MarketDataService : IMarketDataService
 
     public Task<OptionChain?> GetOptionChainAsync(string ticker)
     {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.GetOptionChainAsync), ticker);
+
         var resultChain = new OptionChain
         {
             Ticker = ticker,

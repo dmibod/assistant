@@ -1,21 +1,21 @@
 ﻿namespace Assistant.Market.Api.Services;
 
+using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
-using NATS.Client;
 
 public class FeedTimerService : IHostedService, IDisposable
 {
     private readonly TimeSpan interval = TimeSpan.FromMinutes(1);
-    private readonly IConnection connection;
-    private readonly Msg feedRequest;
+    private readonly string feedRequestTopic;
+    private readonly IBusService busService;
     private readonly ILogger<FeedTimerService> logger;
     private Timer? timer;
 
-    public FeedTimerService(IConnection connection, IOptions<NatsSettings> options, ILogger<FeedTimerService> logger)
+    public FeedTimerService(IBusService busService, IOptions<NatsSettings> options, ILogger<FeedTimerService> logger)
     {
-        this.connection = connection;
-        this.feedRequest = new Msg(options.Value.FeedStockRequestTopic);
+        this.feedRequestTopic = options.Value.FeedStockRequestTopic;
+        this.busService = busService;
         this.logger = logger;
     }
 
@@ -34,7 +34,7 @@ public class FeedTimerService : IHostedService, IDisposable
     {
         this.logger.LogInformation($"{nameof(FeedTimerService)} is working...");
 
-        this.connection.Publish(feedRequest);
+        this.busService.PublishAsync(this.feedRequestTopic);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

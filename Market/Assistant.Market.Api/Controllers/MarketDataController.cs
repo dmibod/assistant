@@ -2,7 +2,9 @@
 
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Services;
+using Assistant.Market.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 [ApiController]
 [Route("[controller]")]
@@ -10,11 +12,15 @@ public class MarketDataController : ControllerBase
 {
     private readonly IStockService stockService;
     private readonly IOptionService optionService;
+    private readonly IBusService busService;
+    private readonly string publishMarketDataTopic;
 
-    public MarketDataController(IStockService stockService, IOptionService optionService)
+    public MarketDataController(IStockService stockService, IOptionService optionService, IBusService busService, IOptions<NatsSettings> options)
     {
         this.stockService = stockService;
         this.optionService = optionService;
+        this.busService = busService;
+        this.publishMarketDataTopic = options.Value.PublishMarketDataTopic;
     }
 
     [HttpGet("Stocks")]
@@ -48,6 +54,6 @@ public class MarketDataController : ControllerBase
     [HttpPost("Publish")]
     public Task PublishAsync()
     {
-        return Task.CompletedTask;
+        return this.busService.PublishAsync(this.publishMarketDataTopic);
     }
 }

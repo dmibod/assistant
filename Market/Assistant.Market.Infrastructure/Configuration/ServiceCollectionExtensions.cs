@@ -20,14 +20,16 @@ public static class ServiceCollectionExtensions
             options.Url = settings.Url;
         });
         services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
+        services.AddSingleton<IBusService, BusService>();
         services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
         services.AddHttpClient<PolygonApi.Client.ApiClient>("PolygonApiClient");
         services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>
         {
             client.BaseAddress = new Uri("https://dmitrybodnar.com/v1/api/");
         });
-
+        services.AddSingleton<IKanbanService, KanbanService>();
         services.AddSingleton<IMarketDataService, MarketDataService>();
+        services.AddSingleton<IPublishingService, PublishingService>();
         services.AddSingleton<IFeedService, FeedService>();
         services.AddSingleton<IStockService, StockService>();
         services.AddSingleton<IStockRepository, StockRepository>();
