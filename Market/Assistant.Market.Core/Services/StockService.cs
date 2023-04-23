@@ -59,4 +59,11 @@ public class StockService : IStockService
 
         return this.repository.FindAllAsync();
     }
+
+    public Task<IEnumerable<string>> FindTickersAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.FindTickersAsync));
+
+        return this.repository.FindTickersAsync();
+    }
 }

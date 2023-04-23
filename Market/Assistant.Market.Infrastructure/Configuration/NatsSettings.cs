@@ -10,5 +10,7 @@ public class NatsSettings
 
     public string RefreshStockRequestTopic { get; set; } = null!;
     
+    public string CleanDataRequestTopic { get; set; } = null!;
+    
     public string PublishMarketDataTopic { get; set; } = null!;
 }

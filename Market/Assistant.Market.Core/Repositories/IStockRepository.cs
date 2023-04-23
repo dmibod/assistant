@@ -15,4 +15,6 @@ public interface IStockRepository
     Task<Stock?> FindOldestAsync(TimeSpan olderThan);
     
     Task<IEnumerable<Stock>> FindAllAsync();
+    
+    Task<IEnumerable<string>> FindTickersAsync();
 }

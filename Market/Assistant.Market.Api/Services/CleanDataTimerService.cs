@@ -4,16 +4,16 @@ using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
 
-public class RefreshDataTimerService : BaseTimerService
+public class CleanDataTimerService : BaseTimerService
 {
-    private readonly string refreshStockRequestTopic;
+    private readonly string cleanDataRequestTopic;
     private readonly IBusService busService;
-    private readonly ILogger<RefreshDataTimerService> logger;
+    private readonly ILogger<CleanDataTimerService> logger;
 
-    public RefreshDataTimerService(IBusService busService, IOptions<NatsSettings> options, ILogger<RefreshDataTimerService> logger) 
-        : base(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(GetInitialDelay(10, 30)))
+    public CleanDataTimerService(IBusService busService, IOptions<NatsSettings> options, ILogger<CleanDataTimerService> logger) 
+        : base(TimeSpan.FromHours(24), TimeSpan.FromSeconds(GetInitialDelay(10, 60)))
     {
-        this.refreshStockRequestTopic = options.Value.RefreshStockRequestTopic;
+        this.cleanDataRequestTopic = options.Value.CleanDataRequestTopic;
         this.busService = busService;
         this.logger = logger;
     }
@@ -22,7 +22,7 @@ public class RefreshDataTimerService : BaseTimerService
     {
         this.LogMessage($"{this.ServiceName} is working...");
 
-        this.busService.PublishAsync(this.refreshStockRequestTopic);
+        this.busService.PublishAsync(this.cleanDataRequestTopic);
     }
 
     protected override void LogMessage(string message)

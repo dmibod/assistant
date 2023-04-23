@@ -7,4 +7,8 @@ public interface IOptionService
     Task<OptionChain> FindAsync(string ticker);
     
     Task UpdateAsync(OptionChain options);
+    
+    Task<IEnumerable<string>> FindExpirationsAsync(string ticker);
+    
+    Task RemoveAsync(IDictionary<string, ISet<string>> expirations);
 }

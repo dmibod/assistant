@@ -61,6 +61,23 @@ public class OptionRepository : IOptionRepository
 
         return Task.FromResult(options.Cast<Option>());
     }
+
+    public Task<IEnumerable<string>> FindExpirationsAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method}", nameof(this.FindExpirationsAsync));
+
+        return Task.FromResult(this.collection.AsQueryable().Where(doc => doc.Ticker == ticker).Select(doc => doc.Expiration).AsEnumerable());
+
+    }
+
+    public async Task RemoveAsync(IDictionary<string, ISet<string>> expirations)
+    {
+        this.logger.LogInformation("{Method}", nameof(this.RemoveAsync));
+
+        var filter = Builders<OptionEntity>.Filter.Where(doc => expirations.ContainsKey(doc.Ticker) && expirations[doc.Ticker].Contains(doc.Expiration));
+
+        await this.collection.DeleteManyAsync(filter);
+    }
 }
 
 internal class OptionEntity : Option

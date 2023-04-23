@@ -1,6 +1,7 @@
 ﻿namespace Assistant.Market.Core.Services;
 
 using Assistant.Market.Core.Models;
+using Assistant.Market.Core.Utils;
 using Microsoft.Extensions.Logging;
 
 public class RefreshService : IRefreshService
@@ -26,6 +27,32 @@ public class RefreshService : IRefreshService
         if (stock != null)
         {
             await this.UpdateStockAsync(stock);
+        }
+    }
+
+    public async Task CleanAsync(DateTime now)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CleanAsync), now.ToShortDateString());
+
+        var threshold = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
+        var tickers = await this.stockService.FindTickersAsync();
+        var outdated = new Dictionary<string, ISet<string>>();
+
+        foreach (var ticker in tickers)
+        {
+            var expirations = await this.optionService.FindExpirationsAsync(ticker);
+                
+            var outdatedExpirations = expirations.Where(expiration => OptionUtils.ParseExpiration(expiration) < threshold).ToHashSet();
+
+            if (outdatedExpirations.Count > 0)
+            {
+                outdated.Add(ticker, outdatedExpirations);
+            }
+        }
+
+        if (outdated.Count > 0)
+        {
+            await this.optionService.RemoveAsync(outdated);
         }
     }
 

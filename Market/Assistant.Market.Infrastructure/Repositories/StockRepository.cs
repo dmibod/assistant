@@ -88,6 +88,13 @@ public class StockRepository : IStockRepository
 
         return list;
     }
+
+    public Task<IEnumerable<string>> FindTickersAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.FindTickersAsync));
+
+        return Task.FromResult(this.collection.AsQueryable().Select(doc => doc.Ticker).AsEnumerable());
+    }
 }
 
 internal class StockEntity : Stock
