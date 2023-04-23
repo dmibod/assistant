@@ -25,7 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<PolygonApi.Client.ApiClient>("PolygonApiClient");
         services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>
         {
-            client.BaseAddress = new Uri("https://dmitrybodnar.com/v1/api/");
+            client.BaseAddress = new Uri("http://assistant.dmitrybodnar.com:8080/v1/api/");
         });
         services.AddSingleton<IKanbanService, KanbanService>();
         services.AddSingleton<IMarketDataService, MarketDataService>();
