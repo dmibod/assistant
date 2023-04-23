@@ -11,6 +11,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<CleanDataTimerService>();
         services.AddHostedService<CleanDataWorkerService>();
         services.AddHostedService<MarketDataWorkerService>();
+        services.AddHostedService<AddStockWorkerService>();
 
         return services;
     }

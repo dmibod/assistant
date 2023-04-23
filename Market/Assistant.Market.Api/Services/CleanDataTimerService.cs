@@ -29,4 +29,9 @@ public class CleanDataTimerService : BaseTimerService
     {
         this.logger.LogInformation(message);
     }
+
+    protected override void LogError(string error)
+    {
+        this.logger.LogError(error);
+    }
 }

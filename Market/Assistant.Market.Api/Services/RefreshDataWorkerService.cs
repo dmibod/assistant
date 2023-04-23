@@ -5,64 +5,32 @@ using Assistant.Market.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
 using NATS.Client;
 
-public class RefreshDataWorkerService : IHostedService, IDisposable
+public class RefreshDataWorkerService : BaseWorkerService
 {
     private readonly TimeSpan lag = TimeSpan.FromHours(4);
     private readonly IRefreshService refreshService;
-    private readonly IConnection connection;
-    private readonly string refreshStockRequestTopic;
-    private IAsyncSubscription subscription;
     private readonly ILogger<RefreshDataWorkerService> logger;
 
-    public RefreshDataWorkerService(IRefreshService refreshService, IConnection connection, IOptions<NatsSettings> options, ILogger<RefreshDataWorkerService> logger)
+    public RefreshDataWorkerService(IRefreshService refreshService, IConnection connection,
+        IOptions<NatsSettings> options, ILogger<RefreshDataWorkerService> logger)
+        : base(connection, options.Value.RefreshStockRequestTopic)
     {
         this.refreshService = refreshService;
-        this.connection = connection;
-        this.refreshStockRequestTopic = options.Value.RefreshStockRequestTopic;
         this.logger = logger;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
-    {
-        this.logger.LogInformation($"{nameof(RefreshDataWorkerService)} is starting...");
-
-        this.subscription = this.connection.SubscribeAsync(this.refreshStockRequestTopic, this.TryDoWork);
-
-        this.logger.LogInformation($"{nameof(RefreshDataWorkerService)} has started.");
-
-        return Task.CompletedTask;
-    }
-
-    private void TryDoWork(object? sender, MsgHandlerEventArgs args)
-    {
-        try
-        {
-            this.logger.LogInformation($"{nameof(RefreshDataWorkerService)} is working...");
-
-            this.DoWork();
-        }
-        catch (Exception e)
-        {
-            this.logger.LogError(e.Message);
-        }
-    }
-
-    private void DoWork()
+    protected override void DoWork(object? sender, MsgHandlerEventArgs args)
     {
         this.refreshService.RefreshAsync(this.lag);
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
+    protected override void LogMessage(string message)
     {
-        this.logger.LogInformation($"{nameof(RefreshDataWorkerService)} is stopping...");
-
-        this.subscription.Unsubscribe();
-        await this.subscription.DrainAsync();
-
-        this.logger.LogInformation($"{nameof(RefreshDataWorkerService)} has stopped.");
+        this.logger.LogInformation(message);
     }
 
-    public virtual void Dispose()
+    protected override void LogError(string error)
     {
+        this.logger.LogError(error);
     }
 }

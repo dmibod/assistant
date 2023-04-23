@@ -14,6 +14,7 @@ public class MarketDataController : ControllerBase
     private readonly IOptionService optionService;
     private readonly IBusService busService;
     private readonly string publishMarketDataTopic;
+    private readonly string addStockRequestTopic;
 
     public MarketDataController(IStockService stockService, IOptionService optionService, IBusService busService, IOptions<NatsSettings> options)
     {
@@ -21,6 +22,7 @@ public class MarketDataController : ControllerBase
         this.optionService = optionService;
         this.busService = busService;
         this.publishMarketDataTopic = options.Value.PublishMarketDataTopic;
+        this.addStockRequestTopic = options.Value.AddStockRequestTopic;
     }
 
     [HttpGet("Stocks")]
@@ -51,8 +53,14 @@ public class MarketDataController : ControllerBase
         return this.stockService.GetOrCreateAsync(ticker);
     }
 
-    [HttpPost("Publish")]
-    public Task PublishAsync()
+    [HttpPost("Queue/AddStock")]
+    public Task QueueAddStockAsync(string ticker)
+    {
+        return this.busService.PublishAsync(this.addStockRequestTopic, ticker);
+    }
+
+    [HttpPost("Queue/Publish")]
+    public Task QueuePublishAsync()
     {
         return this.busService.PublishAsync(this.publishMarketDataTopic);
     }

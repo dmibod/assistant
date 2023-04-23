@@ -26,6 +26,15 @@ public class BusService : IBusService
         return Task.CompletedTask;
     }
 
+    public Task PublishAsync(string topic, string data)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.PublishAsync), topic);
+
+        this.connection.Publish(topic, Encoding.UTF8.GetBytes(data));
+        
+        return Task.CompletedTask;
+    }
+
     public Task PublishAsync<T>(string topic, T data)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.PublishAsync), topic);
