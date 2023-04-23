@@ -19,6 +19,16 @@ public interface IKanbanService
     Task UpdateBoardLaneAsync(string boardId, Lane lane);
 
     Task RemoveBoardLaneAsync(string boardId, string laneId);
+    
+    Task<IEnumerable<Lane>> FindLanesAsync(string boardId, string parentLaneId);
+    
+    Task<Lane> CreateCardLaneAsync(string boardId, string parentLaneId, Lane lane);
+    
+    Task<IEnumerable<Card>> FindCardsAsync(string boardId, string cardLaneId); 
+    
+    Task<Card> CreateCardAsync(string boardId, string cardLaneId, Card card);
+    
+    Task UpdateCardAsync(string boardId, Card card);
 }
 
 public abstract class Entity
@@ -35,5 +45,9 @@ public class Board : Entity
 }
 
 public class Lane : Entity
+{
+}
+
+public class Card : Entity
 {
 }

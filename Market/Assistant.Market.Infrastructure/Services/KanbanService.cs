@@ -4,6 +4,7 @@ using Assistant.Market.Core.Services;
 using KanbanApi.Client;
 using Microsoft.Extensions.Logging;
 using Board = Assistant.Market.Core.Services.Board;
+using Card = Assistant.Market.Core.Services.Card;
 using Lane = Assistant.Market.Core.Services.Lane;
 
 public class KanbanService : IKanbanService
@@ -134,7 +135,8 @@ public class KanbanService : IKanbanService
 
     public Task RemoveBoardLaneAsync(string boardId, string laneId)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveBoardLaneAsync), $"{boardId}-{laneId}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveBoardLaneAsync),
+            $"{boardId}-{laneId}");
 
         return this.apiClient.RemoveLaneAsync(new KanbanApi.Client.Board
         {
@@ -143,5 +145,99 @@ public class KanbanService : IKanbanService
         {
             Id = laneId
         }, boardId);
+    }
+
+    public async Task<IEnumerable<Lane>> FindLanesAsync(string boardId, string parentLaneId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindLanesAsync), $"{boardId}-{parentLaneId}");
+
+        var lanes = await this.apiClient.GetCardLanesAsync(new KanbanApi.Client.Board
+        {
+            Id = boardId
+        }, new KanbanApi.Client.Lane
+        {
+            Id = parentLaneId
+        });
+
+        return lanes.Select(lane => new Lane
+        {
+            Id = lane.Id,
+            Name = lane.Name,
+            Description = lane.Description
+        });
+    }
+
+    public async Task<Lane> CreateCardLaneAsync(string boardId, string parentLaneId, Lane lane)
+    {
+        this.logger.LogInformation("{Method} with arguments {Argument}", nameof(this.CreateCardLaneAsync),
+            $"{boardId}-{parentLaneId}-{lane.Name}");
+
+        var kanbanLane =
+            await this.apiClient.CreateCardLaneAsync(new KanbanApi.Client.Board
+            {
+                Id = boardId
+            }, parentLaneId, lane.Name, lane.Description);
+
+        return new Lane
+        {
+            Id = kanbanLane.Id,
+            Name = kanbanLane.Name,
+            Description = kanbanLane.Description
+        };
+    }
+
+    public async Task<IEnumerable<Card>> FindCardsAsync(string boardId, string cardLaneId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindCardsAsync), $"{boardId}-{cardLaneId}");
+
+        var cards = await this.apiClient.GetCardsAsync(new KanbanApi.Client.Board
+        {
+            Id = boardId
+        }, new CardLane
+        {
+            Id = cardLaneId
+        });
+
+        return cards.Select(lane => new Card
+        {
+            Id = lane.Id,
+            Name = lane.Name,
+            Description = lane.Description
+        });
+    }
+
+    public async Task<Card> CreateCardAsync(string boardId, string cardLaneId, Card card)
+    {
+        this.logger.LogInformation("{Method} with arguments {Argument}", nameof(this.CreateCardAsync),
+            $"{boardId}-{cardLaneId}-{card.Name}");
+
+        var kanbanCard =
+            await this.apiClient.CreateCardAsync(new KanbanApi.Client.Board
+            {
+                Id = boardId
+            }, new CardLane
+            {
+                Id = cardLaneId
+            }, card.Name, card.Description);
+
+        return new Card
+        {
+            Id = kanbanCard.Id,
+            Name = kanbanCard.Name,
+            Description = kanbanCard.Description
+        };
+    }
+
+    public async Task UpdateCardAsync(string boardId, Card card)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateCardAsync),
+            $"{boardId}-{card.Id}-{card.Description}");
+
+        var kanbanBoard = new KanbanApi.Client.Board
+        {
+            Id = boardId
+        };
+
+        await this.apiClient.DescribeCardAsync(kanbanBoard, new KanbanApi.Client.Card { Id = card.Id }, card.Description);
     }
 }
