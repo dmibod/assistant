@@ -44,14 +44,13 @@ public class PublishingService : IPublishingService
         var name = $"{key} ({chunk.Length})";
         var description = chunk.Select(item => item.Ticker).Aggregate((curr, i) => $"{curr}, {i}");
 
-        var boards = this.kanbanService.FindBoardsAsync().Result
-            .Where(board => board.Name.StartsWith(MarketData))
-            .ToDictionary(board => board.Name);
-
         const string pattern = @"\(\d+\)";
-        if (boards.Keys.Any(k => Regex.IsMatch(k, $"{key} {pattern}")))
+        var board = this.kanbanService.FindBoardsAsync().Result
+            .Where(board => board.Name.StartsWith(MarketData))
+            .FirstOrDefault(board => Regex.IsMatch(board.Name, $"{key} {pattern}"));
+
+        if (board != null)
         {
-            var board = boards[name];
             board.Name = name;
             board.Description = description;
             
@@ -59,16 +58,14 @@ public class PublishingService : IPublishingService
         }
         else
         {
-            var board = this.kanbanService.CreateBoardAsync(new Board
+            board = this.kanbanService.CreateBoardAsync(new Board
             {
                 Name = name,
                 Description = description
             }).Result;
-            
-            boards.Add(name, board);
         }
 
-        this.Publish(boards[name], chunk);
+        this.Publish(board, chunk);
     }
 
     private void Publish(Board board, Stock[] chunk)
