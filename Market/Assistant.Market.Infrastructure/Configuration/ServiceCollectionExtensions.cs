@@ -30,7 +30,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IKanbanService, KanbanService>();
         services.AddSingleton<IMarketDataService, MarketDataService>();
         services.AddSingleton<IPublishingService, PublishingService>();
-        services.AddSingleton<IFeedService, FeedService>();
+        services.AddSingleton<IRefreshService, RefreshService>();
         services.AddSingleton<IStockService, StockService>();
         services.AddSingleton<IStockRepository, StockRepository>();
         services.AddSingleton<IOptionService, OptionService>();

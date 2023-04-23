@@ -5,9 +5,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHostedService<FeedTimerService>();
-builder.Services.AddHostedService<FeedWorkerService>();
-builder.Services.AddHostedService<PublishMarketDataService>();
+builder.Services.AddHostedService<RefreshDataTimerService>();
+builder.Services.AddHostedService<RefreshDataWorkerService>();
+builder.Services.AddHostedService<MarketDataWorkerService>();
 builder.Services.ConfigureInfrastructure(builder.Configuration);
 
 var app = builder.Build();

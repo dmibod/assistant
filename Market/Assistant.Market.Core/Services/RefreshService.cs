@@ -3,14 +3,14 @@
 using Assistant.Market.Core.Models;
 using Microsoft.Extensions.Logging;
 
-public class FeedService : IFeedService
+public class RefreshService : IRefreshService
 {
     private readonly IMarketDataService marketDataService;
     private readonly IStockService stockService;
     private readonly IOptionService optionService;
-    private readonly ILogger<FeedService> logger;
+    private readonly ILogger<RefreshService> logger;
 
-    public FeedService(IMarketDataService marketDataService, IStockService stockService, IOptionService optionService, ILogger<FeedService> logger)
+    public RefreshService(IMarketDataService marketDataService, IStockService stockService, IOptionService optionService, ILogger<RefreshService> logger)
     {
         this.marketDataService = marketDataService;
         this.stockService = stockService;
@@ -18,9 +18,9 @@ public class FeedService : IFeedService
         this.logger = logger;
     }
 
-    public async Task FeedAsync(TimeSpan lag)
+    public async Task RefreshAsync(TimeSpan lag)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FeedAsync), lag.ToString());
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RefreshAsync), lag.ToString());
 
         var stock = await this.stockService.FindOldestAsync(lag);
         if (stock != null)
