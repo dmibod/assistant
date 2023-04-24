@@ -8,6 +8,7 @@
 # Output dir
 bin/
 obj/
+out/
 
 # App settings
 appsettings.Development.json
