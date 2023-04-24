@@ -6,17 +6,17 @@ using Common.Infrastructure.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-public class CleanDataTimerService : BaseTimerService
+public class MarketDataTimerService : BaseTimerService
 {
     private readonly IBusService busService;
-    private readonly string cleanDataRequestTopic;
-    private readonly ILogger<CleanDataTimerService> logger;
+    private readonly string publishMarketDataTopic;
+    private readonly ILogger<MarketDataTimerService> logger;
 
-    public CleanDataTimerService(IBusService busService, IOptions<NatsSettings> options, ILogger<CleanDataTimerService> logger) 
-        : base(TimeSpan.FromHours(24), TimeSpan.FromSeconds(GetInitialDelay(10, 60)))
+    public MarketDataTimerService(IBusService busService, IOptions<NatsSettings> options, ILogger<MarketDataTimerService> logger) 
+        : base(TimeSpan.FromHours(1), TimeSpan.FromHours(1))
     {
         this.busService = busService;
-        this.cleanDataRequestTopic = options.Value.CleanDataRequestTopic;
+        this.publishMarketDataTopic = options.Value.PublishMarketDataTopic;
         this.logger = logger;
     }
 
@@ -24,14 +24,14 @@ public class CleanDataTimerService : BaseTimerService
     {
         this.LogMessage($"{this.ServiceName} is working...");
 
-        this.busService.PublishAsync(this.cleanDataRequestTopic);
+        this.busService.PublishAsync(this.publishMarketDataTopic);
     }
 
     protected override void LogMessage(string message)
     {
         this.logger.LogInformation(message);
     }
-
+    
     protected override void LogError(string error)
     {
         this.logger.LogError(error);

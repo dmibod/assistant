@@ -2,7 +2,7 @@
 
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Repositories;
-using Assistant.Tenant.Core.Security;
+using Common.Core.Security;
 using Microsoft.Extensions.Logging;
 
 public class TenantService : ITenantService

@@ -12,7 +12,8 @@ public class CleanDataWorkerService : BaseWorkerService
     private readonly IRefreshService refreshService;
     private readonly ILogger<CleanDataWorkerService> logger;
 
-    public CleanDataWorkerService(IRefreshService refreshService, IConnection connection, IOptions<NatsSettings> options, ILogger<CleanDataWorkerService> logger) 
+    public CleanDataWorkerService(IRefreshService refreshService, IConnection connection,
+        IOptions<NatsSettings> options, ILogger<CleanDataWorkerService> logger)
         : base(connection, options.Value.CleanDataRequestTopic)
     {
         this.refreshService = refreshService;
@@ -23,7 +24,7 @@ public class CleanDataWorkerService : BaseWorkerService
     {
         this.refreshService.CleanAsync(DateTime.UtcNow);
     }
-    
+
     protected override void LogMessage(string message)
     {
         this.logger.LogInformation(message);

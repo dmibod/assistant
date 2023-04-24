@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         {
             client.BaseAddress = new Uri("http://assistant.dmitrybodnar.com:8080/v1/api/");
         });
+        services.AddIdentityProvider();
         services.AddSingleton<IKanbanService, KanbanService>();
         services.AddSingleton<ITenantService, TenantService>();
         services.AddSingleton<IPositionService, PositionService>();

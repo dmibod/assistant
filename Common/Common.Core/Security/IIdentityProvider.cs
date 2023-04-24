@@ -1,4 +1,4 @@
-﻿namespace Assistant.Tenant.Core.Security;
+﻿namespace Common.Core.Security;
 
 using System.Security.Principal;
 

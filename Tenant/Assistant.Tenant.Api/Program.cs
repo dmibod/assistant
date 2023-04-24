@@ -1,11 +1,8 @@
-using Assistant.Tenant.Api.Services;
-using Assistant.Tenant.Core.Security;
 using Assistant.Tenant.Infrastructure.Configuration;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -34,7 +31,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 builder.Services.AddAuthentication("Bearer").AddJwtBearer();
-builder.Services.AddSingleton<IIdentityProvider, IdentityProvider>();
 builder.Services.ConfigureInfrastructure(builder.Configuration);
 
 var app = builder.Build();

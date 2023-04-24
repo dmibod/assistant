@@ -37,11 +37,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IStockRepository, StockRepository>();
         services.AddSingleton<IOptionService, OptionService>();
         services.AddSingleton<IOptionRepository, OptionRepository>();
-
+        
+        services.AddIdentityProvider();
+        
         services.AddHostedService<RefreshDataTimerService>();
         services.AddHostedService<RefreshDataWorkerService>();
         services.AddHostedService<CleanDataTimerService>();
         services.AddHostedService<CleanDataWorkerService>();
+        services.AddHostedService<MarketDataTimerService>();
         services.AddHostedService<MarketDataWorkerService>();
         services.AddHostedService<AddStockWorkerService>();
 
