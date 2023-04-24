@@ -1,16 +1,78 @@
 using Assistant.Market.Api.Configuration;
 using Assistant.Market.Infrastructure.Configuration;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Please enter token",
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        BearerFormat = "JWT",
+        Scheme = "bearer"
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] { }
+        }
+    });
+});
+
+builder.Services.AddAuthorization(opt =>
+{
+    opt.AddPolicy("publishing", b => b.RequireRole("admin"));
+});
+builder.Services.AddAuthentication("Bearer").AddJwtBearer();
 
 builder.Services.AddHostedServices();
 builder.Services.ConfigureInfrastructure(builder.Configuration);
 
 var app = builder.Build();
-app.UseSwagger();
-app.UseSwaggerUI();
-app.MapControllers();
+
+app.UseAuthorization();
+
+app.UseSwagger(options =>
+{
+    options.RouteTemplate = "MarketData/{documentName}/swagger.json";
+});
+
+app.UseSwaggerUI(options =>
+{
+    options.RoutePrefix = "MarketData";
+});
+
+app.MapControllers().RequireAuthorization();
+/*
+var secret = "helloworldimhere";
+var issuer = builder.Configuration["Authentication:Schemes:Bearer:ValidIssuer"];
+
+app.MapGet("/token", () =>
+{
+    var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+    var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+    var tokenOptions = new JwtSecurityToken(
+        issuer: issuer,
+        audience: "http://localhost:8000",
+        claims: new List<Claim>(),
+        expires: DateTime.Now.AddMinutes(5),
+        signingCredentials: signinCredentials
+    );
+    return new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+}).RequireAuthorization();
+*/
 app.Run();

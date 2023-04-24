@@ -3,6 +3,7 @@
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -47,19 +48,19 @@ public class MarketDataController : ControllerBase
         return this.Ok(chain);
     }
 
-    [HttpPost("AddStock")]
+    [HttpPost("AddStock"), Authorize("publishing")]
     public Task<Stock> AddStockAsync(string ticker)
     {
         return this.stockService.GetOrCreateAsync(ticker);
     }
 
-    [HttpPost("Queue/AddStock")]
+    [HttpPost("Queue/AddStock"), Authorize("publishing")]
     public Task QueueAddStockAsync(string ticker)
     {
         return this.busService.PublishAsync(this.addStockRequestTopic, ticker);
     }
 
-    [HttpPost("Queue/Publish")]
+    [HttpPost("Queue/Publish"), Authorize("publishing")]
     public Task QueuePublishAsync()
     {
         return this.busService.PublishAsync(this.publishMarketDataTopic);
