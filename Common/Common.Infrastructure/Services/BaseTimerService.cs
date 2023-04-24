@@ -1,4 +1,4 @@
-﻿namespace Assistant.Market.Api.Services;
+﻿namespace Common.Infrastructure.Services;
 
 public abstract class BaseTimerService : BaseHostedService, IDisposable
 {

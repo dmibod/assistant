@@ -1,9 +1,10 @@
-﻿namespace Assistant.Market.Infrastructure.Configuration;
+﻿namespace Assistant.Tenant.Infrastructure.Configuration;
 
-using Assistant.Market.Core.Repositories;
-using Assistant.Market.Core.Services;
-using Assistant.Market.Infrastructure.Repositories;
 using Assistant.Market.Infrastructure.Services;
+using Assistant.Tenant.Core.Repositories;
+using Assistant.Tenant.Core.Services;
+using Assistant.Tenant.Infrastructure.Repositories;
+using Assistant.Tenant.Infrastructure.Services;
 using Common.Core.Services;
 using Common.Infrastructure.Configuration;
 using Microsoft.Extensions.Configuration;
@@ -24,27 +25,17 @@ public static class ServiceCollectionExtensions
         services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
         services.AddSingleton<IBusService, BusService>();
         services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
-        services.AddHttpClient<PolygonApi.Client.ApiClient>("PolygonApiClient");
         services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>
         {
             client.BaseAddress = new Uri("http://assistant.dmitrybodnar.com:8080/v1/api/");
         });
         services.AddSingleton<IKanbanService, KanbanService>();
-        services.AddSingleton<IMarketDataService, MarketDataService>();
+        services.AddSingleton<ITenantService, TenantService>();
+        services.AddSingleton<IPositionService, PositionService>();
         services.AddSingleton<IPublishingService, PublishingService>();
-        services.AddSingleton<IRefreshService, RefreshService>();
-        services.AddSingleton<IStockService, StockService>();
-        services.AddSingleton<IStockRepository, StockRepository>();
-        services.AddSingleton<IOptionService, OptionService>();
-        services.AddSingleton<IOptionRepository, OptionRepository>();
-
-        services.AddHostedService<RefreshDataTimerService>();
-        services.AddHostedService<RefreshDataWorkerService>();
-        services.AddHostedService<CleanDataTimerService>();
-        services.AddHostedService<CleanDataWorkerService>();
-        services.AddHostedService<MarketDataWorkerService>();
-        services.AddHostedService<AddStockWorkerService>();
-
+        services.AddSingleton<ISuggestionService, SuggestionService>();
+        services.AddSingleton<ITenantRepository, TenantRepository>();
+        
         return services;
     }
 }

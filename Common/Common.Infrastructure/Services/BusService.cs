@@ -2,7 +2,7 @@
 
 using System.Text;
 using System.Text.Json;
-using Assistant.Market.Core.Services;
+using Common.Core.Services;
 using Microsoft.Extensions.Logging;
 using NATS.Client;
 

@@ -3,6 +3,7 @@
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
+using Common.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;

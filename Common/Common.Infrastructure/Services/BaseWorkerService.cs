@@ -1,4 +1,4 @@
-﻿namespace Assistant.Market.Api.Services;
+﻿namespace Common.Infrastructure.Services;
 
 using NATS.Client;
 

@@ -4,12 +4,12 @@ public class Tenant
 {
     public string Name { get; set; }
     
-    public IEnumerable<WatchItem> WatchList { get; set; }
+    public IEnumerable<WatchListItem> WatchList { get; set; }
 
     public IEnumerable<Position> Positions { get; set; }
 }
 
-public class WatchItem
+public class WatchListItem
 {
     public string Ticker { get; set; }
 
@@ -27,6 +27,8 @@ public class Position
     public AssetType Type { get; set; }
     
     public int Quantity { get; set; }
+
+    public string Tag { get; set; }
 
     public decimal AverageCost { get; set; }
 }

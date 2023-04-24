@@ -1,7 +1,9 @@
-﻿namespace Assistant.Market.Api.Services;
+﻿namespace Assistant.Market.Infrastructure.Services;
 
-using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
+using Common.Core.Services;
+using Common.Infrastructure.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 public class RefreshDataTimerService : BaseTimerService

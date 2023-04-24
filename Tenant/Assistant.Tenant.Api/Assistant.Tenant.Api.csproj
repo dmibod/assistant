@@ -4,11 +4,17 @@
         <TargetFramework>net7.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>bab71861-35fc-49b9-b6d1-8637e2db4d56</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Assistant.Tenant.Core\Assistant.Tenant.Core.csproj" />
-      <ProjectReference Include="..\Assistant.Tenant.Infrastructure\Assistant.Tenant.Infrastructure.csproj" />
+        <ProjectReference Include="..\Assistant.Tenant.Core\Assistant.Tenant.Core.csproj" />
+        <ProjectReference Include="..\Assistant.Tenant.Infrastructure\Assistant.Tenant.Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.5" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     </ItemGroup>
 
 </Project>

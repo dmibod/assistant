@@ -4,23 +4,19 @@
         <TargetFramework>net7.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-      <UserSecretsId>bab71861-35fc-49b9-b6d1-8637e2db4d56</UserSecretsId>
-  </PropertyGroup>
+        <UserSecretsId>bab71861-35fc-49b9-b6d1-8637e2db4d56</UserSecretsId>
+    </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\KanbanApi.Client\KanbanApi.Client.csproj" />
-      <ProjectReference Include="..\..\PolygonApi.Client\PolygonApi.Client.csproj" />
-      <ProjectReference Include="..\Assistant.Market.Core\Assistant.Market.Core.csproj" />
-      <ProjectReference Include="..\Assistant.Market.Infrastructure\Assistant.Market.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\KanbanApi.Client\KanbanApi.Client.csproj" />
+        <ProjectReference Include="..\..\PolygonApi.Client\PolygonApi.Client.csproj" />
+        <ProjectReference Include="..\Assistant.Market.Core\Assistant.Market.Core.csproj" />
+        <ProjectReference Include="..\Assistant.Market.Infrastructure\Assistant.Market.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.5" />
-      <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Security\" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.5" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     </ItemGroup>
 
 </Project>

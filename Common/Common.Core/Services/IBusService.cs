@@ -1,4 +1,4 @@
-﻿namespace Assistant.Market.Core.Services;
+﻿namespace Common.Core.Services;
 
 public interface IBusService
 {

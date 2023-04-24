@@ -1,4 +1,6 @@
-﻿namespace Assistant.Market.Api.Services;
+﻿namespace Common.Infrastructure.Services;
+
+using Microsoft.Extensions.Hosting;
 
 public abstract class BaseHostedService : IHostedService
 {

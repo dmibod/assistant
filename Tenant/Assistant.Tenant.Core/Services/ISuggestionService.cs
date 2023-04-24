@@ -5,5 +5,5 @@ using Assistant.Tenant.Core.Models;
 public interface ISuggestionService
 {
     // returns sell operations
-    IEnumerable<object> SuggestPuts(WatchItem asset, SuggestionFilter filter);
+    IEnumerable<object> SuggestPuts(WatchListItem asset, SuggestionFilter filter);
 }

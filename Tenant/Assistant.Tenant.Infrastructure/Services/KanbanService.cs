@@ -2,6 +2,7 @@
 
 using Assistant.Tenant.Core.Services;
 
-public class TenantService : ITenantService
+public class KanbanService : IKanbanService
 {
+    
 }

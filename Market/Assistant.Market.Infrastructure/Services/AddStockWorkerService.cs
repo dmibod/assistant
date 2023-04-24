@@ -1,8 +1,10 @@
-﻿namespace Assistant.Market.Api.Services;
+﻿namespace Assistant.Market.Infrastructure.Services;
 
 using System.Text;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
+using Common.Infrastructure.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NATS.Client;
 
