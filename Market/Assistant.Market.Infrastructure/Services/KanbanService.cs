@@ -73,6 +73,17 @@ public class KanbanService : IKanbanService
         });
     }
 
+    public Task SetBoardProgressStateAsync(string boardId, int progress)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SetBoardProgressStateAsync),
+            $"{boardId}-{progress}");
+
+        return this.apiClient.SetBoardProgressStateAsync(new KanbanApi.Client.Board
+        {
+            Id = boardId
+        }, progress);
+    }
+
     public Task ResetBoardStateAsync(string boardId)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ResetBoardStateAsync), boardId);

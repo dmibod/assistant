@@ -9,7 +9,9 @@ public interface IKanbanService
     Task UpdateBoardAsync(Board board);
 
     Task SetBoardLoadingStateAsync(string boardId);
-
+    
+    Task SetBoardProgressStateAsync(string boardId, int progress);
+    
     Task ResetBoardStateAsync(string boardId);
     
     Task<IEnumerable<Lane>> FindBoardLanesAsync(string boardId);

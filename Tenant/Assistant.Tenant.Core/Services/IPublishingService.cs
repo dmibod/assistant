@@ -4,7 +4,7 @@ using Assistant.Tenant.Core.Models;
 
 public interface IPublishingService
 {
-    Task PublishPositions();
+    Task PublishPositionsAsync();
 
-    Task PublishSuggestions(IEnumerable<object> operations, SuggestionFilter appliedFilter);
+    Task PublishSuggestionsAsync(IEnumerable<object> operations, SuggestionFilter appliedFilter);
 }

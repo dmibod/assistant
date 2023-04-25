@@ -1,4 +1,4 @@
-﻿namespace Assistant.Market.Core.Utils;
+﻿namespace Common.Core.Utils;
 
 public static class RenderUtils
 {

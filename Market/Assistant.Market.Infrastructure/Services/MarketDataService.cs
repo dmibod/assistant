@@ -2,7 +2,7 @@
 
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Services;
-using Assistant.Market.Core.Utils;
+using Common.Core.Utils;
 using Microsoft.Extensions.Logging;
 using PolygonApi.Client;
 using PolygonApi.Client.Utils;

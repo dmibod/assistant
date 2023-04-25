@@ -9,4 +9,6 @@ public interface ITenantRepository
     Task<bool> ExistsAsync(string name);
     
     Task CreateAsync(string name);
+
+    Task CreatePositionAsync(string tenant, Position position);
 }

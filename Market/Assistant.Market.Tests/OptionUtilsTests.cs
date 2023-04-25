@@ -1,6 +1,6 @@
 namespace Assistant.Market.Tests;
 
-using Assistant.Market.Core.Utils;
+using Common.Core.Utils;
 
 [TestClass]
 public class OptionUtilsTests

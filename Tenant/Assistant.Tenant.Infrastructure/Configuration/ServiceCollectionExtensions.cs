@@ -35,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPositionService, PositionService>();
         services.AddSingleton<IPublishingService, PublishingService>();
         services.AddSingleton<ISuggestionService, SuggestionService>();
+        services.AddSingleton<IMarketDataService, MarketDataService>();
         services.AddSingleton<ITenantRepository, TenantRepository>();
         
         return services;

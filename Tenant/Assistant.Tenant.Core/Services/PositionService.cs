@@ -19,33 +19,49 @@ public class PositionService : IPositionService
 
     public async Task<IEnumerable<Position>> FindAllAsync()
     {
+        this.logger.LogInformation("{Method}", nameof(this.FindAllAsync));
+        
         var tenant = await this.tenantService.GetOrCreateAsync();
 
         return tenant.Positions;
     }
 
-    public Task<Position> CreateAsync(Position position)
+    public async Task<Position> CreateAsync(Position position)
     {
-        throw new NotImplementedException();
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateAsync), $"{position.Account}-{position.Asset}");
+        
+        var tenant = await this.tenantService.GetOrCreateAsync();
+
+        await this.repository.CreatePositionAsync(tenant.Name, position);
+
+        return position;
     }
 
     public Task RemoveAsync(string account, string asset)
     {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), $"{account}-{asset}");
+        
         throw new NotImplementedException();
     }
 
     public Task ResetTagAsync()
     {
+        this.logger.LogInformation("{Method}", nameof(this.ResetTagAsync));
+
         throw new NotImplementedException();
     }
 
     public Task ReplaceTagAsync(string oldValue, string newValue)
     {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ReplaceTagAsync), $"{oldValue}-{newValue}");
+
         throw new NotImplementedException();
     }
 
     public Task UpdateTagAsync(string account, string asset)
     {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateTagAsync), $"{account}-{asset}");
+
         throw new NotImplementedException();
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Assistant.Market.Core.Utils;
+﻿namespace Common.Core.Utils;
 
 using System.Text.RegularExpressions;
 
@@ -12,6 +12,17 @@ public static class OptionUtils
         var side = isCall ? "C" : "P";
         
         return $"{stockTicker}{expiration}{side}{strike}";
+    }
+
+    public static string GetStock(string optionTicker)
+    {
+        var match = Regex.Match(optionTicker, OptionTickerPattern);
+        if (!match.Success)
+        {
+            throw new Exception($"Can't get stock from option ticker '{optionTicker}'");
+        }
+        
+        return match.Groups[1].Value;
     }
 
     public static decimal GetStrike(string optionTicker)

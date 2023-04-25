@@ -2,7 +2,7 @@
 
 using System.Text.RegularExpressions;
 using Assistant.Market.Core.Models;
-using Assistant.Market.Core.Utils;
+using Common.Core.Utils;
 using Microsoft.Extensions.Logging;
 using Exception = System.Exception;
 

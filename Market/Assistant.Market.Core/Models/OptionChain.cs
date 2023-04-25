@@ -1,6 +1,6 @@
 ﻿namespace Assistant.Market.Core.Models;
 
-using Assistant.Market.Core.Utils;
+using Common.Core.Utils;
 
 public class OptionChain
 {

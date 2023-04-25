@@ -1,8 +1,10 @@
 ﻿namespace Assistant.Tenant.Api.Controllers;
 
 using System.Security.Claims;
+using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Services;
 using Common.Core.Security;
+using Common.Infrastructure.Security;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,12 +13,14 @@ using Microsoft.AspNetCore.Mvc;
 public class TenantController : ControllerBase
 {
     private readonly IPositionService positionService;
+    private readonly IPublishingService publishingService;
     private readonly ITenantService tenantService;
     private readonly IIdentityProvider identityProvider;
 
-    public TenantController(IPositionService positionService, ITenantService tenantService, IIdentityProvider identityProvider)
+    public TenantController(IPositionService positionService, IPublishingService publishingService, ITenantService tenantService, IIdentityProvider identityProvider)
     {
         this.positionService = positionService;
+        this.publishingService = publishingService;
         this.tenantService = tenantService;
         this.identityProvider = identityProvider;
     }
@@ -33,14 +37,10 @@ public class TenantController : ControllerBase
 
         var tenant = await this.tenantService.GetOrCreateAsync();
 
-        var claim = identity.Claims.Single(c => c.Type == "exp").Value;
-        var value = long.Parse(claim);
-        var exp = DateTime.UnixEpoch.AddSeconds(value);
-
         var result = new
         {
             User = tenant.Name,
-            Expiration = exp.ToLongDateString()
+            Expiration = identity.GetExpiration().ToLongDateString()
         };
 
         return this.Ok(result);
@@ -58,5 +58,17 @@ public class TenantController : ControllerBase
         };
 
         return this.Ok(result);
+    }
+
+    [HttpPost("Positions")]
+    public Task<Position> AddPositionAsync(Position position)
+    {
+        return this.positionService.CreateAsync(position);
+    }
+
+    [HttpPost("Positions/Publish")]
+    public Task PublishPositions()
+    {
+        return this.publishingService.PublishPositionsAsync();
     }
 }

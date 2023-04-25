@@ -54,6 +54,18 @@ public class TenantRepository : ITenantRepository
         });
     }
 
+    public Task CreatePositionAsync(string tenant, Position position)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreatePositionAsync), $"{tenant}-{position.Account}-{position.Asset}");
+        
+        var filter = Builders<TenantEntity>.Filter
+            .Eq(tenant => tenant.Name, tenant);
+        
+        var update = Builders<TenantEntity>.Update
+            .Push(tenant => tenant.Positions, position);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
 }
 
 internal class TenantEntity : Tenant
