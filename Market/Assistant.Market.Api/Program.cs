@@ -44,12 +44,12 @@ app.UseAuthorization();
 
 app.UseSwagger(options =>
 {
-    options.RouteTemplate = "MarketData/{documentName}/swagger.json";
+    options.RouteTemplate = "Market/{documentName}/swagger.json";
 });
 
 app.UseSwaggerUI(options =>
 {
-    options.RoutePrefix = "MarketData";
+    options.RoutePrefix = "Market";
 });
 
 app.MapControllers().RequireAuthorization();

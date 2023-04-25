@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 [ApiController]
 [Route("[controller]")]
-public class MarketDataController : ControllerBase
+public class MarketController : ControllerBase
 {
     private readonly IStockService stockService;
     private readonly IOptionService optionService;
@@ -18,7 +18,7 @@ public class MarketDataController : ControllerBase
     private readonly string publishMarketDataTopic;
     private readonly string addStockRequestTopic;
 
-    public MarketDataController(IStockService stockService, IOptionService optionService, IBusService busService, IOptions<NatsSettings> options)
+    public MarketController(IStockService stockService, IOptionService optionService, IBusService busService, IOptions<NatsSettings> options)
     {
         this.stockService = stockService;
         this.optionService = optionService;
