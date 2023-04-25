@@ -48,14 +48,14 @@ public class OptionService : IOptionService
 
     public Task<IEnumerable<string>> FindExpirationsAsync(string ticker)
     {
-        this.logger.LogInformation("{Method}", nameof(this.FindExpirationsAsync));
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationsAsync), ticker);
 
         return this.repository.FindExpirationsAsync(ticker);
     }
 
     public Task RemoveAsync(IDictionary<string, ISet<string>> expirations)
     {
-        this.logger.LogInformation("{Method}", nameof(this.RemoveAsync));
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), expirations.Count);
 
         return this.repository.RemoveAsync(expirations);
     }
