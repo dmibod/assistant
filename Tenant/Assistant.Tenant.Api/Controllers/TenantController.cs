@@ -3,6 +3,7 @@
 using System.Security.Claims;
 using Assistant.Tenant.Core.Services;
 using Common.Core.Security;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -21,6 +22,7 @@ public class TenantController : ControllerBase
     }
 
     [HttpPost("Token")]
+    [EnableCors("CorsPolicy")]
     public async Task<ActionResult> Token()
     {
         var identity = this.identityProvider.Identity as ClaimsIdentity;

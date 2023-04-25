@@ -2,6 +2,20 @@ using Assistant.Tenant.Infrastructure.Configuration;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy",
+        policy =>
+        {
+            policy.WithOrigins("*")
+                //.SetIsOriginAllowedToAllowWildcardSubdomains()
+                //.AllowCredentials()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+});
+
 builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -35,6 +49,7 @@ builder.Services.ConfigureInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
+app.UseCors();
 app.UseAuthorization();
 
 app.UseSwagger(options =>
