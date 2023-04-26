@@ -37,11 +37,13 @@ public class PositionService : IPositionService
         return position;
     }
 
-    public Task RemoveAsync(string account, string asset)
+    public async Task RemoveAsync(string account, string asset)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), $"{account}-{asset}");
+
+        var tenant = await this.tenantService.GetOrCreateAsync();
         
-        throw new NotImplementedException();
+        await this.repository.RemovePositionAsync(tenant.Name, account, asset);
     }
 
     public Task ResetTagAsync()
@@ -58,10 +60,12 @@ public class PositionService : IPositionService
         throw new NotImplementedException();
     }
 
-    public Task UpdateTagAsync(string account, string asset)
+    public async Task UpdateTagAsync(string account, string asset, string tag)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateTagAsync), $"{account}-{asset}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateTagAsync), $"{account}-{asset}-{tag}");
 
-        throw new NotImplementedException();
+        var tenant = await this.tenantService.GetOrCreateAsync();
+        
+        await this.repository.TagPositionAsync(tenant.Name, account, asset, tag);
     }
 }

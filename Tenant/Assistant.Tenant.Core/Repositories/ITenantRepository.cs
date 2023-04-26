@@ -11,4 +11,8 @@ public interface ITenantRepository
     Task CreateAsync(string name);
 
     Task CreatePositionAsync(string tenant, Position position);
+
+    Task RemovePositionAsync(string tenant, string account, string asset);
+    
+    Task TagPositionAsync(string tenant, string account, string asset, string tag);
 }

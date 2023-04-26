@@ -60,6 +60,7 @@ app.UseSwagger(options =>
 app.UseSwaggerUI(options =>
 {
     options.RoutePrefix = "Tenant";
+    options.ConfigObject.PersistAuthorization = true;
 });
 
 app.MapControllers().RequireAuthorization();

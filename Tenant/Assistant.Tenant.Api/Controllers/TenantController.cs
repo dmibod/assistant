@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Services;
 using Common.Core.Security;
+using Common.Core.Utils;
 using Common.Infrastructure.Security;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
@@ -60,10 +61,63 @@ public class TenantController : ControllerBase
         return this.Ok(result);
     }
 
-    [HttpPost("Positions")]
-    public Task<Position> AddPositionAsync(Position position)
+    [HttpPost("Positions/{account}/{ticker}")]
+    public Task<Position> AddStockPositionAsync(string account, string ticker, decimal averageCost, int size, string tag = "")
     {
+        var position = new Position
+        {
+            Account = account.ToUpper(),
+            Asset = ticker.ToUpper(),
+            Type = AssetType.Stock,
+            AverageCost = averageCost,
+            Quantity = size
+        };
+
         return this.positionService.CreateAsync(position);
+    }
+
+    [HttpPost("Positions/{account}/{ticker}/Call/{yyyymmmdd}")]
+    public Task<Position> AddCallOptionPositionAsync(string account, string ticker, string yyyymmmdd, decimal strike, decimal averageCost, int size, string tag = "")
+    {
+        var position = new Position
+        {
+            Account = account.ToUpper(),
+            Asset = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmmdd, strike, true),
+            Type = AssetType.Option,
+            AverageCost = averageCost,
+            Quantity = size,
+            Tag = tag
+        };
+
+        return this.positionService.CreateAsync(position);
+    }
+
+    [HttpPost("Positions/{account}/{ticker}/Put/{yyyymmmdd}")]
+    public Task<Position> AddPutOptionPositionAsync(string account, string ticker, string yyyymmmdd, decimal strike, decimal averageCost, int size, string tag = "")
+    {
+        var position = new Position
+        {
+            Account = account.ToUpper(),
+            Asset = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmmdd, strike, false),
+            Type = AssetType.Option,
+            AverageCost = averageCost,
+            Quantity = size,
+            Tag = tag
+        };
+
+        return this.positionService.CreateAsync(position);
+    }
+
+    [HttpPut("Positions/{account}/{ticker}/{tag}")]
+    public Task TagPositionAsync(string account, string ticker, string tag)
+    {
+        return this.positionService.UpdateTagAsync(account.ToUpper(), ticker.ToUpper(), tag);
+    }
+
+    [HttpDelete("Positions/{account}")]
+    public Task RemovePositionAsync(string account, string ticker)
+    {
+        return this.positionService.RemoveAsync(account.ToUpper(), ticker.ToUpper());
     }
 
     [HttpPost("Positions/Publish")]

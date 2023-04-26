@@ -14,6 +14,11 @@ public static class OptionUtils
         return $"{stockTicker}{expiration}{side}{strike}";
     }
 
+    public static string OptionTicker(string stockTicker, string expiration, decimal strike, bool isCall)
+    {
+        return OptionTicker(stockTicker, expiration, FormatStrike(strike), isCall);
+    }
+
     public static string GetStock(string optionTicker)
     {
         var match = Regex.Match(optionTicker, OptionTickerPattern);
@@ -46,6 +51,19 @@ public static class OptionUtils
         }
         
         return match.Groups[3].Value;
+    }
+
+    public static string FormatStrike(decimal strike)
+    {
+        var value = $"{Math.Round(strike * 1000, 0)}";
+        var leadingZeroes = 8 - value.Length;
+
+        if (leadingZeroes < 0)
+        {
+            leadingZeroes = 0;
+        }
+
+        return new string('0', leadingZeroes) + value;
     }
 
     public static DateTime ParseExpiration(string expiration)

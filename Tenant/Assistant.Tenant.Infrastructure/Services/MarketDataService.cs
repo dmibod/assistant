@@ -55,11 +55,6 @@ internal class AssetPriceEntity : AssetPrice
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
-    
-    public string Ticker {
-        get => this.Asset;
-        set => this.Asset = value;
-    }
 
     public DateTime LastRefresh { get; set; }
 }

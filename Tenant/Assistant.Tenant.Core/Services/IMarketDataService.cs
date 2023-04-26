@@ -9,7 +9,7 @@ public interface IMarketDataService
 
 public class AssetPrice
 {
-    public string Asset { get; set; }
+    public string Ticker { get; set; }
     
     public decimal? Bid { get; set; }
 

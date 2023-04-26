@@ -1,6 +1,5 @@
 ﻿namespace Assistant.Tenant.Infrastructure.Repositories;
 
-using System.Runtime.InteropServices.JavaScript;
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Repositories;
 using Assistant.Tenant.Infrastructure.Configuration;
@@ -63,6 +62,33 @@ public class TenantRepository : ITenantRepository
         
         var update = Builders<TenantEntity>.Update
             .Push(tenant => tenant.Positions, position);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+    
+    public Task RemovePositionAsync(string tenant, string account, string asset)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemovePositionAsync), $"{tenant}-{account}-{asset}");
+
+        var filter = Builders<TenantEntity>.Filter
+            .Eq(tenant => tenant.Name, tenant);
+        
+        var update = Builders<TenantEntity>.Update
+            .PullFilter(tenant => tenant.Positions, position => position.Account == account && position.Asset == asset);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public Task TagPositionAsync(string tenant, string account, string asset, string tag)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.TagPositionAsync), $"{tenant}-{account}-{asset}-{tag}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.ElemMatch(x => x.Positions, 
+                         Builders<Position>.Filter.Eq(x => x.Account, account) & 
+                         Builders<Position>.Filter.Eq(x => x.Asset, asset));
+        
+        var update = Builders<TenantEntity>.Update.Set("Positions.$.Tag", tag);
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }

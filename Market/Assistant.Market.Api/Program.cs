@@ -50,6 +50,7 @@ app.UseSwagger(options =>
 app.UseSwaggerUI(options =>
 {
     options.RoutePrefix = "Market";
+    options.ConfigObject.PersistAuthorization = true;
 });
 
 app.MapControllers().RequireAuthorization();
