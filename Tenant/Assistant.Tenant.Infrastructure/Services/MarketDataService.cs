@@ -44,11 +44,11 @@ public class MarketDataService : IMarketDataService
         return this.busService.PublishAsync(this.addStockRequestTopic, ticker);
     }
 
-    public async Task<IEnumerable<AssetPrice>> FindStockPricesAsync()
+    public async Task<IEnumerable<AssetPrice>> FindStockPricesAsync(ISet<string> tickers)
     {
         this.logger.LogInformation("{Method}", nameof(this.FindStockPricesAsync));
-        
-        var cursor = await this.stockCollection.FindAsync(_ => true);
+
+        var cursor = await this.stockCollection.FindAsync(doc => tickers == null || tickers.Contains(doc.Ticker));
 
         return cursor.ToEnumerable().ToList();
     }

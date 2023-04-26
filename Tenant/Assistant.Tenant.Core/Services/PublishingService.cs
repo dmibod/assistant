@@ -28,17 +28,12 @@ public class PublishingService : IPublishingService
         this.logger.LogInformation("{Method}", nameof(this.PublishPositionsAsync));
 
         var positions = (await this.positionService.FindAllAsync()).ToList();
+        var tickers = positions.Select(p => p.Type == AssetType.Stock ? p.Ticker : OptionUtils.GetStock(p.Ticker)).Distinct().ToHashSet();
+        var stocks = (await this.marketDataService.FindStockPricesAsync(tickers)).ToDictionary(stock => stock.Ticker);
+        var expirations = new Dictionary<string, IEnumerable<AssetPrice>>();
 
-        var boards = await this.kanbanService.FindBoardsAsync();
-
-        var board = boards.FirstOrDefault(board => board.Name == Positions);
-
-        if (board == null)
-        {
-            var now = DateTime.UtcNow;
-            board = await this.kanbanService.CreateBoardAsync(new Board { Name = $"{Positions} {now.ToShortDateString()} {now.ToShortTimeString()}" });
-        }
-
+        var now = DateTime.UtcNow;
+        var board = await this.kanbanService.CreateBoardAsync(new Board { Name = $"{Positions} {now.ToShortDateString()} {now.ToShortTimeString()}" });
         var tracker = new ProgressTracker(positions.Count, 1,
             progress =>
             {
@@ -46,9 +41,6 @@ public class PublishingService : IPublishingService
 
                 this.logger.LogInformation($"{progress}");
             });
-
-        var stocks = (await this.marketDataService.FindStockPricesAsync()).ToDictionary(stock => stock.Ticker);
-        var expirations = new Dictionary<string, IEnumerable<AssetPrice>>();
 
         var totalOptions = 0;
         var totalCombos = 0;

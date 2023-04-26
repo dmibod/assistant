@@ -36,18 +36,21 @@ public class PositionService : IPositionService
 
         await this.repository.CreatePositionAsync(tenant.Name, position);
 
-        await this.marketDataService.EnsureStockAsync(position.Ticker);
+        if (position.Type == AssetType.Stock)
+        {
+            await this.marketDataService.EnsureStockAsync(position.Ticker);
+        }
 
         return position;
     }
 
-    public async Task RemoveAsync(string account, string asset)
+    public async Task RemoveAsync(string account, string ticker)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), $"{account}-{asset}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), $"{account}-{ticker}");
 
         var tenant = await this.tenantService.GetOrCreateAsync();
         
-        await this.repository.RemovePositionAsync(tenant.Name, account, asset);
+        await this.repository.RemovePositionAsync(tenant.Name, account, ticker);
     }
 
     public Task ResetTagAsync()
@@ -64,12 +67,12 @@ public class PositionService : IPositionService
         throw new NotImplementedException();
     }
 
-    public async Task UpdateTagAsync(string account, string asset, string tag)
+    public async Task UpdateTagAsync(string account, string ticker, string tag)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateTagAsync), $"{account}-{asset}-{tag}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateTagAsync), $"{account}-{ticker}-{tag}");
 
         var tenant = await this.tenantService.GetOrCreateAsync();
         
-        await this.repository.TagPositionAsync(tenant.Name, account, asset, tag);
+        await this.repository.TagPositionAsync(tenant.Name, account, ticker, tag);
     }
 }

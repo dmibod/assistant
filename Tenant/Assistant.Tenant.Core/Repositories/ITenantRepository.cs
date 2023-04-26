@@ -12,7 +12,7 @@ public interface ITenantRepository
 
     Task CreatePositionAsync(string tenant, Position position);
 
-    Task RemovePositionAsync(string tenant, string account, string asset);
+    Task RemovePositionAsync(string tenant, string account, string ticker);
     
-    Task TagPositionAsync(string tenant, string account, string asset, string tag);
+    Task TagPositionAsync(string tenant, string account, string ticker, string tag);
 }

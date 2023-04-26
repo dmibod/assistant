@@ -66,27 +66,27 @@ public class TenantRepository : ITenantRepository
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
     
-    public Task RemovePositionAsync(string tenant, string account, string asset)
+    public Task RemovePositionAsync(string tenant, string account, string ticker)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemovePositionAsync), $"{tenant}-{account}-{asset}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemovePositionAsync), $"{tenant}-{account}-{ticker}");
 
         var filter = Builders<TenantEntity>.Filter
             .Eq(tenant => tenant.Name, tenant);
         
         var update = Builders<TenantEntity>.Update
-            .PullFilter(tenant => tenant.Positions, position => position.Account == account && position.Ticker == asset);
+            .PullFilter(tenant => tenant.Positions, position => position.Account == account && position.Ticker == ticker);
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
 
-    public Task TagPositionAsync(string tenant, string account, string asset, string tag)
+    public Task TagPositionAsync(string tenant, string account, string ticker, string tag)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.TagPositionAsync), $"{tenant}-{account}-{asset}-{tag}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.TagPositionAsync), $"{tenant}-{account}-{ticker}-{tag}");
 
         var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
                      Builders<TenantEntity>.Filter.ElemMatch(x => x.Positions, 
                          Builders<Position>.Filter.Eq(x => x.Account, account) & 
-                         Builders<Position>.Filter.Eq(x => x.Ticker, asset));
+                         Builders<Position>.Filter.Eq(x => x.Ticker, ticker));
         
         var update = Builders<TenantEntity>.Update.Set("Positions.$.Tag", tag);
         

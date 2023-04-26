@@ -8,11 +8,11 @@ public interface IPositionService
     
     Task<Position> CreateAsync(Position position);
 
-    Task RemoveAsync(string account, string asset);
+    Task RemoveAsync(string account, string ticker);
 
     Task ResetTagAsync();
 
     Task ReplaceTagAsync(string oldValue, string newValue);
 
-    Task UpdateTagAsync(string account, string asset, string tag);
+    Task UpdateTagAsync(string account, string ticker, string tag);
 }
