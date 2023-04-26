@@ -44,6 +44,30 @@ public class PositionService : IPositionService
         return position;
     }
 
+    public async Task<Position> CreateOrUpdateAsync(string tenant, Position position)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateAsync), $"{tenant}-{position.Account}-{position.Ticker}");
+
+        var existing = await this.repository.FindPositionAsync(tenant,
+            p => p.Account == position.Account && p.Ticker == position.Ticker);
+
+        if (existing != null)
+        {
+            await this.repository.UpdatePositionAsync(tenant, position);
+            
+            return existing;
+        }
+
+        await this.repository.CreatePositionAsync(tenant, position);
+
+        if (position.Type == AssetType.Stock)
+        {
+            await this.marketDataService.EnsureStockAsync(position.Ticker);
+        }
+
+        return position;
+    }
+
     public async Task RemoveAsync(string account, string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), $"{account}-{ticker}");

@@ -10,7 +10,11 @@ public interface ITenantRepository
     
     Task CreateAsync(string name);
 
+    Task<Position?> FindPositionAsync(string tenant, Func<Position, bool> criteria);
+    
     Task CreatePositionAsync(string tenant, Position position);
+
+    Task UpdatePositionAsync(string tenant, Position position);
 
     Task RemovePositionAsync(string tenant, string account, string ticker);
     

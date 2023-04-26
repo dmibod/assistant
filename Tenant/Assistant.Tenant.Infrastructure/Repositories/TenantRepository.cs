@@ -53,6 +53,15 @@ public class TenantRepository : ITenantRepository
         });
     }
 
+    public async Task<Position?> FindPositionAsync(string tenant, Func<Position, bool> criteria)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindPositionAsync), $"{tenant}");
+
+        var t = await this.FindByNameAsync(tenant);
+
+        return t == null ? null : t.Positions.FirstOrDefault(criteria);
+    }
+
     public Task CreatePositionAsync(string tenant, Position position)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreatePositionAsync), $"{tenant}-{position.Account}-{position.Ticker}");
@@ -65,7 +74,23 @@ public class TenantRepository : ITenantRepository
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
-    
+
+    public Task UpdatePositionAsync(string tenant, Position position)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdatePositionAsync), $"{tenant}-{position.Account}-{position.Ticker}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.ElemMatch(x => x.Positions, 
+                         Builders<Position>.Filter.Eq(x => x.Account, position.Account) & 
+                         Builders<Position>.Filter.Eq(x => x.Ticker, position.Ticker));
+        
+        var update = Builders<TenantEntity>.Update
+            .Set("Positions.$.Quantity", position.Quantity)
+            .Set("Positions.$.AverageCost", position.AverageCost);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
     public Task RemovePositionAsync(string tenant, string account, string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemovePositionAsync), $"{tenant}-{account}-{ticker}");

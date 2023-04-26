@@ -39,6 +39,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMarketDataService, MarketDataService>();
         services.AddSingleton<ITenantRepository, TenantRepository>();
         
+        services.AddHostedService<AddPositionWorkerService>();
+        
         return services;
     }
 }
