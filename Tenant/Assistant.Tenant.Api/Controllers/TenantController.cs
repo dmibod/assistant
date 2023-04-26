@@ -55,7 +55,7 @@ public class TenantController : ControllerBase
         var result = new
         {
             Count = positions.Count(),
-            Items = positions.OrderBy(position => position.Account).ThenBy(position => position.Asset).ToArray()
+            Items = positions.OrderBy(position => position.Account).ThenBy(position => position.Ticker).ToArray()
         };
 
         return this.Ok(result);
@@ -67,7 +67,7 @@ public class TenantController : ControllerBase
         var position = new Position
         {
             Account = account.ToUpper(),
-            Asset = ticker.ToUpper(),
+            Ticker = ticker.ToUpper(),
             Type = AssetType.Stock,
             AverageCost = averageCost,
             Quantity = size
@@ -82,7 +82,7 @@ public class TenantController : ControllerBase
         var position = new Position
         {
             Account = account.ToUpper(),
-            Asset = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmmdd, strike, true),
+            Ticker = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmmdd, strike, true),
             Type = AssetType.Option,
             AverageCost = averageCost,
             Quantity = size,
@@ -98,7 +98,7 @@ public class TenantController : ControllerBase
         var position = new Position
         {
             Account = account.ToUpper(),
-            Asset = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmmdd, strike, false),
+            Ticker = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmmdd, strike, false),
             Type = AssetType.Option,
             AverageCost = averageCost,
             Quantity = size,

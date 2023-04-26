@@ -90,9 +90,9 @@ public class PublishingService : IPublishingService
 
         var options = await this.kanbanService.CreateCardLaneAsync(board.Id, account.Id, new Lane { Name = "OPTIONS", Description = $"{singleOptionPositions.Count}"});
 
-        foreach (var p in singleOptionPositions.OrderBy(p => p.Asset))
+        foreach (var p in singleOptionPositions.OrderBy(p => p.Ticker))
         {
-            var name = $"{OptionUtils.GetSide(p.Asset)}${OptionUtils.GetStrike(p.Asset)} {FormatExpiration(OptionUtils.ParseExpiration(p.Asset))}";
+            var name = $"{OptionUtils.GetSide(p.Ticker)}${OptionUtils.GetStrike(p.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(p.Ticker))}";
             var description = this.PositionToContent(p, stocks, expirations);
 
             await this.kanbanService.CreateCardAsync(board.Id, options.Id, new Card { Name = name, Description = description});
@@ -114,9 +114,9 @@ public class PublishingService : IPublishingService
 
         var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, account.Id, new Lane { Name = "STOCKS", Description = $"{stockPositions.Count}"});
 
-        foreach (var p in stockPositions.OrderBy(p => p.Asset))
+        foreach (var p in stockPositions.OrderBy(p => p.Ticker))
         {
-            var name = p.Asset;
+            var name = p.Ticker;
             var description = this.PositionToContent(p, stocks, expirations);
 
             await this.kanbanService.CreateCardAsync(board.Id, stocksLane.Id, new Card{ Name = name, Description = description});
@@ -170,11 +170,11 @@ public class PublishingService : IPublishingService
     {
         var size = RevealComboSize(legs);
         
-        legs = legs.OrderBy(leg => leg.Type).ThenByDescending(leg => OptionUtils.GetStrike(leg.Asset));
+        legs = legs.OrderBy(leg => leg.Type).ThenByDescending(leg => OptionUtils.GetStrike(leg.Ticker));
         
         return "[" 
                + legs.Select(leg => LegToContent(leg, stocks, expirations)).Aggregate((curr, el) => $"{curr}, {el}") + ","
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("underlying"), RenderUtils.PropToContent(FormatPrice(stocks[OptionUtils.GetStock(legs.First().Asset)].Last))) + ","               
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("underlying"), RenderUtils.PropToContent(FormatPrice(stocks[OptionUtils.GetStock(legs.First().Ticker)].Last))) + ","               
                + RenderUtils.PairToContent(RenderUtils.PropToContent("quantity"), RenderUtils.PropToContent($"{size}")) + ","
                + this.PriceToContent(legs, expirations) + 
                "]";
@@ -187,7 +187,7 @@ public class PublishingService : IPublishingService
 
     private string LegToContent(Position leg, IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
-        var label = $"{OptionUtils.GetSide(leg.Asset)}${OptionUtils.GetStrike(leg.Asset)}";
+        var label = $"{OptionUtils.GetSide(leg.Ticker)}${OptionUtils.GetStrike(leg.Ticker)}";
         var key = RenderUtils.PropToContent(label);
         var value = RenderUtils.PropToContent(FormatSize(leg.Quantity));
         
@@ -203,7 +203,7 @@ public class PublishingService : IPublishingService
 
     private string StockPositionToContent(Position pos, IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
-        var ticker = pos.Asset;
+        var ticker = pos.Ticker;
         
         return "[" 
                + RenderUtils.PairToContent(RenderUtils.PropToContent("ticker"), RenderUtils.PropToContent(ticker)) + ","
@@ -215,12 +215,12 @@ public class PublishingService : IPublishingService
 
     private string OptionPositionToContent(Position pos, IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
-        if (OptionUtils.GetSide(pos.Asset) == "P" && pos.Quantity < decimal.Zero)
+        if (OptionUtils.GetSide(pos.Ticker) == "P" && pos.Quantity < decimal.Zero)
         {
             return this.ShortPutToContent(pos, stocks, expirations);
         }
 
-        var ticker = OptionUtils.GetStock(pos.Asset);
+        var ticker = OptionUtils.GetStock(pos.Ticker);
         
         return "["
                + RenderUtils.PairToContent(RenderUtils.PropToContent("ticker"), RenderUtils.PropToContent(ticker)) + ","
@@ -232,8 +232,8 @@ public class PublishingService : IPublishingService
     
     private string ShortPutToContent(Position pos, IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
-        var ticker = OptionUtils.GetStock(pos.Asset);
-        var strike = OptionUtils.GetStrike(pos.Asset);
+        var ticker = OptionUtils.GetStock(pos.Ticker);
+        var strike = OptionUtils.GetStrike(pos.Ticker);
         
         var watchListItem = stocks[ticker]; 
         var underlying = watchListItem.Last ?? decimal.Zero;
@@ -241,7 +241,7 @@ public class PublishingService : IPublishingService
         var breakEven = (collateral - pos.AverageCost) / 100.0m;
         var style = breakEven == underlying ? null : breakEven < underlying ? RenderUtils.GreenStyle() : RenderUtils.RedStyle();
         var breakEvenValue = $"{FormatPrice(breakEven)} ({FormatPrice(Math.Abs(underlying - breakEven))})";
-        var dte = Expiration.From(OptionUtils.ParseExpiration(pos.Asset)).DaysTillExpiration;
+        var dte = Expiration.From(OptionUtils.ParseExpiration(pos.Ticker)).DaysTillExpiration;
         var itm = underlying < strike;
         
         return "["
@@ -333,7 +333,7 @@ public class PublishingService : IPublishingService
 
     private Tuple<decimal, decimal, decimal> GetStockPriceChange(Position pos, IDictionary<string, AssetPrice> stocks)
     {
-        var ticker = pos.Asset;
+        var ticker = pos.Ticker;
 
         var price = stocks.ContainsKey(ticker) ? stocks[ticker] : null;
 
@@ -349,10 +349,10 @@ public class PublishingService : IPublishingService
 
     private Tuple<decimal, decimal, decimal> GetOptionPriceChange(Position pos, IDictionary<string, IEnumerable<AssetPrice>> context)
     {
-        var ticker = OptionUtils.GetStock(pos.Asset);
-        var expiration = AsYYYYMMDD(OptionUtils.ParseExpiration(pos.Asset));
-        var strike = OptionUtils.GetStrike(pos.Asset);
-        var side = OptionUtils.GetSide(pos.Asset);
+        var ticker = OptionUtils.GetStock(pos.Ticker);
+        var expiration = AsYYYYMMDD(OptionUtils.ParseExpiration(pos.Ticker));
+        var strike = OptionUtils.GetStrike(pos.Ticker);
+        var side = OptionUtils.GetSide(pos.Ticker);
 
         var key = $"{ticker}-{expiration}";
         

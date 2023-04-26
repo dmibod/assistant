@@ -22,7 +22,7 @@ public class Position
 {
     public string Account { get; set; }
     
-    public string Asset { get; set; }
+    public string Ticker { get; set; }
 
     public AssetType Type { get; set; }
     

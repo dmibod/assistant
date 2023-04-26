@@ -8,12 +8,14 @@ public class PositionService : IPositionService
 {
     private readonly ITenantService tenantService;
     private readonly ITenantRepository repository;
+    private readonly IMarketDataService marketDataService;
     private readonly ILogger<PositionService> logger;
 
-    public PositionService(ITenantService tenantService, ITenantRepository repository, ILogger<PositionService> logger)
+    public PositionService(ITenantService tenantService, ITenantRepository repository, IMarketDataService marketDataService, ILogger<PositionService> logger)
     {
         this.tenantService = tenantService;
         this.repository = repository;
+        this.marketDataService = marketDataService;
         this.logger = logger;
     }
 
@@ -28,11 +30,13 @@ public class PositionService : IPositionService
 
     public async Task<Position> CreateAsync(Position position)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateAsync), $"{position.Account}-{position.Asset}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateAsync), $"{position.Account}-{position.Ticker}");
         
         var tenant = await this.tenantService.GetOrCreateAsync();
 
         await this.repository.CreatePositionAsync(tenant.Name, position);
+
+        await this.marketDataService.EnsureStockAsync(position.Ticker);
 
         return position;
     }

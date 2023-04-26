@@ -55,7 +55,7 @@ public class TenantRepository : ITenantRepository
 
     public Task CreatePositionAsync(string tenant, Position position)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreatePositionAsync), $"{tenant}-{position.Account}-{position.Asset}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreatePositionAsync), $"{tenant}-{position.Account}-{position.Ticker}");
         
         var filter = Builders<TenantEntity>.Filter
             .Eq(tenant => tenant.Name, tenant);
@@ -74,7 +74,7 @@ public class TenantRepository : ITenantRepository
             .Eq(tenant => tenant.Name, tenant);
         
         var update = Builders<TenantEntity>.Update
-            .PullFilter(tenant => tenant.Positions, position => position.Account == account && position.Asset == asset);
+            .PullFilter(tenant => tenant.Positions, position => position.Account == account && position.Ticker == asset);
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
@@ -86,7 +86,7 @@ public class TenantRepository : ITenantRepository
         var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
                      Builders<TenantEntity>.Filter.ElemMatch(x => x.Positions, 
                          Builders<Position>.Filter.Eq(x => x.Account, account) & 
-                         Builders<Position>.Filter.Eq(x => x.Asset, asset));
+                         Builders<Position>.Filter.Eq(x => x.Ticker, asset));
         
         var update = Builders<TenantEntity>.Update.Set("Positions.$.Tag", tag);
         

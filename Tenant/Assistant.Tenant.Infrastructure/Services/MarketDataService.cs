@@ -2,6 +2,7 @@
 
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Configuration;
+using Common.Core.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
@@ -13,11 +14,17 @@ public class MarketDataService : IMarketDataService
     private readonly IMongoCollection<AssetPriceEntity> stockCollection;
     
     private readonly IMongoCollection<OptionPriceEntity> optionCollection;
+
+    private readonly string addStockRequestTopic;
+
+    private readonly IBusService busService;
     
     private readonly ILogger<MarketDataService> logger;
 
-    public MarketDataService(IOptions<DatabaseSettings> databaseSettings, ILogger<MarketDataService> logger)
+    public MarketDataService(IBusService busService, IOptions<NatsSettings> natsSettings, IOptions<DatabaseSettings> databaseSettings, ILogger<MarketDataService> logger)
     {
+        this.addStockRequestTopic = natsSettings.Value.AddStockRequestTopic;
+        
         var mongoClient = new MongoClient(
             databaseSettings.Value.ConnectionString);
 
@@ -28,7 +35,13 @@ public class MarketDataService : IMarketDataService
         
         this.optionCollection = mongoDatabase.GetCollection<OptionPriceEntity>("option");
 
+        this.busService = busService;
         this.logger = logger;
+    }
+
+    public Task EnsureStockAsync(string ticker)
+    {
+        return this.busService.PublishAsync(this.addStockRequestTopic, ticker);
     }
 
     public async Task<IEnumerable<AssetPrice>> FindStockPricesAsync()
