@@ -17,4 +17,6 @@ public interface IPositionService
     Task ReplaceTagAsync(string oldValue, string newValue);
 
     Task UpdateTagAsync(string account, string ticker, string tag);
+
+    Task AutoTagOptionsAsync();
 }

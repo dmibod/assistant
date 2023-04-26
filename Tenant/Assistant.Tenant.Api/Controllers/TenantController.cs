@@ -163,6 +163,24 @@ public class TenantController : ControllerBase
         return this.positionService.UpdateTagAsync(account.ToUpper(), ticker.ToUpper(), tag);
     }
 
+    [HttpPost("Positions/ReplaceTag")]
+    public Task ReplaceTagAsync(string oldValue, string? newValue)
+    {
+        return this.positionService.ReplaceTagAsync(oldValue, newValue ?? string.Empty);
+    }
+
+    [HttpPost("Positions/ResetTags")]
+    public Task ResetTagsAsync()
+    {
+        return this.positionService.ResetTagAsync();
+    }
+
+    [HttpPost("Positions/AutoTagOptions")]
+    public Task AutoTagOptionsAsync()
+    {
+        return this.positionService.AutoTagOptionsAsync();
+    }
+
     [HttpDelete("Positions/{account}")]
     public Task RemovePositionAsync(string account, string ticker)
     {

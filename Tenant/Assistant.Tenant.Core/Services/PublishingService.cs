@@ -395,7 +395,7 @@ public class PublishingService : IPublishingService
         IDictionary<string, IEnumerable<AssetPrice>> context)
     {
         var ticker = OptionUtils.GetStock(pos.Ticker);
-        var expiration = AsYYYYMMDD(OptionUtils.ParseExpiration(pos.Ticker));
+        var expiration = OptionUtils.GetExpiration(pos.Ticker);
         var strike = OptionUtils.GetStrike(pos.Ticker);
         var side = OptionUtils.GetSide(pos.Ticker);
 
@@ -466,11 +466,6 @@ public class PublishingService : IPublishingService
     private static string FormatExpiration(DateTime expiraion)
     {
         return $"{expiraion.Year}/{expiraion.Month}/{expiraion.Day}";
-    }
-
-    private static string AsYYYYMMDD(DateTime expiraion)
-    {
-        return expiraion.ToString("yyyyMMdd");
     }
 
     private static string Hide(string value)

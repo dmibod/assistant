@@ -184,6 +184,29 @@ public class TenantRepository : ITenantRepository
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
+
+    public Task ResetTagAsync(string tenant)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ResetTagAsync), tenant);
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
+        var update = Builders<TenantEntity>.Update.Set("Positions.$[].Tag", string.Empty);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public Task ReplaceTagAsync(string tenant, string oldValue, string newValue)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ResetTagAsync), tenant);
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.ElemMatch(x => x.Positions, 
+                         Builders<Position>.Filter.Eq(x => x.Tag, oldValue));
+        
+        var update = Builders<TenantEntity>.Update.Set("Positions.$.Tag", newValue);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
 }
 
 internal class TenantEntity : Tenant

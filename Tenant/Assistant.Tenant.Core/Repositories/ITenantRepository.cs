@@ -29,4 +29,8 @@ public interface ITenantRepository
     Task SetWatchListItemSellPriceAsync(string tenant, string ticker, decimal price);
     
     Task SetWatchListItemPricesAsync(string tenant, string ticker, decimal buyPrice, decimal sellPrice);
+    
+    Task ResetTagAsync(string tenant);
+    
+    Task ReplaceTagAsync(string tenant, string oldValue, string newValue);
 }

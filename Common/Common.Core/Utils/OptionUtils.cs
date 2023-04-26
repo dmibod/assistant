@@ -53,6 +53,11 @@ public static class OptionUtils
         return match.Groups[3].Value;
     }
 
+    public static string GetExpiration(string optionTicker)
+    {
+        return AsYYYYMMDD(ParseExpiration(optionTicker));
+    }
+
     public static string FormatStrike(decimal strike)
     {
         var value = $"{Math.Round(strike * 1000, 0)}";
@@ -79,5 +84,10 @@ public static class OptionUtils
         var day = int.Parse(match.Groups[3].Value);
         
         return new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+    }
+    
+    public static string AsYYYYMMDD(DateTime expiraion)
+    {
+        return expiraion.ToString("yyyyMMdd");
     }
 }

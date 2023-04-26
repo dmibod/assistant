@@ -2,6 +2,7 @@
 
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Repositories;
+using Common.Core.Utils;
 using Microsoft.Extensions.Logging;
 
 public class PositionService : IPositionService
@@ -77,18 +78,22 @@ public class PositionService : IPositionService
         await this.repository.RemovePositionAsync(tenant.Name, account, ticker);
     }
 
-    public Task ResetTagAsync()
+    public async Task ResetTagAsync()
     {
         this.logger.LogInformation("{Method}", nameof(this.ResetTagAsync));
 
-        throw new NotImplementedException();
+        var tenant = await this.tenantService.GetOrCreateAsync();
+        
+        await this.repository.ResetTagAsync(tenant.Name);
     }
 
-    public Task ReplaceTagAsync(string oldValue, string newValue)
+    public async Task ReplaceTagAsync(string oldValue, string newValue)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ReplaceTagAsync), $"{oldValue}-{newValue}");
 
-        throw new NotImplementedException();
+        var tenant = await this.tenantService.GetOrCreateAsync();
+        
+        await this.repository.ReplaceTagAsync(tenant.Name, oldValue, newValue);
     }
 
     public async Task UpdateTagAsync(string account, string ticker, string tag)
@@ -98,5 +103,24 @@ public class PositionService : IPositionService
         var tenant = await this.tenantService.GetOrCreateAsync();
         
         await this.repository.TagPositionAsync(tenant.Name, account, ticker, tag);
+    }
+
+    public async Task AutoTagOptionsAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.AutoTagOptionsAsync));
+        
+        var tenant = await this.tenantService.GetOrCreateAsync();
+
+        var groups = tenant.Positions
+            .Where(p => string.IsNullOrEmpty(p.Tag) && p.Type == AssetType.Option)
+            .GroupBy(p => $"{p.Account}-{OptionUtils.GetStock(p.Ticker)}-{OptionUtils.GetExpiration(p.Ticker)}");
+
+        foreach (var group in groups.Where(g => g.Count() > 1))
+        {
+            foreach (var position in group)
+            {
+                await this.repository.TagPositionAsync(tenant.Name, position.Account, position.Ticker, group.Key);
+            }
+        }
     }
 }
