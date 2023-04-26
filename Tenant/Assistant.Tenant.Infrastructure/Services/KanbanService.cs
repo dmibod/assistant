@@ -43,7 +43,14 @@ public class KanbanService : IKanbanService
         var tenant = await this.tenantService.GetOrCreateAsync();
         
         var kanbanBoard =
-            await this.apiClient.CreateBoardAsync(tenant.Name, board.Name, board.Description, LayoutTypes.H);
+            await this.apiClient.CreateBoardAsync(new KanbanApi.Client.Board
+            {
+                Owner = tenant.Name, 
+                Name = board.Name, 
+                Description = board.Description, 
+                Layout = LayoutTypes.H,
+                Shared = false
+            });
 
         return new Board
         {
