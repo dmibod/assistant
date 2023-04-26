@@ -28,7 +28,7 @@ public class AddPositionWorkerService : BaseWorkerService
         var json = Encoding.UTF8.GetString(args.Message.Data);
         var data = JsonSerializer.Deserialize<TenantPosition>(json);
 
-        this.positionService.CreateOrUpdateAsync(data.Tenant, data).GetAwaiter().GetResult();
+        this.positionService.CreateOrUpdateAsync(data.Tenant, data.AsPosition()).GetAwaiter().GetResult();
     }
 
     protected override void LogMessage(string message)
@@ -45,4 +45,20 @@ public class AddPositionWorkerService : BaseWorkerService
 internal class TenantPosition : Position
 {
     public string Tenant { get; set; }
+}
+
+internal static class TenantPositionExtensions
+{
+    public static Position AsPosition(this TenantPosition position)
+    {
+        return new Position
+        {
+            Account = position.Account,
+            Quantity = position.Quantity,
+            Ticker = position.Ticker,
+            Tag = position.Tag,
+            Type = position.Type,
+            AverageCost = position.AverageCost
+        };
+    }
 }

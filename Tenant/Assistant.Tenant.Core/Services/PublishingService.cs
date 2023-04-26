@@ -156,7 +156,8 @@ public class PublishingService : IPublishingService
 
         foreach (var p in comboOptionPositions.OrderBy(p => p.Key))
         {
-            var name = $"COMBO ({p.Key})";
+            var leg = p.Value.First();
+            var name = $"{OptionUtils.GetStock(leg.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(leg.Ticker))}";
 
             var description = this.PositionToContent(p.Value, stocks, expirations);
 
@@ -165,8 +166,6 @@ public class PublishingService : IPublishingService
 
             tracker.Increase(p.Value.Count);
         }
-
-        ;
 
         return comboOptionPositions.Count;
     }
