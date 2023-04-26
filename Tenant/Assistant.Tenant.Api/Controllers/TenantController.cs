@@ -14,13 +14,15 @@ using Microsoft.AspNetCore.Mvc;
 public class TenantController : ControllerBase
 {
     private readonly IPositionService positionService;
+    private readonly IWatchListService watchListService;
     private readonly IPublishingService publishingService;
     private readonly ITenantService tenantService;
     private readonly IIdentityProvider identityProvider;
 
-    public TenantController(IPositionService positionService, IPublishingService publishingService, ITenantService tenantService, IIdentityProvider identityProvider)
+    public TenantController(IPositionService positionService, IWatchListService watchListService, IPublishingService publishingService, ITenantService tenantService, IIdentityProvider identityProvider)
     {
         this.positionService = positionService;
+        this.watchListService = watchListService;
         this.publishingService = publishingService;
         this.tenantService = tenantService;
         this.identityProvider = identityProvider;
@@ -45,6 +47,51 @@ public class TenantController : ControllerBase
         };
 
         return this.Ok(result);
+    }
+
+    [HttpGet("WatchList")]
+    public async Task<ActionResult> GetWatchListAsync()
+    {
+        var watchList = await this.watchListService.FindAllAsync();
+
+        var result = new
+        {
+            Count = watchList.Count(),
+            Items = watchList.OrderBy(item => item.Ticker).ToArray()
+        };
+
+        return this.Ok(result);
+    }
+    
+    [HttpPost("WatchList/{ticker}")]
+    public Task<WatchListItem> AddWatchListItemAsync(string ticker, decimal buyPrice, decimal sellPrice)
+    {
+        var item = new WatchListItem
+        {
+            Ticker = ticker.ToUpper(),
+            BuyPrice = buyPrice,
+            SellPrice = sellPrice
+        };
+
+        return this.watchListService.CreateAsync(item);
+    }
+
+    [HttpPut("WatchList/{ticker}/BuyPrice")]
+    public Task SetWatchListItemBuyPriceAsync(string ticker, decimal price)
+    {
+        return this.watchListService.SetBuyPriceAsync(ticker.ToUpper(), price);
+    }
+
+    [HttpPut("WatchList/{ticker}/SellPrice")]
+    public Task SetWatchListItemSellPriceAsync(string ticker, decimal price)
+    {
+        return this.watchListService.SetSellPriceAsync(ticker.ToUpper(), price);
+    }
+
+    [HttpDelete("WatchList")]
+    public Task RemoveWatchListItemAsync(string ticker)
+    {
+        return this.watchListService.RemoveAsync(ticker.ToUpper());
     }
 
     [HttpGet("Positions")]
@@ -124,5 +171,19 @@ public class TenantController : ControllerBase
     public Task PublishPositions()
     {
         return this.publishingService.PublishPositionsAsync();
+    }
+    
+    [HttpPost("Suggestions/Publish")]
+    public Task PublishSuggestions(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? Otm)
+    {
+        var filter = new SuggestionFilter
+        {
+            MinAnnualPercent = minAnnualPercent,
+            MinPremium = minPremium,
+            MaxDte = maxDte,
+            Otm = Otm
+        };
+        
+        return this.publishingService.PublishSuggestionsAsync(null, filter);
     }
 }

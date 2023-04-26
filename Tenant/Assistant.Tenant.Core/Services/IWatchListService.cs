@@ -4,6 +4,8 @@ using Assistant.Tenant.Core.Models;
 
 public interface IWatchListService
 {
+    Task<IEnumerable<WatchListItem>> FindAllAsync();
+
     Task<WatchListItem> CreateAsync(WatchListItem listItem);
 
     Task RemoveAsync(string ticker);

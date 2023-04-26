@@ -15,4 +15,14 @@ public interface ITenantRepository
     Task RemovePositionAsync(string tenant, string account, string ticker);
     
     Task TagPositionAsync(string tenant, string account, string ticker, string tag);
+    
+    Task CreateWatchListItemAsync(string tenant, WatchListItem listItem);
+    
+    Task RemoveWatchListItemAsync(string tenant, string ticker);
+
+    Task SetWatchListItemBuyPriceAsync(string tenant, string ticker, decimal price);
+    
+    Task SetWatchListItemSellPriceAsync(string tenant, string ticker, decimal price);
+    
+    Task SetWatchListItemPricesAsync(string tenant, string ticker, decimal buyPrice, decimal sellPrice);
 }

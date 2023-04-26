@@ -8,7 +8,7 @@ public class SuggestionFilter
     
     public int? MaxDte { get; set; }
 
-    public bool Otm { get; set; }
+    public bool? Otm { get; set; }
 
     public string AsDescription()
     {
@@ -26,9 +26,9 @@ public class SuggestionFilter
         {
             filters.Add($"dte <= {MaxDte}");
         }
-        if (Otm)
+        if (Otm.HasValue)
         {
-            filters.Add("otm");
+            filters.Add(Otm.Value ? "otm" : "itm");
         }
 
         return filters.Aggregate((curr, el) => $"{curr}, {el}");

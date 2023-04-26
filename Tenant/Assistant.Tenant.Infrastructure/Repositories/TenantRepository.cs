@@ -92,6 +92,73 @@ public class TenantRepository : ITenantRepository
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
+
+    public Task CreateWatchListItemAsync(string tenant, WatchListItem listItem)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateWatchListItemAsync), $"{tenant}-{listItem.Ticker}");
+        
+        var filter = Builders<TenantEntity>.Filter
+            .Eq(tenant => tenant.Name, tenant);
+        
+        var update = Builders<TenantEntity>.Update
+            .Push(tenant => tenant.WatchList, listItem);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public Task RemoveWatchListItemAsync(string tenant, string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveWatchListItemAsync), $"{tenant}-{ticker}");
+
+        var filter = Builders<TenantEntity>.Filter
+            .Eq(tenant => tenant.Name, tenant);
+        
+        var update = Builders<TenantEntity>.Update
+            .PullFilter(tenant => tenant.WatchList, item => item.Ticker == ticker);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public Task SetWatchListItemBuyPriceAsync(string tenant, string ticker, decimal price)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SetWatchListItemBuyPriceAsync), $"{tenant}-{ticker}-{price}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.ElemMatch(x => x.WatchList, 
+                         Builders<WatchListItem>.Filter.Eq(x => x.Ticker, ticker));
+        
+        var update = Builders<TenantEntity>.Update.Set("WatchList.$.BuyPrice", price);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public Task SetWatchListItemSellPriceAsync(string tenant, string ticker, decimal price)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SetWatchListItemSellPriceAsync), $"{tenant}-{ticker}-{price}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.ElemMatch(x => x.WatchList, 
+                         Builders<WatchListItem>.Filter.Eq(x => x.Ticker, ticker));
+        
+        var update = Builders<TenantEntity>.Update.Set("WatchList.$.SellPrice", price);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public Task SetWatchListItemPricesAsync(string tenant, string ticker, decimal buyPrice, decimal sellPrice)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SetWatchListItemPricesAsync), $"{tenant}-{ticker}-{buyPrice}-{sellPrice}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.ElemMatch(x => x.WatchList, 
+                         Builders<WatchListItem>.Filter.Eq(x => x.Ticker, ticker));
+        
+        var update = Builders<TenantEntity>.Update
+            .Set("WatchList.$.BuyPrice", buyPrice)
+            .Set("WatchList.$.SellPrice", sellPrice);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
 }
 
 internal class TenantEntity : Tenant

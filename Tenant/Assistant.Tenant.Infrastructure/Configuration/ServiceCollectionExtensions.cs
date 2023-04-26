@@ -33,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IKanbanService, KanbanService>();
         services.AddSingleton<ITenantService, TenantService>();
         services.AddSingleton<IPositionService, PositionService>();
+        services.AddSingleton<IWatchListService, WatchListService>();
         services.AddSingleton<IPublishingService, PublishingService>();
         services.AddSingleton<ISuggestionService, SuggestionService>();
         services.AddSingleton<IMarketDataService, MarketDataService>();
