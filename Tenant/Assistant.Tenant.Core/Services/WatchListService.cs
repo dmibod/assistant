@@ -28,6 +28,15 @@ public class WatchListService : IWatchListService
         return tenant.WatchList;
     }
 
+    public async Task<WatchListItem?> FindByTickerAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindByTickerAsync), ticker);
+        
+        var tenant = await this.tenantService.GetOrCreateAsync();
+
+        return tenant.WatchList.FirstOrDefault(item => item.Ticker == ticker);
+    }
+
     public async Task<WatchListItem> CreateAsync(WatchListItem listItem)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateAsync), listItem.Ticker);

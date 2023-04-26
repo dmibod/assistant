@@ -31,6 +31,11 @@ public class SuggestionFilter
             filters.Add(Otm.Value ? "otm" : "itm");
         }
 
+        if (filters.Count == 0)
+        {
+            return string.Empty;
+        }
+
         return filters.Aggregate((curr, el) => $"{curr}, {el}");
     }
 }

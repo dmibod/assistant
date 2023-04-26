@@ -41,6 +41,8 @@ public class MarketDataService : IMarketDataService
 
     public Task EnsureStockAsync(string ticker)
     {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.EnsureStockAsync), ticker);
+        
         return this.busService.PublishAsync(this.addStockRequestTopic, ticker);
     }
 
@@ -60,6 +62,15 @@ public class MarketDataService : IMarketDataService
         var cursor = await this.optionCollection.FindAsync(doc => doc.Ticker == stockTicker && doc.Expiration == expiration);
 
         return cursor.ToEnumerable().SelectMany(doc => doc.Contracts).ToList();
+    }
+
+    public async Task<IEnumerable<string>> FindExpirationsAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationsAsync), ticker);
+
+        var cursor = await this.optionCollection.FindAsync(doc => doc.Ticker == ticker);
+
+        return cursor.ToEnumerable().Select(doc => doc.Expiration).ToList();
     }
 }
 

@@ -1,9 +1,11 @@
 ﻿namespace Assistant.Tenant.Core.Services;
 
 using Assistant.Tenant.Core.Models;
+using Helper.Core.Domain;
 
 public interface ISuggestionService
 {
-    // returns sell operations
-    IEnumerable<object> SuggestPuts(WatchListItem asset, SuggestionFilter filter);
+    Task<IEnumerable<SellOperation>> SuggestPutsAsync(SuggestionFilter filter);
+
+    Task<IEnumerable<SellOperation>> SuggestPutsAsync(WatchListItem item, SuggestionFilter filter);
 }

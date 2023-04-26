@@ -15,14 +15,16 @@ public class TenantController : ControllerBase
 {
     private readonly IPositionService positionService;
     private readonly IWatchListService watchListService;
+    private readonly ISuggestionService suggestionService;
     private readonly IPublishingService publishingService;
     private readonly ITenantService tenantService;
     private readonly IIdentityProvider identityProvider;
 
-    public TenantController(IPositionService positionService, IWatchListService watchListService, IPublishingService publishingService, ITenantService tenantService, IIdentityProvider identityProvider)
+    public TenantController(IPositionService positionService, IWatchListService watchListService, ISuggestionService suggestionService, IPublishingService publishingService, ITenantService tenantService, IIdentityProvider identityProvider)
     {
         this.positionService = positionService;
         this.watchListService = watchListService;
+        this.suggestionService = suggestionService;
         this.publishingService = publishingService;
         this.tenantService = tenantService;
         this.identityProvider = identityProvider;
@@ -174,7 +176,7 @@ public class TenantController : ControllerBase
     }
     
     [HttpPost("Suggestions/Publish")]
-    public Task PublishSuggestions(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? Otm)
+    public async Task PublishSuggestions(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? Otm)
     {
         var filter = new SuggestionFilter
         {
@@ -183,7 +185,9 @@ public class TenantController : ControllerBase
             MaxDte = maxDte,
             Otm = Otm
         };
+
+        var operations = await this.suggestionService.SuggestPutsAsync(filter);
         
-        return this.publishingService.PublishSuggestionsAsync(null, filter);
+        await this.publishingService.PublishSuggestionsAsync(operations, filter);
     }
 }

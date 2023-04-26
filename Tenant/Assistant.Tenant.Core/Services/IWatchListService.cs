@@ -6,6 +6,8 @@ public interface IWatchListService
 {
     Task<IEnumerable<WatchListItem>> FindAllAsync();
 
+    Task<WatchListItem?> FindByTickerAsync(string ticker);
+
     Task<WatchListItem> CreateAsync(WatchListItem listItem);
 
     Task RemoveAsync(string ticker);
