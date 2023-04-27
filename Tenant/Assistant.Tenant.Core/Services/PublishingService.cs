@@ -30,20 +30,37 @@ public class PublishingService : IPublishingService
         this.kanbanService = kanbanService;
         this.logger = logger;
     }
-
+    
     public async Task PublishPositionsAsync()
     {
         this.logger.LogInformation("{Method}", nameof(this.PublishPositionsAsync));
 
+        var now = DateTime.UtcNow;
+        var board = await this.kanbanService.CreateBoardAsync(new Board
+            { Name = $"{Positions} {now.ToShortDateString()} {now.ToShortTimeString()}" });
+
+        try
+        {
+            await this.PublishPositionsAsync(board);
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError(e, e.Message);
+        }
+        finally
+        {
+            await this.kanbanService.ResetBoardStateAsync(board.Id);
+        }
+    }
+
+    private async Task PublishPositionsAsync(Board board)
+    {
         var positions = (await this.positionService.FindAllAsync()).ToList();
         var tickers = positions.Select(p => p.Type == AssetType.Stock ? p.Ticker : OptionUtils.GetStock(p.Ticker))
             .Distinct().ToHashSet();
         var stocks = (await this.marketDataService.FindStockPricesAsync(tickers)).ToDictionary(stock => stock.Ticker);
         var expirations = new Dictionary<string, IEnumerable<AssetPrice>>();
 
-        var now = DateTime.UtcNow;
-        var board = await this.kanbanService.CreateBoardAsync(new Board
-            { Name = $"{Positions} {now.ToShortDateString()} {now.ToShortTimeString()}" });
         var tracker = new ProgressTracker(positions.Count, 1,
             progress =>
             {
@@ -73,11 +90,10 @@ public class PublishingService : IPublishingService
             totalStocks +=
                 await this.PublishStocksAsync(board, account, accountPositions, stocks, expirations, tracker);
         }
-
-        await this.kanbanService.ResetBoardStateAsync(board.Id);
+        
+        tracker.Finish();
 
         board.Description = $"Stocks ({totalStocks}), Options ({totalOptions}), Combos ({totalCombos})";
-
         await this.kanbanService.UpdateBoardAsync(board);
     }
 
@@ -109,8 +125,6 @@ public class PublishingService : IPublishingService
             tracker.Increase();
         }
 
-        ;
-
         return singleOptionPositions.Count;
     }
 
@@ -138,8 +152,6 @@ public class PublishingService : IPublishingService
 
             tracker.Increase();
         }
-
-        ;
 
         return stockPositions.Count;
     }
@@ -277,7 +289,7 @@ public class PublishingService : IPublishingService
         var collateral = strike * 100.0m;
         var breakEven = (collateral - pos.AverageCost) / 100.0m;
         var style = breakEven == underlying ? null :
-            breakEven < underlying ? RenderUtils.GreenStyle() : RenderUtils.RedStyle();
+            breakEven < underlying ? RenderUtils.GreenStyle : RenderUtils.RedStyle;
         var breakEvenValue = $"{FormatPrice(breakEven)} ({FormatPrice(Math.Abs(underlying - breakEven))})";
         var dte = Expiration.From(OptionUtils.ParseExpiration(pos.Ticker)).DaysTillExpiration;
         var itm = underlying < strike;
@@ -295,7 +307,7 @@ public class PublishingService : IPublishingService
                    RenderUtils.PropToContent(breakEvenValue, style)) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("dte"), RenderUtils.PropToContent($"{dte}")) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("itm"),
-                   RenderUtils.PropToContent($"{itm}", itm ? RenderUtils.RedStyle() : RenderUtils.GreenStyle())) +
+                   RenderUtils.PropToContent($"{itm}", itm ? RenderUtils.RedStyle : RenderUtils.GreenStyle)) +
                "]";
     }
 
@@ -332,7 +344,7 @@ public class PublishingService : IPublishingService
                 RenderUtils.PropToContent($"${Math.Round(comboChange.Item1, 2)}"));
         }
 
-        var style = comboChange.Item2 > decimal.Zero ? RenderUtils.GreenStyle() : RenderUtils.RedStyle();
+        var style = comboChange.Item2 > decimal.Zero ? RenderUtils.GreenStyle : RenderUtils.RedStyle;
 
         return RenderUtils.PairToContent(
             RenderUtils.PropToContent(label),
@@ -347,7 +359,7 @@ public class PublishingService : IPublishingService
         label = label ?? "price";
         if (pos.Type == AssetType.Stock)
         {
-            var priceChange = this.GetStockPriceChange(pos, stocks);
+            var priceChange = GetStockPriceChange(pos, stocks);
             if (priceChange != null)
             {
                 var content = percents
@@ -379,7 +391,7 @@ public class PublishingService : IPublishingService
             RenderUtils.PropToContent($"${Math.Round(pos.AverageCost, 2)}"));
     }
 
-    private Tuple<decimal, decimal, decimal> GetStockPriceChange(Position pos, IDictionary<string, AssetPrice> stocks)
+    private static Tuple<decimal, decimal, decimal> GetStockPriceChange(Position pos, IDictionary<string, AssetPrice> stocks)
     {
         var ticker = pos.Ticker;
 
@@ -434,7 +446,7 @@ public class PublishingService : IPublishingService
             CalculationUtils.Percent(diff / pos.AverageCost, 2));
     }
 
-    private static Dictionary<string, string> GetStyle(Position pos, decimal priceChange,
+    private static IDictionary<string, string> GetStyle(Position pos, decimal priceChange,
         IDictionary<string, string> extraValues = null)
     {
         var isLong = pos.Quantity > decimal.Zero;
@@ -445,7 +457,7 @@ public class PublishingService : IPublishingService
 
         var isProfit = (isLong && isPriceIncreased) || (isShort && isPriceDecreased);
 
-        var style = isProfit ? RenderUtils.GreenStyle() : RenderUtils.RedStyle();
+        var style = isProfit ? RenderUtils.GreenStyle : RenderUtils.RedStyle;
 
         if (extraValues != null)
         {
@@ -480,6 +492,8 @@ public class PublishingService : IPublishingService
 
     public async Task PublishSuggestionsAsync(SuggestionFilter filter)
     {
+        this.logger.LogInformation("{Method}", nameof(this.PublishSuggestionsAsync));
+
         var now = DateTime.UtcNow;
         
         var board = await this.kanbanService.CreateBoardAsync(new Board
@@ -494,7 +508,7 @@ public class PublishingService : IPublishingService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            this.logger.LogError(e, e.Message);
         }
         finally
         {
