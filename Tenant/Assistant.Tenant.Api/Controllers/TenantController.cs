@@ -76,7 +76,7 @@ public class TenantController : ControllerBase
     /// </summary>
     /// <param name="ticker">Stock ticker, ex. AAPL, TSLA etc...</param>
     /// <param name="buyPrice">The price at which you are comfortable to own the stock</param>
-    /// <param name="sellPrice">The price you are willing to get rid of stock</param>
+    /// <param name="sellPrice">The price at which you are willing to get rid of the stock</param>
     [HttpPost("WatchList/{ticker}")]
     public Task<WatchListItem> AddWatchListItemAsync(string ticker, decimal buyPrice, decimal sellPrice)
     {
@@ -163,19 +163,19 @@ public class TenantController : ControllerBase
     /// </summary>
     /// <param name="account">The account your position belongs to</param>
     /// <param name="ticker">The underlying stock ticker</param>
-    /// <param name="yyyymmmdd">Option expiration, ex. 20230428 (April 28, 2023)</param>
+    /// <param name="yyyymmdd">Option expiration, ex. 20230428 (April 28, 2023)</param>
     /// <param name="strike">Option strike</param>
     /// <param name="averageCost">The cost of 1 option contract in your position (averaged value)</param>
     /// <param name="size">Positive value means number of option contracts you bought, negative value for the sold option contracts</param>
     /// <param name="tag">Use tags to group positions into 'combos'</param>
     /// <returns></returns>
-    [HttpPost("Positions/{account}/{ticker}/Call/{yyyymmmdd}")]
-    public Task<Position> AddCallOptionPositionAsync(string account, string ticker, string yyyymmmdd, decimal strike, decimal averageCost, int size, string tag = "")
+    [HttpPost("Positions/{account}/{ticker}/Call/{yyyymmdd}")]
+    public Task<Position> AddCallOptionPositionAsync(string account, string ticker, string yyyymmdd, decimal strike, decimal averageCost, int size, string tag = "")
     {
         var position = new Position
         {
             Account = account.ToUpper(),
-            Ticker = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmmdd, strike, true),
+            Ticker = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmdd, strike, true),
             Type = AssetType.Option,
             AverageCost = averageCost,
             Quantity = size,
@@ -190,19 +190,19 @@ public class TenantController : ControllerBase
     /// </summary>
     /// <param name="account">The account your position belongs to</param>
     /// <param name="ticker">The underlying stock ticker</param>
-    /// <param name="yyyymmmdd">Option expiration, ex. 20230428 (April 28, 2023)</param>
+    /// <param name="yyyymmdd">Option expiration, ex. 20230428 (April 28, 2023)</param>
     /// <param name="strike">Option strike</param>
     /// <param name="averageCost">The cost of 1 option contract in your position (averaged value)</param>
     /// <param name="size">Positive value means number of option contracts you bought, negative value for the sold option contracts</param>
     /// <param name="tag">Use tags to group positions into 'combos'</param>
     /// <returns></returns>
-    [HttpPost("Positions/{account}/{ticker}/Put/{yyyymmmdd}")]
-    public Task<Position> AddPutOptionPositionAsync(string account, string ticker, string yyyymmmdd, decimal strike, decimal averageCost, int size, string tag = "")
+    [HttpPost("Positions/{account}/{ticker}/Put/{yyyymmdd}")]
+    public Task<Position> AddPutOptionPositionAsync(string account, string ticker, string yyyymmdd, decimal strike, decimal averageCost, int size, string tag = "")
     {
         var position = new Position
         {
             Account = account.ToUpper(),
-            Ticker = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmmdd, strike, false),
+            Ticker = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmdd, strike, false),
             Type = AssetType.Option,
             AverageCost = averageCost,
             Quantity = size,
