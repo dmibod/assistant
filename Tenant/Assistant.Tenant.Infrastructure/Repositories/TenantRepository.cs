@@ -225,6 +225,16 @@ public class TenantRepository : ITenantRepository
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
+
+    public Task UpdateDefaultFilterAsync(string tenant, string defaultFilter)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ResetTagAsync), tenant);
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
+        var update = Builders<TenantEntity>.Update.Set(tenant => tenant.DefaultFilter, defaultFilter);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
 }
 
 internal class TenantEntity : Tenant

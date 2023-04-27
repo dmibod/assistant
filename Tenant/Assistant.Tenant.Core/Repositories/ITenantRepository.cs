@@ -37,4 +37,6 @@ public interface ITenantRepository
     Task ResetTagAsync(string tenant);
     
     Task ReplaceTagAsync(string tenant, string oldValue, string newValue);
+    
+    Task UpdateDefaultFilterAsync(string tenant, string filter);
 }

@@ -1,5 +1,6 @@
 ﻿namespace Assistant.Tenant.Core.Services;
 
+using System.Text.Json;
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Repositories;
 using Common.Core.Security;
@@ -44,5 +45,23 @@ public class TenantService : ITenantService
         }
 
         return identityName;
+    }
+
+    public async Task<SuggestionFilter?> GetDefaultFilterAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.GetDefaultFilterAsync));
+
+        var tenant = await this.GetOrCreateAsync();
+
+        return JsonSerializer.Deserialize<SuggestionFilter>(tenant.DefaultFilter);
+    }
+
+    public async Task UpdateDefaultFilterAsync(SuggestionFilter filter)
+    {
+        this.logger.LogInformation("{Method}", nameof(this.GetDefaultFilterAsync));
+
+        var tenant = await this.EnsureExistsAsync();
+
+        await this.repository.UpdateDefaultFilterAsync(tenant, JsonSerializer.Serialize(filter));
     }
 }

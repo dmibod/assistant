@@ -3,7 +3,9 @@
 public class Tenant
 {
     public string Name { get; set; }
-    
+
+    public string DefaultFilter { get; set; }
+
     public WatchListItem[] WatchList { get; set; }
 
     public Position[] Positions { get; set; }

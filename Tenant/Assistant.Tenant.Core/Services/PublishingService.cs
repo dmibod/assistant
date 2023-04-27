@@ -1,5 +1,6 @@
 ﻿namespace Assistant.Tenant.Core.Services;
 
+using System.Security.AccessControl;
 using Assistant.Tenant.Core.Models;
 using Common.Core.Utils;
 using Helper.Core.Domain;
@@ -10,16 +11,19 @@ public class PublishingService : IPublishingService
 {
     private const string Positions = "Positions";
     private const string Suggestions = "Suggestions";
+    private readonly ISuggestionService suggestionService;
     private readonly IPositionService positionService;
     private readonly IMarketDataService marketDataService;
     private readonly IWatchListService watchListService;
     private readonly IKanbanService kanbanService;
     private readonly ILogger<PublishingService> logger;
 
-    public PublishingService(IPositionService positionService, IMarketDataService marketDataService, IWatchListService watchListService,
+    public PublishingService(ISuggestionService suggestionService, IPositionService positionService,
+        IMarketDataService marketDataService, IWatchListService watchListService,
         IKanbanService kanbanService,
         ILogger<PublishingService> logger)
     {
+        this.suggestionService = suggestionService;
         this.positionService = positionService;
         this.marketDataService = marketDataService;
         this.watchListService = watchListService;
@@ -157,7 +161,8 @@ public class PublishingService : IPublishingService
         foreach (var p in comboOptionPositions.OrderBy(p => p.Key))
         {
             var leg = p.Value.First();
-            var name = $"{OptionUtils.GetStock(leg.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(leg.Ticker))}";
+            var name =
+                $"{OptionUtils.GetStock(leg.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(leg.Ticker))}";
 
             var description = this.PositionToContent(p.Value, stocks, expirations);
 
@@ -473,13 +478,44 @@ public class PublishingService : IPublishingService
         return value.Substring(0, 2) + new string(Enumerable.Repeat('*', value.Length - 2).ToArray());
     }
 
-    public async Task PublishSuggestionsAsync(IEnumerable<SellOperation> operations, SuggestionFilter filter)
+    public async Task PublishSuggestionsAsync(SuggestionFilter filter)
     {
         var now = DateTime.UtcNow;
-        var description = operations.Select(item => item.Option.Stock.Id).Distinct().OrderBy(ticker => ticker)
-            .Aggregate("", (curr, el) => curr + (string.IsNullOrEmpty(curr) ? "" : ", ") + el);
+        
         var board = await this.kanbanService.CreateBoardAsync(new Board
-            { Name = $"{Suggestions} {now.ToShortDateString()} {now.ToShortTimeString()}", Description = description });
+        {
+            Name = $"{Suggestions} {now.ToShortDateString()} {now.ToShortTimeString()}", 
+            Description = "Calculation..."
+        });
+
+        try
+        {
+            await this.PublishSuggestionsAsync(board, filter);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+        finally
+        {
+            await this.kanbanService.ResetBoardStateAsync(board.Id);
+        }
+    }
+
+    private async Task PublishSuggestionsAsync(Board board, SuggestionFilter filter)
+    {
+        var operations = await this.suggestionService.SuggestPutsAsync(filter,
+            total =>
+            {
+                return new ProgressTracker(total, 1,
+                    progress => { this.kanbanService.SetBoardProgressStateAsync(board.Id, progress); });
+            });
+
+        await this.kanbanService.ResetBoardStateAsync(board.Id);
+
+        board.Description = "Publishing...";
+        await this.kanbanService.UpdateBoardAsync(board);
+
         var tracker = new ProgressTracker(operations.Count(), 1,
             progress =>
             {
@@ -493,30 +529,35 @@ public class PublishingService : IPublishingService
 
         foreach (var group in operations.GroupBy(op => op.Option.Stock.Id).OrderBy(op => op.Key))
         {
-            var stockPrices = await this.marketDataService.FindStockPricesAsync(new HashSet<string>(new[] { group.Key }));
+            var stockPrices =
+                await this.marketDataService.FindStockPricesAsync(new HashSet<string>(new[] { group.Key }));
             var stockPrice = stockPrices.FirstOrDefault();
             var currentPrice = stockPrice?.Last ?? decimal.Zero;
             var watchListItem = await this.watchListService.FindByTickerAsync(group.Key);
             var buyPrice = watchListItem?.BuyPrice ?? decimal.Zero;
             var sellPrice = watchListItem?.SellPrice ?? decimal.Zero;
-            
+
             var laneTitle = $"${currentPrice} buy ${buyPrice} sell ${sellPrice}";
 
             var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, putsLane.Id,
                 new Lane { Name = group.Key, Description = laneTitle });
 
-            foreach (var opInfo in group.OrderByDescending(op => op.AnnualRoi).Select(this.OpInfo))
+            foreach (var opInfo in group.OrderByDescending(op => op.AnnualRoi).Select(OpInfo))
             {
-                await this.kanbanService.CreateCardAsync(board.Id, stocksLane.Id, new Card{ Name = opInfo.Item1, Description = opInfo.Item2 });
-                
+                await this.kanbanService.CreateCardAsync(board.Id, stocksLane.Id,
+                    new Card { Name = opInfo.Item1, Description = opInfo.Item2 });
+
                 tracker.Increase();
             }
         }
         
-        await this.kanbanService.ResetBoardStateAsync(board.Id);
+        board.Description = operations.Select(item => item.Option.Stock.Id).Distinct().OrderBy(ticker => ticker)
+            .Aggregate("", (curr, el) => curr + (string.IsNullOrEmpty(curr) ? "" : ", ") + el);
+
+        await this.kanbanService.UpdateBoardAsync(board);
     }
-    
-    private Tuple<string, string> OpInfo(SellOperation op)
+
+    private static Tuple<string, string> OpInfo(SellOperation op)
     {
         var name =
             $"{op.Option.Id.OptionType.ToString().Substring(0, 1)}${op.Option.Id.Strike} {(int)op.Option.Id.Expiration.Month}/{op.Option.Id.Expiration.Day}/{op.Option.Id.Expiration.Year}";

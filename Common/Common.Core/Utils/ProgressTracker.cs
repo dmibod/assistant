@@ -33,6 +33,12 @@ public class ProgressTracker
         while (value-- > 0) this.Increase();
     }
 
+    public void Finish()
+    {
+        this.currentItems = this.totalItems;
+        this.Increase();
+    }
+
     public void Reset()
     {
         this.currentItems = 0;

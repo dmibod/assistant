@@ -20,19 +20,25 @@ public class SuggestionService : ISuggestionService
         this.logger = logger;
     }
 
-    public async Task<IEnumerable<SellOperation>> SuggestPutsAsync(SuggestionFilter filter)
+    public async Task<IEnumerable<SellOperation>> SuggestPutsAsync(SuggestionFilter filter, Func<int, ProgressTracker> trackerCreator)
     {
         this.logger.LogInformation("{Method}", nameof(this.SuggestPutsAsync));
 
         var items = await this.watchListService.FindAllAsync();
+
+        var tracker = trackerCreator(items.Count());
 
         var operations = Enumerable.Empty<SellOperation>();
 
         foreach (var item in items)
         {
             operations = operations.Union(await this.SuggestPutsAsync(item, filter));
+
+            tracker.Increase();
         }
 
+        tracker.Finish();
+        
         return operations;
     }
 
