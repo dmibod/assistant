@@ -10,6 +10,8 @@ public interface ITenantRepository
     
     Task CreateAsync(string name);
 
+    Task<IEnumerable<Position>> FindPositionsAsync(string name);
+    
     Task<Position?> FindPositionAsync(string tenant, Func<Position, bool> criteria);
     
     Task CreatePositionAsync(string tenant, Position position);
@@ -20,6 +22,8 @@ public interface ITenantRepository
     
     Task TagPositionAsync(string tenant, string account, string ticker, string tag);
     
+    Task<IEnumerable<WatchListItem>> FindWatchListAsync(string tenantName);
+
     Task CreateWatchListItemAsync(string tenant, WatchListItem listItem);
     
     Task RemoveWatchListItemAsync(string tenant, string ticker);

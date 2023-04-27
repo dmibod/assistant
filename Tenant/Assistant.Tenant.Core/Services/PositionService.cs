@@ -24,18 +24,18 @@ public class PositionService : IPositionService
     {
         this.logger.LogInformation("{Method}", nameof(this.FindAllAsync));
         
-        var tenant = await this.tenantService.GetOrCreateAsync();
+        var tenant = await this.tenantService.EnsureExistsAsync();
 
-        return tenant.Positions;
+        return await this.repository.FindPositionsAsync(tenant);
     }
 
     public async Task<Position> CreateAsync(Position position)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateAsync), $"{position.Account}-{position.Ticker}");
         
-        var tenant = await this.tenantService.GetOrCreateAsync();
+        var tenant = await this.tenantService.EnsureExistsAsync();
 
-        await this.repository.CreatePositionAsync(tenant.Name, position);
+        await this.repository.CreatePositionAsync(tenant, position);
 
         if (position.Type == AssetType.Stock)
         {
@@ -73,45 +73,47 @@ public class PositionService : IPositionService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), $"{account}-{ticker}");
 
-        var tenant = await this.tenantService.GetOrCreateAsync();
+        var tenant = await this.tenantService.EnsureExistsAsync();
         
-        await this.repository.RemovePositionAsync(tenant.Name, account, ticker);
+        await this.repository.RemovePositionAsync(tenant, account, ticker);
     }
 
     public async Task ResetTagAsync()
     {
         this.logger.LogInformation("{Method}", nameof(this.ResetTagAsync));
 
-        var tenant = await this.tenantService.GetOrCreateAsync();
+        var tenant = await this.tenantService.EnsureExistsAsync();
         
-        await this.repository.ResetTagAsync(tenant.Name);
+        await this.repository.ResetTagAsync(tenant);
     }
 
     public async Task ReplaceTagAsync(string oldValue, string newValue)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ReplaceTagAsync), $"{oldValue}-{newValue}");
 
-        var tenant = await this.tenantService.GetOrCreateAsync();
+        var tenant = await this.tenantService.EnsureExistsAsync();
         
-        await this.repository.ReplaceTagAsync(tenant.Name, oldValue, newValue);
+        await this.repository.ReplaceTagAsync(tenant, oldValue, newValue);
     }
 
     public async Task UpdateTagAsync(string account, string ticker, string tag)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateTagAsync), $"{account}-{ticker}-{tag}");
 
-        var tenant = await this.tenantService.GetOrCreateAsync();
+        var tenant = await this.tenantService.EnsureExistsAsync();
         
-        await this.repository.TagPositionAsync(tenant.Name, account, ticker, tag);
+        await this.repository.TagPositionAsync(tenant, account, ticker, tag);
     }
 
     public async Task AutoTagOptionsAsync()
     {
         this.logger.LogInformation("{Method}", nameof(this.AutoTagOptionsAsync));
         
-        var tenant = await this.tenantService.GetOrCreateAsync();
+        var tenant = await this.tenantService.EnsureExistsAsync();
 
-        var groups = tenant.Positions
+        var positions = await this.repository.FindPositionsAsync(tenant);
+
+        var groups = positions
             .Where(p => string.IsNullOrEmpty(p.Tag) && p.Type == AssetType.Option)
             .GroupBy(p => $"{p.Account}-{OptionUtils.GetStock(p.Ticker)}-{OptionUtils.GetExpiration(p.Ticker)}");
 
@@ -119,7 +121,7 @@ public class PositionService : IPositionService
         {
             foreach (var position in group)
             {
-                await this.repository.TagPositionAsync(tenant.Name, position.Account, position.Ticker, group.Key);
+                await this.repository.TagPositionAsync(tenant, position.Account, position.Ticker, group.Key);
             }
         }
     }

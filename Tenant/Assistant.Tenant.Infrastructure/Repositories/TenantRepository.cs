@@ -53,6 +53,15 @@ public class TenantRepository : ITenantRepository
         });
     }
 
+    public async Task<IEnumerable<Position>> FindPositionsAsync(string name)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindPositionsAsync), name);
+
+        var tenant = await this.collection.Find(entity => entity.Name == name).FirstOrDefaultAsync();
+
+        return tenant.Positions;
+    }
+
     public async Task<Position?> FindPositionAsync(string tenant, Func<Position, bool> criteria)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindPositionAsync), $"{tenant}");
@@ -116,6 +125,15 @@ public class TenantRepository : ITenantRepository
         var update = Builders<TenantEntity>.Update.Set("Positions.$.Tag", tag);
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public async Task<IEnumerable<WatchListItem>> FindWatchListAsync(string tenantName)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindWatchListAsync), tenantName);
+
+        var tenant = await this.collection.Find(entity => entity.Name == tenantName).FirstOrDefaultAsync();
+        
+        return tenant.WatchList;
     }
 
     public Task CreateWatchListItemAsync(string tenant, WatchListItem listItem)

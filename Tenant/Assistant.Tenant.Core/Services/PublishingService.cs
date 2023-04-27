@@ -491,7 +491,7 @@ public class PublishingService : IPublishingService
         var putsLane = await this.kanbanService.CreateBoardLaneAsync(board.Id,
             new Lane { Name = "PUTS", Description = filter.AsDescription() });
 
-        foreach (var group in operations.GroupBy(op => op.Option.Stock.Id))
+        foreach (var group in operations.GroupBy(op => op.Option.Stock.Id).OrderBy(op => op.Key))
         {
             var stockPrices = await this.marketDataService.FindStockPricesAsync(new HashSet<string>(new[] { group.Key }));
             var stockPrice = stockPrices.FirstOrDefault();

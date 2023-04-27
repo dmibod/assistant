@@ -31,4 +31,18 @@ public class TenantService : ITenantService
 
         return await this.repository.FindByNameAsync(identityName);
     }
+
+    public async Task<string> EnsureExistsAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.EnsureExistsAsync));
+        
+        var identityName = this.provider.Identity.Name;
+        
+        if (!await this.repository.ExistsAsync(identityName))
+        {
+            await this.repository.CreateAsync(identityName);
+        }
+
+        return identityName;
+    }
 }

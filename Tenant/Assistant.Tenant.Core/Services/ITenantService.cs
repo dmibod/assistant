@@ -5,4 +5,6 @@ using Assistant.Tenant.Core.Models;
 public interface ITenantService
 {
     Task<Tenant> GetOrCreateAsync();
+
+    Task<string> EnsureExistsAsync();
 }

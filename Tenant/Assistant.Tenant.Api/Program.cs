@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json.Serialization;
 using Assistant.Tenant.Infrastructure.Configuration;
 using Microsoft.OpenApi.Models;
@@ -48,6 +49,10 @@ builder.Services.AddSwaggerGen(options =>
             new string[] { }
         }
     });
+    
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
 });
 builder.Services.AddAuthentication("Bearer").AddJwtBearer();
 builder.Services.ConfigureInfrastructure(builder.Configuration);
