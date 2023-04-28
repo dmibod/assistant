@@ -8,6 +8,7 @@ using Common.Core.Utils;
 using Common.Infrastructure.Security;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver.Linq;
 
 [ApiController]
 [Route("[controller]")]
@@ -70,7 +71,16 @@ public class TenantController : ControllerBase
 
         return this.Ok(result);
     }
-    
+
+    /// <summary>
+    /// Gets single watch list item by stock ticker
+    /// </summary>
+    [HttpGet("WatchList/{ticker}")]
+    public Task<WatchListItem?> GetWatchListItemAsync(string ticker)
+    {
+        return this.watchListService.FindByTickerAsync(ticker.ToUpper());
+    }
+
     /// <summary>
     /// Adds stock to your watch list, market data for the stock will be fetched and continuously refreshed
     /// </summary>
@@ -125,10 +135,36 @@ public class TenantController : ControllerBase
     {
         var positions = await this.positionService.FindAllAsync();
 
+        var list = positions.ToList();
+        
         var result = new
         {
-            Count = positions.Count(),
-            Items = positions.OrderBy(position => position.Account).ThenBy(position => position.Ticker).ToArray()
+            list.Count,
+            Items = list.OrderBy(position => position.Account).ThenBy(position => position.Ticker).ToArray()
+        };
+
+        return this.Ok(result);
+    }
+
+    /// <summary>
+    /// The list of your positions filtered by stock ticker, ordered by 'Account' then 'Ticker' 
+    /// </summary>
+    [HttpGet("Positions/{ticker}")]
+    public async Task<ActionResult> GetPositionsByTickerAsync(string ticker)
+    {
+        ticker = ticker.ToUpper();
+        
+        var positions = await this.positionService.FindAllAsync();
+
+        var filtered = positions.Where(p =>
+            ticker == (p.Type == AssetType.Stock 
+                ? p.Ticker 
+                : OptionUtils.GetStock(p.Ticker))).ToList();
+        
+        var result = new
+        {
+            filtered.Count,
+            Items = filtered.OrderBy(position => position.Account).ThenBy(position => position.Ticker).ToArray()
         };
 
         return this.Ok(result);
