@@ -2,16 +2,18 @@
 
 public static class RenderUtils
 {
-    public static readonly IDictionary<string, string> GreenStyle = new Dictionary<string, string>
-    {
-        ["color"] = "green"
-    };
+    public static IDictionary<string, string> GreenStyle =>
+        new Dictionary<string, string>
+        {
+            ["color"] = "green"
+        };
 
-    public static readonly IDictionary<string, string> RedStyle = new Dictionary<string, string>
-    {
-        ["color"] = "red"
-    };
-    
+    public static IDictionary<string, string> RedStyle =>
+        new Dictionary<string, string>
+        {
+            ["color"] = "red"
+        };
+
     public static string PairToContent(string name, string value)
     {
         return "{" + $"key:{name}," + $"value:{value}" + "}";
