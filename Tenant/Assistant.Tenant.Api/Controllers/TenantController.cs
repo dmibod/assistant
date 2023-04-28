@@ -8,7 +8,6 @@ using Common.Core.Utils;
 using Common.Infrastructure.Security;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Driver.Linq;
 
 [ApiController]
 [Route("[controller]")]
@@ -21,7 +20,9 @@ public class TenantController : ControllerBase
     private readonly ITenantService tenantService;
     private readonly IIdentityProvider identityProvider;
 
-    public TenantController(IPositionService positionService, IWatchListService watchListService, ISuggestionService suggestionService, IPublishingService publishingService, ITenantService tenantService, IIdentityProvider identityProvider)
+    public TenantController(IPositionService positionService, IWatchListService watchListService,
+        ISuggestionService suggestionService, IPublishingService publishingService, ITenantService tenantService,
+        IIdentityProvider identityProvider)
     {
         this.positionService = positionService;
         this.watchListService = watchListService;
@@ -136,7 +137,7 @@ public class TenantController : ControllerBase
         var positions = await this.positionService.FindAllAsync();
 
         var list = positions.ToList();
-        
+
         var result = new
         {
             list.Count,
@@ -153,14 +154,14 @@ public class TenantController : ControllerBase
     public async Task<ActionResult> GetPositionsByTickerAsync(string ticker)
     {
         ticker = ticker.ToUpper();
-        
+
         var positions = await this.positionService.FindAllAsync();
 
         var filtered = positions.Where(p =>
-            ticker == (p.Type == AssetType.Stock 
-                ? p.Ticker 
+            ticker == (p.Type == AssetType.Stock
+                ? p.Ticker
                 : OptionUtils.GetStock(p.Ticker))).ToList();
-        
+
         var result = new
         {
             filtered.Count,
@@ -180,7 +181,8 @@ public class TenantController : ControllerBase
     /// <param name="tag">Use tags to group positions into 'combos'</param>
     /// <returns></returns>
     [HttpPost("Positions/{account}/{ticker}")]
-    public Task<Position> AddStockPositionAsync(string account, string ticker, decimal averageCost, int size, string tag = "")
+    public Task<Position> AddStockPositionAsync(string account, string ticker, decimal averageCost, int size,
+        string tag = "")
     {
         var position = new Position
         {
@@ -206,7 +208,8 @@ public class TenantController : ControllerBase
     /// <param name="tag">Use tags to group positions into 'combos'</param>
     /// <returns></returns>
     [HttpPost("Positions/{account}/{ticker}/Call/{yyyymmdd}")]
-    public Task<Position> AddCallOptionPositionAsync(string account, string ticker, string yyyymmdd, decimal strike, decimal averageCost, int size, string tag = "")
+    public Task<Position> AddCallOptionPositionAsync(string account, string ticker, string yyyymmdd, decimal strike,
+        decimal averageCost, int size, string tag = "")
     {
         var position = new Position
         {
@@ -233,7 +236,8 @@ public class TenantController : ControllerBase
     /// <param name="tag">Use tags to group positions into 'combos'</param>
     /// <returns></returns>
     [HttpPost("Positions/{account}/{ticker}/Put/{yyyymmdd}")]
-    public Task<Position> AddPutOptionPositionAsync(string account, string ticker, string yyyymmdd, decimal strike, decimal averageCost, int size, string tag = "")
+    public Task<Position> AddPutOptionPositionAsync(string account, string ticker, string yyyymmdd, decimal strike,
+        decimal averageCost, int size, string tag = "")
     {
         var position = new Position
         {
@@ -346,7 +350,7 @@ public class TenantController : ControllerBase
         var defaultFilter = await this.tenantService.GetDefaultFilterAsync();
 
         var filter = defaultFilter ?? new SuggestionFilter();
-        
+
         if (minAnnualPercent.HasValue)
         {
             filter.MinAnnualPercent = minAnnualPercent;
