@@ -1,6 +1,5 @@
 ﻿namespace Assistant.Tenant.Core.Services;
 
-using System.Security.AccessControl;
 using Assistant.Tenant.Core.Models;
 using Common.Core.Utils;
 using Helper.Core.Domain;
@@ -534,8 +533,6 @@ public class PublishingService : IPublishingService
             progress =>
             {
                 this.kanbanService.SetBoardProgressStateAsync(board.Id, progress);
-
-                this.logger.LogInformation($"{progress}");
             });
 
         var putsLane = await this.kanbanService.CreateBoardLaneAsync(board.Id,

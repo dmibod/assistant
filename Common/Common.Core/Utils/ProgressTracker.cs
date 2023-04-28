@@ -19,7 +19,8 @@ public class ProgressTracker
     {
         this.currentItems++;
 
-        var progressPercents = this.currentItems * 100 / this.totalItems;
+        var progressPercents = this.totalItems == 0 ? 100 : this.currentItems * 100 / this.totalItems;
+        
         progressPercents = progressPercents > 100 ? 100 : progressPercents;
 
         if (progressPercents == 100 || progressPercents % this.increasePercent == 0)
