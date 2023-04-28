@@ -1,9 +1,12 @@
 ﻿namespace Assistant.Market.Api.Controllers;
 
+using System.Security.Claims;
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
+using Common.Core.Security;
 using Common.Core.Services;
+using Common.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -15,16 +18,40 @@ public class MarketController : ControllerBase
     private readonly IStockService stockService;
     private readonly IOptionService optionService;
     private readonly IBusService busService;
+    private readonly IIdentityProvider identityProvider;
     private readonly string publishMarketDataTopic;
     private readonly string addStockRequestTopic;
 
-    public MarketController(IStockService stockService, IOptionService optionService, IBusService busService, IOptions<NatsSettings> options)
+    public MarketController(IStockService stockService, IOptionService optionService, IBusService busService,
+        IIdentityProvider identityProvider, IOptions<NatsSettings> options)
     {
         this.stockService = stockService;
         this.optionService = optionService;
         this.busService = busService;
+        this.identityProvider = identityProvider;
         this.publishMarketDataTopic = options.Value.PublishMarketDataTopic;
         this.addStockRequestTopic = options.Value.AddStockRequestTopic;
+    }
+
+    /// <summary>
+    /// Allows to get 'User' and 'Expiration' from your token
+    /// </summary>
+    [HttpPost("Token")]
+    public ActionResult Token()
+    {
+        var identity = this.identityProvider.Identity as ClaimsIdentity;
+        if (identity == null)
+        {
+            return this.BadRequest();
+        }
+
+        var result = new
+        {
+            User = identity.Name,
+            Expiration = identity.GetExpiration().ToLongDateString()
+        };
+
+        return this.Ok(result);
     }
 
     /// <summary>
