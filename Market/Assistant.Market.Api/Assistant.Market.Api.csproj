@@ -7,6 +7,11 @@
         <UserSecretsId>bab71861-35fc-49b9-b6d1-8637e2db4d56</UserSecretsId>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);1591</NoWarn>
+    </PropertyGroup>
+
     <ItemGroup>
         <ProjectReference Include="..\..\KanbanApi.Client\KanbanApi.Client.csproj" />
         <ProjectReference Include="..\..\PolygonApi.Client\PolygonApi.Client.csproj" />

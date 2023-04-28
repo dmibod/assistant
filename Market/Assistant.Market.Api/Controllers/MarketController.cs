@@ -27,6 +27,9 @@ public class MarketController : ControllerBase
         this.addStockRequestTopic = options.Value.AddStockRequestTopic;
     }
 
+    /// <summary>
+    /// Gets a list of stocks tracked by the system, ordered by 'last refresh' time
+    /// </summary>
     [HttpGet("Stocks")]
     public async Task<ActionResult> GetStocksAsync()
     {
@@ -41,7 +44,11 @@ public class MarketController : ControllerBase
         return this.Ok(result);
     }
 
-    [HttpGet("OptionChain")]
+    /// <summary>
+    /// Gets option chain data by stock ticker
+    /// </summary>
+    /// <param name="ticker"></param>
+    [HttpGet("OptionChain/{ticker}")]
     public async Task<ActionResult> GetOptionChainAsync(string ticker)
     {
         var chain = await this.optionService.FindAsync(ticker);
@@ -49,19 +56,30 @@ public class MarketController : ControllerBase
         return this.Ok(chain);
     }
 
-    [HttpPost("AddStock"), Authorize("publishing")]
+    /// <summary>
+    /// Adds stock to the system immediately
+    /// </summary>
+    [HttpPost("Stocks/{ticker}"), Authorize("publishing")]
     public Task<Stock> AddStockAsync(string ticker)
     {
         return this.stockService.GetOrCreateAsync(ticker);
     }
 
-    [HttpPost("Queue/AddStock"), Authorize("publishing")]
+    /// <summary>
+    /// Enqueues add stock request
+    /// </summary>
+    /// <param name="ticker"></param>
+    /// <returns></returns>
+    [HttpPost("Stocks/{ticker}/Queue"), Authorize("publishing")]
     public Task QueueAddStockAsync(string ticker)
     {
         return this.busService.PublishAsync(this.addStockRequestTopic, ticker);
     }
 
-    [HttpPost("Queue/Publish"), Authorize("publishing")]
+    /// <summary>
+    /// Enqueues publish market data request
+    /// </summary>
+    [HttpPost("Publish/Queue"), Authorize("publishing")]
     public Task QueuePublishAsync()
     {
         return this.busService.PublishAsync(this.publishMarketDataTopic);
