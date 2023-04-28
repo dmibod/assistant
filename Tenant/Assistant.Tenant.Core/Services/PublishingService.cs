@@ -558,8 +558,15 @@ public class PublishingService : IPublishingService
 
             foreach (var opInfo in group.OrderByDescending(op => op.AnnualRoi).Select(OpInfo))
             {
-                await this.kanbanService.CreateCardAsync(board.Id, stocksLane.Id,
-                    new Card { Name = opInfo.Item1, Description = opInfo.Item2 });
+                try
+                {
+                    await this.kanbanService.CreateCardAsync(board.Id, stocksLane.Id,
+                        new Card { Name = opInfo.Item1, Description = opInfo.Item2 });
+                }
+                catch (Exception e)
+                {
+                    this.logger.LogError(e, e.Message);
+                }
 
                 tracker.Increase();
             }
