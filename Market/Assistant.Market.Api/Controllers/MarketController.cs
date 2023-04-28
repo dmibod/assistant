@@ -45,10 +45,10 @@ public class MarketController : ControllerBase
     }
 
     /// <summary>
-    /// Gets option chain data by stock ticker
+    /// Gets option chain by the stock ticker
     /// </summary>
     /// <param name="ticker"></param>
-    [HttpGet("OptionChain/{ticker}")]
+    [HttpGet("Stocks/{ticker}/Options")]
     public async Task<ActionResult> GetOptionChainAsync(string ticker)
     {
         var chain = await this.optionService.FindAsync(ticker);
