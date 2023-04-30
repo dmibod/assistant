@@ -40,15 +40,26 @@ public class WatchListService : IWatchListService
         return watchList.FirstOrDefault(item => item.Ticker == ticker);
     }
 
-    public async Task<WatchListItem> CreateAsync(WatchListItem listItem)
+    public async Task<WatchListItem> CreateOrUpdateAsync(WatchListItem listItem, bool ignoreIfExists)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateAsync), listItem.Ticker);
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateOrUpdateAsync), listItem.Ticker);
 
         var tenant = await this.tenantService.EnsureExistsAsync();
 
-        await this.repository.CreateWatchListItemAsync(tenant, listItem);
+        var watchList = await this.repository.FindWatchListAsync(tenant);
 
-        await this.marketDataService.EnsureStockAsync(listItem.Ticker);
+        var existingItem = watchList.FirstOrDefault(item => item.Ticker == listItem.Ticker);
+
+        if (existingItem == null)
+        {
+            await this.repository.CreateWatchListItemAsync(tenant, listItem);
+
+            await this.marketDataService.EnsureStockAsync(listItem.Ticker);
+        }
+        else if (!ignoreIfExists)
+        {
+            await this.repository.SetWatchListItemPricesAsync(tenant, listItem.Ticker, listItem.BuyPrice, listItem.SellPrice);
+        }
 
         return listItem;
     }

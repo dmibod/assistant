@@ -1,6 +1,7 @@
 ﻿namespace Assistant.Tenant.Api.Controllers;
 
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Services;
 using Common.Core.Security;
@@ -8,6 +9,7 @@ using Common.Core.Utils;
 using Common.Infrastructure.Security;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 [ApiController]
 [Route("[controller]")]
@@ -15,21 +17,21 @@ public class TenantController : ControllerBase
 {
     private readonly IPositionService positionService;
     private readonly IWatchListService watchListService;
-    private readonly ISuggestionService suggestionService;
     private readonly IPublishingService publishingService;
     private readonly ITenantService tenantService;
     private readonly IIdentityProvider identityProvider;
+    private readonly IMarketDataService marketDataService;
 
     public TenantController(IPositionService positionService, IWatchListService watchListService,
-        ISuggestionService suggestionService, IPublishingService publishingService, ITenantService tenantService,
-        IIdentityProvider identityProvider)
+        IPublishingService publishingService, ITenantService tenantService,
+        IIdentityProvider identityProvider, IMarketDataService marketDataService)
     {
         this.positionService = positionService;
         this.watchListService = watchListService;
-        this.suggestionService = suggestionService;
         this.publishingService = publishingService;
         this.tenantService = tenantService;
         this.identityProvider = identityProvider;
+        this.marketDataService = marketDataService;
     }
 
     /// <summary>
@@ -98,7 +100,63 @@ public class TenantController : ControllerBase
             SellPrice = sellPrice
         };
 
-        return this.watchListService.CreateAsync(item);
+        return this.watchListService.CreateOrUpdateAsync(item, false);
+    }
+
+    /// <summary>
+    /// Adds multiple stocks to your watch list
+    /// </summary>
+    /// <param name="tickers">Multiple stock tickers separate by comma, ex. AAPL, TSLA, AMZN</param>
+    /// <param name="buyPricePercent">The % amount below current price, for ex. stock price 100$ in case buyPricePercent is 10%, buy price is 90$</param>
+    /// <param name="sellPricePercent">The % amount above current price, for ex. stock price 100$ in case sellPricePercent is 10%, sell price is 110$</param>
+    [HttpPost("WatchList/AddMultiple")]
+    public async Task<ActionResult> AddWatchListItemsAsync(string tickers, decimal buyPricePercent, decimal sellPricePercent)
+    {
+        var validatedTickers = tickers
+            .ToUpper()
+            .Split(",")
+            .Select(ticker => ticker.Trim())
+            .Where(ticker => ticker.Length > 0)
+            .Where(ticker => Regex.IsMatch(ticker, "[A-Z]+"))
+            .Distinct()
+            .ToHashSet();
+
+        if (validatedTickers.Count == 0)
+        {
+            return this.Ok(new
+            {
+                Count = 0,
+                Items = Array.Empty<WatchListItem>()
+            });
+        }
+
+        var prices = (await this.marketDataService.FindStockPricesAsync(validatedTickers)).ToDictionary(item => item.Ticker);
+
+        var buyPriceFactor = (100.0m - buyPricePercent) / 100.0m;
+        var sellPriceFactor = (100.0m + sellPricePercent) / 100.0m;
+
+        var list = new List<WatchListItem>();
+
+        foreach (var ticker in validatedTickers)
+        {
+            var last = prices[ticker].Last;
+            var item = new WatchListItem
+            {
+                Ticker = ticker,
+                BuyPrice = prices.ContainsKey(ticker) && last.HasValue ? Math.Round(last.Value * buyPriceFactor) : decimal.Zero,
+                SellPrice = prices.ContainsKey(ticker) && last.HasValue ? Math.Round(last.Value * sellPriceFactor) : decimal.Zero
+            };
+
+            item = await this.watchListService.CreateOrUpdateAsync(item, true);
+            
+            list.Add(item);
+        }
+        
+        return this.Ok(new
+        {
+            list.Count,
+            Items = list.ToArray()
+        });
     }
 
     /// <summary>
