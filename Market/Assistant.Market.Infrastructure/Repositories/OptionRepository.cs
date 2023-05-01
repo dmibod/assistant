@@ -8,23 +8,32 @@ using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 public class OptionRepository : IOptionRepository
 {
     private readonly IMongoCollection<OptionEntity> collection;
     private readonly ILogger<OptionRepository> logger;
 
-    public OptionRepository(IOptions<DatabaseSettings> databaseSettings, ILogger<OptionRepository> logger)
+    public OptionRepository(IOptions<DatabaseSettings> databaseSettings, ILogger<OptionRepository> logger) :
+        this(databaseSettings.Value, logger)
     {
-        var mongoClient = new MongoClient(
-            databaseSettings.Value.ConnectionString);
+    }
 
-        var mongoDatabase = mongoClient.GetDatabase(
-            databaseSettings.Value.DatabaseName);
+    public OptionRepository(DatabaseSettings databaseSettings, ILogger<OptionRepository> logger) :
+        this(databaseSettings.ConnectionString,
+            databaseSettings.DatabaseName,
+            databaseSettings.OptionCollectionName,
+            logger)
+    {
+    }
 
-        this.collection = mongoDatabase.GetCollection<OptionEntity>(
-            databaseSettings.Value.OptionCollectionName);
-
+    public OptionRepository(string connectionString, string databaseName, string collectionName,
+        ILogger<OptionRepository> logger)
+    {
+        var mongoClient = new MongoClient(connectionString);
+        var mongoDatabase = mongoClient.GetDatabase(databaseName);
+        this.collection = mongoDatabase.GetCollection<OptionEntity>(collectionName);
         this.logger = logger;
     }
 
@@ -33,25 +42,19 @@ public class OptionRepository : IOptionRepository
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ExistsAsync),
             $"{ticker}-{expiration}");
 
-        return this.collection.Find(doc => doc.Ticker == ticker && doc.Expiration == expiration).AnyAsync();
+        return this.collection.Find(entity => entity.Ticker == ticker && entity.Expiration == expiration).AnyAsync();
     }
 
-    public async Task UpdateAsync(Option option)
+    public Task UpdateAsync(Option option)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateAsync),
             $"{option.Ticker}-{option.Expiration}");
 
-        var entity = this.collection
-            .Find(doc => doc.Ticker == option.Ticker && doc.Expiration == option.Expiration)
-            .FirstOrDefault();
+        var filter = Builders<OptionEntity>.Filter.Where(entity =>
+            entity.Ticker == option.Ticker && entity.Expiration == option.Expiration);
+        var update = Builders<OptionEntity>.Update.Set(entity => entity.Contracts, option.Contracts);
 
-        if (entity != null)
-        {
-            var replacement = option.AsEntity();
-            replacement.Id = entity.Id;
-            
-            this.collection.ReplaceOneAsync(doc => doc.Ticker == option.Ticker && doc.Expiration == option.Expiration, replacement);
-        }
+        return this.collection.FindOneAndUpdateAsync(filter, update);
     }
 
     public Task CreateAsync(Option option)
@@ -62,29 +65,38 @@ public class OptionRepository : IOptionRepository
         return this.collection.InsertOneAsync(option.AsEntity());
     }
 
-    public Task<IEnumerable<Option>> FindByTickerAsync(string ticker)
+    public async Task<IEnumerable<Option>> FindByTickerAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindByTickerAsync), ticker);
 
-        var options = this.collection.AsQueryable().Where(doc => doc.Ticker == ticker).ToList();
-
-        return Task.FromResult(options.Cast<Option>());
+        return await this.collection.Find(entity => entity.Ticker == ticker).ToListAsync();
     }
 
-    public Task<IEnumerable<string>> FindExpirationsAsync(string ticker)
+    public async Task<IEnumerable<string>> FindExpirationsAsync(string ticker)
     {
         this.logger.LogInformation("{Method}", nameof(this.FindExpirationsAsync));
 
-        return Task.FromResult(this.collection.AsQueryable().Where(doc => doc.Ticker == ticker)
-            .Select(doc => doc.Expiration).AsEnumerable());
+        return await this.collection.AsQueryable()
+            .Where(entity => entity.Ticker == ticker)
+            .Select(entity => entity.Expiration)
+            .ToListAsync();
     }
 
     public async Task RemoveAsync(IDictionary<string, ISet<string>> expirations)
     {
         this.logger.LogInformation("{Method}", nameof(this.RemoveAsync));
+        
+        foreach (var expiration in expirations)
+        {
+            await this.RemoveAsync(expiration.Key, expiration.Value);
+        }
+    }
 
-        var filter = Builders<OptionEntity>.Filter.Where(doc =>
-            expirations.ContainsKey(doc.Ticker) && expirations[doc.Ticker].Contains(doc.Expiration));
+    private async Task RemoveAsync(string ticker, ISet<string> expirations)
+    {
+        var array = expirations.ToArray();
+        var builder = Builders<OptionEntity>.Filter;
+        var filter = builder.Where(entity => entity.Ticker == ticker) & builder.In(entity => entity.Expiration, array);
 
         await this.collection.DeleteManyAsync(filter);
     }

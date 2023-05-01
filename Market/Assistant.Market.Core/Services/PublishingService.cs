@@ -1,5 +1,6 @@
 ﻿namespace Assistant.Market.Core.Services;
 
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Assistant.Market.Core.Models;
 using Common.Core.Utils;
@@ -74,8 +75,9 @@ public class PublishingService : IPublishingService
         {
             this.kanbanService.SetBoardLoadingStateAsync(board.Id).GetAwaiter().GetResult();
 
-            var laneMap = PublishTickers(board, chunk);
-            PublishExpirations(board, chunk, laneMap);
+            var laneMap = this.PublishTickers(board, chunk);
+            
+            this.PublishExpirations(board, chunk, laneMap);
         }
         catch (Exception e)
         {
@@ -229,7 +231,7 @@ public class PublishingService : IPublishingService
     {
         var round = Math.Round(value ?? Decimal.Zero, 2);
 
-        return round.ToString();
+        return round.ToString(CultureInfo.InvariantCulture);
     }
 
     private static string PriceToContent(OptionContract price)
@@ -249,15 +251,13 @@ public class PublishingService : IPublishingService
     private static string TupleToContent(IEnumerable<Tuple<string, string>> tuples)
     {
         var list = tuples.ToList();
-
         if (list.Count == 0)
         {
             return string.Empty;
         }
-
-        var style = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"));
         
-        var body = list.Select(x => RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1), RenderUtils.PropToContent(x.Item2, style))).Aggregate((curr, x) => $"{curr},{x}");
-        return "[" + body + "]";
+        var body = list.Select(x => RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1), RenderUtils.PropToContent(x.Item2))).Aggregate((curr, x) => $"{curr},{x}");
+
+        return $"[{body}]";
     }
 }
