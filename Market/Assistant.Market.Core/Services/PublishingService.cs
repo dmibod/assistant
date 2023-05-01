@@ -210,7 +210,7 @@ public class PublishingService : IPublishingService
         var tuples = expiration.Contracts
             .Where(pair => pair.Value.Call != null)
             .OrderBy(pair => pair.Key)
-            .Select(pair => new Tuple<string, string>(DecimalToContent(pair.Key), $"${DecimalToContent(pair.Value.Call.Last)}"));
+            .Select(pair => new Tuple<string, string>(DecimalToContent(pair.Key), PriceToContent(pair.Value.Call)));
 
         return TupleToContent(tuples);
     }
@@ -220,7 +220,7 @@ public class PublishingService : IPublishingService
         var tuples = expiration.Contracts
             .Where(pair => pair.Value.Put != null)
             .OrderBy(pair => pair.Key)
-            .Select(pair => new Tuple<string, string>(DecimalToContent(pair.Key), $"${DecimalToContent(pair.Value.Put.Last)}"));
+            .Select(pair => new Tuple<string, string>(DecimalToContent(pair.Key), PriceToContent(pair.Value.Put)));
 
         return TupleToContent(tuples);
     }
@@ -232,6 +232,20 @@ public class PublishingService : IPublishingService
         return round.ToString();
     }
 
+    private static string PriceToContent(OptionContract price)
+    {
+        var bid = price.Bid ?? decimal.Zero;
+        var ask = price.Ask ?? decimal.Zero;
+        var last = price.Last ?? decimal.Zero;
+        
+        if (bid == ask)
+        {
+            return bid == decimal.Zero ? $"${DecimalToContent(last)}" : $"${DecimalToContent(bid)}";
+        }
+
+        return $"${DecimalToContent(bid)} ({DecimalToContent(ask)})";
+    }
+
     private static string TupleToContent(IEnumerable<Tuple<string, string>> tuples)
     {
         var list = tuples.ToList();
@@ -241,7 +255,7 @@ public class PublishingService : IPublishingService
             return string.Empty;
         }
 
-        var style = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "2rem"));
+        var style = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"));
         
         var body = list.Select(x => RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1), RenderUtils.PropToContent(x.Item2, style))).Aggregate((curr, x) => $"{curr},{x}");
         return "[" + body + "]";
