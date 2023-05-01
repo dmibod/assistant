@@ -17,16 +17,18 @@ public class MarketController : ControllerBase
 {
     private readonly IStockService stockService;
     private readonly IOptionService optionService;
+    private readonly IRefreshService refreshService;
     private readonly IBusService busService;
     private readonly IIdentityProvider identityProvider;
     private readonly string publishMarketDataTopic;
     private readonly string addStockRequestTopic;
 
-    public MarketController(IStockService stockService, IOptionService optionService, IBusService busService,
+    public MarketController(IStockService stockService, IOptionService optionService, IRefreshService refreshService, IBusService busService,
         IIdentityProvider identityProvider, IOptions<NatsSettings> options)
     {
         this.stockService = stockService;
         this.optionService = optionService;
+        this.refreshService = refreshService;
         this.busService = busService;
         this.identityProvider = identityProvider;
         this.publishMarketDataTopic = options.Value.PublishMarketDataTopic;
@@ -90,6 +92,15 @@ public class MarketController : ControllerBase
     public Task<Stock> AddStockAsync(string ticker)
     {
         return this.stockService.GetOrCreateAsync(ticker);
+    }
+
+    /// <summary>
+    /// Update stock data immediately
+    /// </summary>
+    [HttpPut("Stocks/{ticker}"), Authorize("publishing")]
+    public Task RefreshStockAsync(string ticker)
+    {
+        return this.refreshService.UpdateStockAsync(ticker);
     }
 
     /// <summary>

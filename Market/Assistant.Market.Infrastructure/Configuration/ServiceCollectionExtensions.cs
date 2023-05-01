@@ -9,6 +9,7 @@ using Common.Infrastructure.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NATS.Client;
+using PolygonApi.Client.Configuration;
 
 public static class ServiceCollectionExtensions
 {
@@ -24,7 +25,14 @@ public static class ServiceCollectionExtensions
         services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
         services.AddSingleton<IBusService, BusService>();
         services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
-        services.AddHttpClient<PolygonApi.Client.ApiClient>("PolygonApiClient");
+
+        var polygonSettings = configuration.GetSection("PolygonApiSettings").Get<PolygonApiSettings>();
+        services.AddHttpClient<PolygonApi.Client.ApiClient>("PolygonApiClient", client =>
+        {
+            client.BaseAddress = new Uri(polygonSettings.ApiUrl);
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {polygonSettings.ApiKey}");
+        });
+        
         services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>
         {
             client.BaseAddress = new Uri("http://assistant.dmitrybodnar.com:8080/v1/api/");

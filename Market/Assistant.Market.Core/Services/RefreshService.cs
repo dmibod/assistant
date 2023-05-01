@@ -56,6 +56,17 @@ public class RefreshService : IRefreshService
         }
     }
 
+    public async Task UpdateStockAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateStockAsync), ticker);
+        
+        var stock = await this.stockService.GetOrCreateAsync(ticker);
+        if (stock != null)
+        {
+            await this.UpdateStockAsync(stock);
+        }
+    }
+
     private async Task UpdateStockAsync(Stock stock)
     {
         var stockPrice = await this.marketDataService.GetStockPriceAsync(stock.Ticker);

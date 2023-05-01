@@ -5,8 +5,6 @@ using PolygonApi.Client.Utils;
 
 public class ApiClient : IDisposable
 {
-    private const string DefaultApiKey = "gpoaGtajTlrCLYIFRAqeMK7rAS7QfRdl";
-    private const string ApiKeyEnvVar = "PolygonApiKey";
     private static readonly Uri ApiUri = new("https://api.polygon.io");
 
     private readonly HttpClient httpClient;
@@ -15,10 +13,6 @@ public class ApiClient : IDisposable
     {
         this.httpClient = httpClient;
         this.httpClient.BaseAddress = ApiUri;
-
-        var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvVar, EnvironmentVariableTarget.Machine) ?? DefaultApiKey;
-        
-        this.httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
     }
 
     public async Task<PrevCloseResponse?> PrevCloseAsync(PrevCloseRequest request)

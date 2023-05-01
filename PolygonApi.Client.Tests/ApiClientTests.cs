@@ -12,7 +12,7 @@ public class ApiClientTests
     public static void TestFixtureSetup(TestContext context)
     {
         var httpClient = new HttpClient();
-        
+        httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer {token}");
         client = new ApiClient(httpClient);
     }
 
@@ -61,6 +61,27 @@ public class ApiClientTests
         Assert.IsTrue(response.Results.Length > 0);
     }
     
+    [TestMethod]
+    public async Task OptionChainStream_ReturnsExpectedResult()
+    {
+        // Arrange
+        var request = new OptionChainRequest
+        {
+            Ticker = "FSR"
+        };
+        
+        // Act
+        var optionChain = client
+            .OptionChainStream(request)
+            .SelectMany(item => item.Results)
+            .Where(item => item.Day.Close > decimal.Zero)
+            .GroupBy(item => item.Details.ExpirationDate)
+            .ToDictionary(item => item.Key.Replace("-", string.Empty), item => item.ToList());
+
+        // Assert
+        Assert.IsTrue(optionChain.Count > 0);
+    }
+
     [TestMethod]
     public async Task OptionChainStreamAsync_ReturnsExpectedResult()
     {

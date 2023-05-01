@@ -36,13 +36,22 @@ public class OptionRepository : IOptionRepository
         return this.collection.Find(doc => doc.Ticker == ticker && doc.Expiration == expiration).AnyAsync();
     }
 
-    public Task UpdateAsync(Option option)
+    public async Task UpdateAsync(Option option)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateAsync),
             $"{option.Ticker}-{option.Expiration}");
 
-        return this.collection.ReplaceOneAsync(
-            doc => doc.Ticker == option.Ticker && doc.Expiration == option.Expiration, option.AsEntity());
+        var entity = this.collection
+            .Find(doc => doc.Ticker == option.Ticker && doc.Expiration == option.Expiration)
+            .FirstOrDefault();
+
+        if (entity != null)
+        {
+            var replacement = option.AsEntity();
+            replacement.Id = entity.Id;
+            
+            this.collection.ReplaceOneAsync(doc => doc.Ticker == option.Ticker && doc.Expiration == option.Expiration, replacement);
+        }
     }
 
     public Task CreateAsync(Option option)
@@ -66,15 +75,16 @@ public class OptionRepository : IOptionRepository
     {
         this.logger.LogInformation("{Method}", nameof(this.FindExpirationsAsync));
 
-        return Task.FromResult(this.collection.AsQueryable().Where(doc => doc.Ticker == ticker).Select(doc => doc.Expiration).AsEnumerable());
-
+        return Task.FromResult(this.collection.AsQueryable().Where(doc => doc.Ticker == ticker)
+            .Select(doc => doc.Expiration).AsEnumerable());
     }
 
     public async Task RemoveAsync(IDictionary<string, ISet<string>> expirations)
     {
         this.logger.LogInformation("{Method}", nameof(this.RemoveAsync));
 
-        var filter = Builders<OptionEntity>.Filter.Where(doc => expirations.ContainsKey(doc.Ticker) && expirations[doc.Ticker].Contains(doc.Expiration));
+        var filter = Builders<OptionEntity>.Filter.Where(doc =>
+            expirations.ContainsKey(doc.Ticker) && expirations[doc.Ticker].Contains(doc.Expiration));
 
         await this.collection.DeleteManyAsync(filter);
     }

@@ -5,4 +5,6 @@ public interface IRefreshService
     Task RefreshAsync(TimeSpan lag);
     
     Task CleanAsync(DateTime now);
+
+    Task UpdateStockAsync(string ticker);
 }
