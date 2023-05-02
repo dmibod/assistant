@@ -55,7 +55,7 @@ public class MarketDataService : IMarketDataService
         return cursor.ToEnumerable().ToList();
     }
 
-    public async Task<IEnumerable<AssetPrice>> FindOptionPricesAsync(string stockTicker, string expiration)
+    public async Task<IEnumerable<OptionAssetPrice>> FindOptionPricesAsync(string stockTicker, string expiration)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOptionPricesAsync), $"{stockTicker}-{expiration}");
         

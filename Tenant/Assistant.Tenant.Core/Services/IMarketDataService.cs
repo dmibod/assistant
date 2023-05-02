@@ -6,7 +6,7 @@ public interface IMarketDataService
     
     Task<IEnumerable<AssetPrice>> FindStockPricesAsync(ISet<string> tickers);
     
-    Task<IEnumerable<AssetPrice>> FindOptionPricesAsync(string stockTicker, string expiration);
+    Task<IEnumerable<OptionAssetPrice>> FindOptionPricesAsync(string stockTicker, string expiration);
 
     Task<IEnumerable<string>> FindExpirationsAsync(string ticker);
 }
@@ -22,11 +22,18 @@ public class AssetPrice
     public decimal? Last { get; set; }
 }
 
+public class OptionAssetPrice : AssetPrice
+{
+    public decimal? Vol { get; set; }
+    
+    public decimal? OI { get; set; }
+}
+
 public class OptionPrice
 {
     public string Ticker { get; set; }
 
     public string Expiration { get; set; }
 
-    public AssetPrice[] Contracts { get; set; }
+    public OptionAssetPrice[] Contracts { get; set; }
 }
