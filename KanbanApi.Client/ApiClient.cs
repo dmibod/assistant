@@ -18,7 +18,11 @@ public class ApiClient : IDisposable
     
     public async Task<IEnumerable<Board>?> GetBoardsAsync(string? owner)
     {
-        using var response = await this.httpClient.GetAsync(string.IsNullOrEmpty(owner) ? "board" : $"board?owner={owner}");
+        var requestUri = string.IsNullOrEmpty(owner) 
+            ? "/v1/api/board" 
+            : $"/v1/api/board?owner={owner}";
+
+        using var response = await this.httpClient.GetAsync(requestUri);
 
         response.EnsureSuccessStatusCode();
 
@@ -27,7 +31,7 @@ public class ApiClient : IDisposable
     
     public async Task<Board?> GetBoardAsync(string id)
     {
-        using var response = await this.httpClient.GetAsync($"board/{id}");
+        using var response = await this.httpClient.GetAsync($"/v1/api/board/{id}");
 
         response.EnsureSuccessStatusCode();
 
@@ -36,7 +40,7 @@ public class ApiClient : IDisposable
 
     public async Task<Board?> CreateBoardAsync(Board board)
     {
-        using var response = await this.httpClient.PostAsJsonAsync("board", board, SerializationDefaults.Options);
+        using var response = await this.httpClient.PostAsJsonAsync("/v1/api/board", board, SerializationDefaults.Options);
 
         response.EnsureSuccessStatusCode();
         
@@ -104,7 +108,7 @@ public class ApiClient : IDisposable
     
     public async Task<Board?> ShareBoardAsync(Board board, bool value)
     {
-        using var response = await this.httpClient.PutAsJsonAsync($"board/{board.Id}/share", new { shared = value });
+        using var response = await this.httpClient.PutAsJsonAsync($"/v1/api/board/{board.Id}/share", new { shared = value });
 
         response.EnsureSuccessStatusCode();
         
@@ -136,7 +140,7 @@ public class ApiClient : IDisposable
 
     private async Task<IEnumerable<T>?> GetLanesAsync<T>(string boardId) where T : BaseLane
     {
-        using var response = await this.httpClient.GetAsync($"board/{boardId}/lanes");
+        using var response = await this.httpClient.GetAsync($"/v1/api/board/{boardId}/lanes");
 
         response.EnsureSuccessStatusCode();
 
@@ -145,7 +149,7 @@ public class ApiClient : IDisposable
 
     private async Task<IEnumerable<T>?> GetLanesAsync<T>(Board board, string parentId) where T : BaseLane
     {
-        using var response = await this.httpClient.GetAsync($"board/{board.Id}/lanes/{parentId}/lanes");
+        using var response = await this.httpClient.GetAsync($"/v1/api/board/{board.Id}/lanes/{parentId}/lanes");
 
         response.EnsureSuccessStatusCode();
 
@@ -197,7 +201,7 @@ public class ApiClient : IDisposable
 
     private async Task<T> CreateLaneAsync<T>(Board board, string parentId, T request) where T : BaseLane
     {
-        using var response = await this.httpClient.PostAsJsonAsync($"board/{board.Id}/lanes", request, SerializationDefaults.Options);
+        using var response = await this.httpClient.PostAsJsonAsync($"/v1/api/board/{board.Id}/lanes", request, SerializationDefaults.Options);
 
         response.EnsureSuccessStatusCode();
         
@@ -213,7 +217,7 @@ public class ApiClient : IDisposable
     
     public async Task<IEnumerable<Card>?> GetCardsAsync(Board board, CardLane lane)
     {
-        using var response = await this.httpClient.GetAsync($"board/{board.Id}/lanes/{lane.Id}/cards");
+        using var response = await this.httpClient.GetAsync($"/v1/api/board/{board.Id}/lanes/{lane.Id}/cards");
 
         response.EnsureSuccessStatusCode();
 
@@ -237,7 +241,7 @@ public class ApiClient : IDisposable
             Description = description
         };
         
-        using var response = await this.httpClient.PostAsJsonAsync($"board/{board.Id}/cards", request);
+        using var response = await this.httpClient.PostAsJsonAsync($"/v1/api/board/{board.Id}/cards", request);
 
         response.EnsureSuccessStatusCode();
         
@@ -253,7 +257,7 @@ public class ApiClient : IDisposable
     
     public async Task<CommandResponse?> CommandAsync(Command command)
     {
-        using var response = await this.httpClient.PostAsJsonAsync($"command/{command.BoardId}", new[] { command }, SerializationDefaults.Options);
+        using var response = await this.httpClient.PostAsJsonAsync($"/v1/api/command/{command.BoardId}", new[] { command }, SerializationDefaults.Options);
 
         response.EnsureSuccessStatusCode();
 

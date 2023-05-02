@@ -7,6 +7,7 @@ using Assistant.Tenant.Infrastructure.Repositories;
 using Assistant.Tenant.Infrastructure.Services;
 using Common.Core.Services;
 using Common.Infrastructure.Configuration;
+using KanbanApi.Client.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NATS.Client;
@@ -25,9 +26,12 @@ public static class ServiceCollectionExtensions
         services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
         services.AddSingleton<IBusService, BusService>();
         services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
+
+        var kanbanSettings = configuration.GetSection("KanbanApiSettings").Get<KanbanApiSettings>();
         services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>
         {
-            client.BaseAddress = new Uri("http://assistant.dmitrybodnar.com:8080/v1/api/");
+            client.BaseAddress = new Uri(kanbanSettings.ApiUrl);
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");
         });
         services.AddIdentityProvider();
         services.AddSingleton<IKanbanService, KanbanService>();

@@ -6,7 +6,6 @@ using PolygonApi.Client.Utils;
 public class ApiClient : IDisposable
 {
     private static readonly Uri ApiUri = new("https://api.polygon.io");
-
     private readonly HttpClient httpClient;
 
     public ApiClient(HttpClient httpClient)

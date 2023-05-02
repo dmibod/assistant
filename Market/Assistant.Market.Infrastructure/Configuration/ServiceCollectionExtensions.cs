@@ -6,6 +6,7 @@ using Assistant.Market.Infrastructure.Repositories;
 using Assistant.Market.Infrastructure.Services;
 using Common.Core.Services;
 using Common.Infrastructure.Configuration;
+using KanbanApi.Client.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NATS.Client;
@@ -32,10 +33,11 @@ public static class ServiceCollectionExtensions
             client.BaseAddress = new Uri(polygonSettings.ApiUrl);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {polygonSettings.ApiKey}");
         });
-        
+        var kanbanSettings = configuration.GetSection("KanbanApiSettings").Get<KanbanApiSettings>();
         services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>
         {
-            client.BaseAddress = new Uri("http://assistant.dmitrybodnar.com:8080/v1/api/");
+            client.BaseAddress = new Uri(kanbanSettings.ApiUrl);
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");
         });
         services.AddSingleton<IKanbanService, KanbanService>();
         services.AddSingleton<IMarketDataService, MarketDataService>();

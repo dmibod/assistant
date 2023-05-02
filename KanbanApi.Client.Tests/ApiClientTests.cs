@@ -3,7 +3,7 @@
 [TestClass]
 public class ApiClientTests
 {
-    private static readonly Uri ApiUri = new("http://localhost:8080/v1/api/");
+    private static readonly Uri ApiUri = new("https://dmitrybodnar.com/v1/api/");
     private const string Owner = "superuser";
     private static ApiClient client;
 
