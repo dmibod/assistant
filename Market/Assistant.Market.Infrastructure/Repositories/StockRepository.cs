@@ -60,6 +60,7 @@ public class StockRepository : IStockRepository
             .Set(item => item.Ask, stock.Ask)
             .Set(item => item.Bid, stock.Bid)
             .Set(item => item.Last, stock.Last)
+            .Set(item => item.TimeStamp, stock.TimeStamp)
             .Set(item => item.LastRefresh, stock.LastRefresh);
 
         return this.collection.UpdateOneAsync(filter, update);
@@ -119,6 +120,7 @@ internal static class StockExtensions
             Bid = stock.Bid,
             Last = stock.Last,
             Ticker = stock.Ticker,
+            TimeStamp = stock.TimeStamp,
             LastRefresh = stock.LastRefresh
         };
     }

@@ -39,4 +39,9 @@ public static class Formatting
         
         return DateTime.UnixEpoch.AddTicks(ticks);
     }
+    
+    public static DateTime FromMillisecondsTimestamp(long millisecondsTimestamp)
+    {
+        return DateTime.UnixEpoch.AddMilliseconds(millisecondsTimestamp);
+    }
 }

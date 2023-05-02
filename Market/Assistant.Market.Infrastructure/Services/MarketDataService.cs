@@ -129,7 +129,7 @@ public static class PrevCloseResponseExtensions
             Bid = priceItem.Low,
             Last = priceItem.Close,
             Ticker = response.Ticker,
-            TimeStamp = Formatting.FromNanosecondsTimestamp(priceItem.Timestamp)
+            TimeStamp = Formatting.FromMillisecondsTimestamp(priceItem.Timestamp)
         };
     }
 }

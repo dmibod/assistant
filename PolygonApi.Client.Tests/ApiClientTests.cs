@@ -6,13 +6,14 @@ using PolygonApi.Client.Utils;
 [TestClass]
 public class ApiClientTests
 {
+    private const string Token = "";
     private static ApiClient client;
 
     [ClassInitialize]
     public static void TestFixtureSetup(TestContext context)
     {
         var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer {token}");
+        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Token}");
         client = new ApiClient(httpClient);
     }
 

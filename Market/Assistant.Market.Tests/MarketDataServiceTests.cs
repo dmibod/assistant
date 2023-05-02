@@ -8,12 +8,30 @@ using PolygonApi.Client;
 [TestClass]
 public class MarketDataServiceTests
 {
+    private const string Token = "";
+
+    [TestMethod]
+    public async Task GetStockPriceAsync_ReturnsExpectedResult()
+    {
+        // Arrange
+        var httpClient = new HttpClient(new HttpClientHandler());
+        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Token}");
+        var client = new ApiClient(httpClient);
+        var service = new MarketDataService(client, Substitute.For<ILogger<MarketDataService>>());
+        
+        // Act
+        var stockPrice = await service.GetStockPriceAsync("FSR");
+        
+        // Assert
+        Assert.IsTrue(stockPrice.TimeStamp < DateTime.Now);
+    }
+
     [TestMethod]
     public async Task GetOptionChainAsync_ReturnsExpectedResult()
     {
         // Arrange
         var httpClient = new HttpClient(new HttpClientHandler());
-        httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer {token}");
+        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Token}");
         var client = new ApiClient(httpClient);
         var service = new MarketDataService(client, Substitute.For<ILogger<MarketDataService>>());
         
