@@ -64,6 +64,7 @@ public class MarketDataService : IMarketDataService
                 {
                     Strike = strikePrice
                 };
+                
                 resultExpiration.Contracts.Add(strikePrice, resultContracts);
 
                 var call = expirationOptions.FirstOrDefault(item =>
@@ -71,28 +72,14 @@ public class MarketDataService : IMarketDataService
 
                 if (call != null)
                 {
-                    var price = ToPriceHistory(call);
-                    resultContracts.Call = new OptionContract
-                    {
-                        Ticker = OptionUtils.OptionTicker(ticker, expiration, Formatting.FormatStrike(strikePrice), true),
-                        Ask = price.Ask,
-                        Bid = price.Bid,
-                        Last = price.Last
-                    };
+                    resultContracts.Call = ToContract(OptionUtils.OptionTicker(ticker, expiration, Formatting.FormatStrike(strikePrice), true), call);
                 }
 
                 var put = expirationOptions.FirstOrDefault(item =>
                     item.Details.StrikePrice == strikePrice && item.Details.ContractType == "put");
                 if (put != null)
                 {
-                    var price = ToPriceHistory(put);
-                    resultContracts.Put = new OptionContract
-                    {
-                        Ticker = OptionUtils.OptionTicker(ticker, expiration, Formatting.FormatStrike(strikePrice), false),
-                        Ask = price.Ask,
-                        Bid = price.Bid,
-                        Last = price.Last
-                    };
+                    resultContracts.Put = ToContract(OptionUtils.OptionTicker(ticker, expiration, Formatting.FormatStrike(strikePrice), false), put);
                 }
             }
         }
@@ -100,17 +87,18 @@ public class MarketDataService : IMarketDataService
         return Task.FromResult<OptionChain?>(resultChain);
     }
 
-    private static Stock ToPriceHistory(OptionChainItemResponse item)
+    private static OptionContract ToContract(string ticker, OptionChainItemResponse item)
     {
-        var timeStamp = Formatting.FromNanosecondsTimestamp(item.Day.LastUpdated);
-        var time = Formatting.ToPriceBarDateTime(timeStamp);
-
-        return new Stock
+        //var timeStamp = Formatting.FromNanosecondsTimestamp(item.Day.LastUpdated);
+        //var time = Formatting.ToPriceBarDateTime(timeStamp);
+        return new OptionContract
         {
-            Ticker = $"{item.Details.ContractType.Substring(0, 1).ToUpper()}|{item.Details.StrikePrice}",
+            Ticker = ticker,
             Bid = item.Day.Low,
             Ask = item.Day.High,
-            Last = item.Day.Close
+            Last = item.Day.Close,
+            Vol = item.Day.Volume,
+            OI = item.OpenInterest
         };
     }
 

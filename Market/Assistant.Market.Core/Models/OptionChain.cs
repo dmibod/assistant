@@ -34,6 +34,10 @@ public class OptionContract
     public decimal? Ask { get; set; }
 
     public decimal? Last { get; set; }
+    
+    public decimal? Vol { get; set; }
+    
+    public decimal? OI { get; set; }
 }
 
 public static class OptionChainExtensions
