@@ -99,7 +99,7 @@ public class PublishingService : IPublishingService
         foreach (var stock in chunk)
         {
             var description = stock.LastRefresh != DateTime.UnixEpoch
-                ? $"${Math.Round(stock.Last ?? decimal.Zero, 2)}, {stock.LastRefresh.ToShortDateString()} {stock.LastRefresh.ToShortTimeString()}"
+                ? $"${Math.Round(stock.Last, 2)}, {stock.LastRefresh.ToShortDateString()} {stock.LastRefresh.ToShortTimeString()}"
                 : "n/a";
 
             if (!laneMap.ContainsKey(stock.Ticker))
@@ -236,16 +236,12 @@ public class PublishingService : IPublishingService
 
     private static string PriceToContent(OptionContract price)
     {
-        var bid = price.Bid ?? decimal.Zero;
-        var ask = price.Ask ?? decimal.Zero;
-        var last = price.Last ?? decimal.Zero;
-        
-        if (bid == ask)
+        if (price.Bid == price.Ask)
         {
-            return bid == decimal.Zero ? $"${DecimalToContent(last)}" : $"${DecimalToContent(bid)}";
+            return price.Bid == decimal.Zero ? $"${DecimalToContent(price.Last)}" : $"${DecimalToContent(price.Bid)}";
         }
 
-        return $"${DecimalToContent(bid)} ({DecimalToContent(ask)})";
+        return $"${DecimalToContent(price.Bid)} ({DecimalToContent(price.Ask)})";
     }
 
     private static string TupleToContent(IEnumerable<Tuple<string, string>> tuples)

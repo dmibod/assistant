@@ -89,8 +89,6 @@ public class MarketDataService : IMarketDataService
 
     private static OptionContract ToContract(string ticker, OptionChainItemResponse item)
     {
-        //var timeStamp = Formatting.FromNanosecondsTimestamp(item.Day.LastUpdated);
-        //var time = Formatting.ToPriceBarDateTime(timeStamp);
         return new OptionContract
         {
             Ticker = ticker,
@@ -98,7 +96,8 @@ public class MarketDataService : IMarketDataService
             Ask = item.Day.High,
             Last = item.Day.Close,
             Vol = item.Day.Volume,
-            OI = item.OpenInterest
+            OI = item.OpenInterest,
+            TimeStamp = Formatting.FromNanosecondsTimestamp(item.Day.LastUpdated),
         };
     }
 
@@ -119,7 +118,6 @@ public static class PrevCloseResponseExtensions
         }
 
         var priceItem = response.Results.MaxBy(item => item.Timestamp);
-
         if (priceItem == null)
         {
             return null;

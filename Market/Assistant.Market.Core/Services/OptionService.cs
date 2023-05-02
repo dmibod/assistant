@@ -34,6 +34,8 @@ public class OptionService : IOptionService
         {
             var option = options.Expirations[expiration].AsOption(options.Ticker);
             
+            option.LastRefresh = DateTime.UtcNow;
+
             if (await this.repository.ExistsAsync(options.Ticker, expiration))
             {
                 await this.repository.UpdateAsync(option);

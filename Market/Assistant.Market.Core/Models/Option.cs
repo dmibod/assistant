@@ -6,5 +6,7 @@ public class Option
 
     public string Expiration { get; set; }
 
+    public DateTime LastRefresh { get; set; }
+
     public OptionContract[] Contracts { get; set; }
 }

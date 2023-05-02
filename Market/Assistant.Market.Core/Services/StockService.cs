@@ -42,6 +42,8 @@ public class StockService : IStockService
             throw new Exception($"Stock with ticker '{stock.Ticker}' is not found.");
         }
         
+        stock.LastRefresh = DateTime.UtcNow;
+
         await this.repository.UpdateAsync(stock);
     }
 

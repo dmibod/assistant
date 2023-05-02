@@ -75,7 +75,7 @@ public class RefreshService : IRefreshService
             stock.Ask = stockPrice.Ask;
             stock.Bid = stockPrice.Bid;
             stock.Last = stockPrice.Last;
-            stock.LastRefresh = DateTime.UtcNow;
+            stock.TimeStamp = stockPrice.TimeStamp;
             
             await this.stockService.UpdateAsync(stock);
         }
