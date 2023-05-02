@@ -63,8 +63,7 @@ public class PublishingService : IPublishingService
         var tracker = new ProgressTracker(positions.Count, 1,
             progress =>
             {
-                this.kanbanService.SetBoardProgressStateAsync(board.Id, progress);
-
+                this.kanbanService.SetBoardProgressStateAsync(board.Id, progress).GetAwaiter().GetResult();
                 this.logger.LogInformation($"{progress}");
             });
 
@@ -521,7 +520,10 @@ public class PublishingService : IPublishingService
             total =>
             {
                 return new ProgressTracker(total, 1,
-                    progress => { this.kanbanService.SetBoardProgressStateAsync(board.Id, progress); });
+                    progress =>
+                    {
+                        this.kanbanService.SetBoardProgressStateAsync(board.Id, progress).GetAwaiter().GetResult();
+                    });
             });
 
         await this.kanbanService.ResetBoardStateAsync(board.Id);
@@ -532,7 +534,7 @@ public class PublishingService : IPublishingService
         var tracker = new ProgressTracker(operations.Count(), 1,
             progress =>
             {
-                this.kanbanService.SetBoardProgressStateAsync(board.Id, progress);
+                this.kanbanService.SetBoardProgressStateAsync(board.Id, progress).GetAwaiter().GetResult();
             });
 
         var putsLane = await this.kanbanService.CreateBoardLaneAsync(board.Id,
