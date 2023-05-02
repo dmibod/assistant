@@ -1,14 +1,60 @@
 version: '3'
 services:
-  app:
-    image: assitant-market
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+  bus:
+    image: nats-streaming
     ports:
-      - '8000:8000'
+      - '4444:4222'
+    command: --user ${NATS_USER} --pass ${NATS_PASSWORD}
+  db:
+    image: mongo:4.0.5
+    ports:
+      - '37017:27017'
+    volumes:
+      - '/root/mongo:/data/db'
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+  app:
+    image: dmibod/kanban-monolith
+    environment:
+      - BUS_URL=nats://${NATS_USER}:${NATS_PASSWORD}@bus:4222
+      - MGO_URL=db:27017
+      - MUX_PORT=${MUX_PORT}
+    depends_on:
+      - bus
+      - db
+  market:
+    image: dmibod/assistant-market
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8000 
     volumes:
-      - './UserSecrets:/root/.microsoft/usersecrets:ro'
+      - './secrets:/root/.microsoft/usersecrets:ro'
+    depends_on:
+      - bus
+      - db
+  tenant:
+    image: dmibod/assistant-tenant
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8000 
+    volumes:
+      - './secrets:/root/.microsoft/usersecrets:ro'
+    depends_on:
+      - bus
+      - db
+  proxy:
+    image: nginx
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - "/etc/letsencrypt:/etc/letsencrypt"
+      - "/root/proxy/assistant.dmitrybodnar.com/conf:/etc/nginx/conf.d"
+      - "/root/proxy/assistant.dmitrybodnar.com/www:/usr/share/nginx/html:ro"
+    depends_on:
+      - market
+      - tenant
+networks:
+  default:
+    driver: bridge

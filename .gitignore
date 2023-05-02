@@ -13,3 +13,6 @@ out/
 # App settings
 appsettings.Development.json
 
+# Env vars
+.env
+

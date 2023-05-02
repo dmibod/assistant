@@ -1,0 +1,14 @@
+version: '3'
+services:
+  app:
+    image: assitant-market
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - '8000:8000'
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8000 
+    volumes:
+      - './UserSecrets:/root/.microsoft/usersecrets:ro'
