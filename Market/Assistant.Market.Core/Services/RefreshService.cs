@@ -70,7 +70,6 @@ public class RefreshService : IRefreshService
     private async Task UpdateStockAsync(Stock stock)
     {
         var stockPrice = await this.marketDataService.GetStockPriceAsync(stock.Ticker);
-
         if (stockPrice != null)
         {
             stock.Ask = stockPrice.Ask;
@@ -82,7 +81,6 @@ public class RefreshService : IRefreshService
         }
 
         var optionChain = await this.marketDataService.GetOptionChainAsync(stock.Ticker);
-
         if (optionChain != null)
         {
             await this.optionService.UpdateAsync(optionChain);

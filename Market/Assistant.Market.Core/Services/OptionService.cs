@@ -32,8 +32,7 @@ public class OptionService : IOptionService
 
         foreach (var expiration in options.Expirations.Keys)
         {
-            var optionExpiration = options.Expirations[expiration];
-            var option = optionExpiration.AsOption(options.Ticker);
+            var option = options.Expirations[expiration].AsOption(options.Ticker);
             
             if (await this.repository.ExistsAsync(options.Ticker, expiration))
             {

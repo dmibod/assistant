@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 public class PublishingService : IPublishingService
 {
     private const string Positions = "Positions";
-    private const string Suggestions = "Suggestions";
+    private const string SellPuts = "Sell Puts";
     private readonly ISuggestionService suggestionService;
     private readonly IPositionService positionService;
     private readonly IMarketDataService marketDataService;
@@ -488,21 +488,21 @@ public class PublishingService : IPublishingService
         return value.Substring(0, 2) + new string(Enumerable.Repeat('*', value.Length - 2).ToArray());
     }
 
-    public async Task PublishSuggestionsAsync(SuggestionFilter filter)
+    public async Task PublishSellPutsAsync(SuggestionFilter filter)
     {
-        this.logger.LogInformation("{Method}", nameof(this.PublishSuggestionsAsync));
+        this.logger.LogInformation("{Method}", nameof(this.PublishSellPutsAsync));
 
         var now = DateTime.UtcNow;
         
         var board = await this.kanbanService.CreateBoardAsync(new Board
         {
-            Name = $"{Suggestions} {now.ToShortDateString()} {now.ToShortTimeString()}", 
+            Name = $"{SellPuts} {now.ToShortDateString()} {now.ToShortTimeString()}", 
             Description = "Calculation..."
         });
 
         try
         {
-            await this.PublishSuggestionsAsync(board, filter);
+            await this.PublishSellPutsAsync(board, filter);
         }
         catch (Exception e)
         {
@@ -514,9 +514,9 @@ public class PublishingService : IPublishingService
         }
     }
 
-    private async Task PublishSuggestionsAsync(Board board, SuggestionFilter filter)
+    private async Task PublishSellPutsAsync(Board board, SuggestionFilter filter)
     {
-        var operations = await this.suggestionService.SuggestPutsAsync(filter,
+        var operations = await this.suggestionService.SellPutsAsync(filter,
             total =>
             {
                 return new ProgressTracker(total, 1,

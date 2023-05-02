@@ -20,9 +20,9 @@ public class SuggestionService : ISuggestionService
         this.logger = logger;
     }
 
-    public async Task<IEnumerable<SellOperation>> SuggestPutsAsync(SuggestionFilter filter, Func<int, ProgressTracker> trackerCreator)
+    public async Task<IEnumerable<SellOperation>> SellPutsAsync(SuggestionFilter filter, Func<int, ProgressTracker> trackerCreator)
     {
-        this.logger.LogInformation("{Method}", nameof(this.SuggestPutsAsync));
+        this.logger.LogInformation("{Method}", nameof(this.SellPutsAsync));
 
         var items = await this.watchListService.FindAllAsync();
 
@@ -32,7 +32,7 @@ public class SuggestionService : ISuggestionService
 
         foreach (var item in items)
         {
-            operations = operations.Union(await this.SuggestPutsAsync(item, filter));
+            operations = operations.Union(await this.SellPutsAsync(item, filter));
 
             tracker.Increase();
         }
@@ -42,9 +42,9 @@ public class SuggestionService : ISuggestionService
         return operations;
     }
 
-    public async Task<IEnumerable<SellOperation>> SuggestPutsAsync(WatchListItem item, SuggestionFilter filter)
+    private async Task<IEnumerable<SellOperation>> SellPutsAsync(WatchListItem item, SuggestionFilter filter)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SuggestPutsAsync), item.Ticker);
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SellPutsAsync), item.Ticker);
         
         var expirations = await this.marketDataService.FindExpirationsAsync(item.Ticker);
         if (expirations == null)

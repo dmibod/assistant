@@ -6,7 +6,5 @@ using Helper.Core.Domain;
 
 public interface ISuggestionService
 {
-    Task<IEnumerable<SellOperation>> SuggestPutsAsync(SuggestionFilter filter, Func<int, ProgressTracker> trackerCreator);
-
-    Task<IEnumerable<SellOperation>> SuggestPutsAsync(WatchListItem item, SuggestionFilter filter);
+    Task<IEnumerable<SellOperation>> SellPutsAsync(SuggestionFilter filter, Func<int, ProgressTracker> trackerCreator);
 }
