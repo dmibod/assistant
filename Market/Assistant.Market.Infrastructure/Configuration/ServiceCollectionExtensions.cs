@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IStockRepository, StockRepository>();
         services.AddSingleton<IOptionService, OptionService>();
         services.AddSingleton<IOptionRepository, OptionRepository>();
+        services.AddSingleton<IOptionChangeRepository, OptionChangeRepository>();
         
         services.AddIdentityProvider();
         

@@ -37,36 +37,6 @@ public class OptionRepository : IOptionRepository
         this.logger = logger;
     }
 
-    public Task<bool> ExistsAsync(string ticker, string expiration)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ExistsAsync),
-            $"{ticker}-{expiration}");
-
-        return this.collection.Find(entity => entity.Ticker == ticker && entity.Expiration == expiration).AnyAsync();
-    }
-
-    public Task UpdateAsync(Option option)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateAsync),
-            $"{option.Ticker}-{option.Expiration}");
-
-        var filter = Builders<OptionEntity>.Filter.Where(entity =>
-            entity.Ticker == option.Ticker && entity.Expiration == option.Expiration);
-        var update = Builders<OptionEntity>.Update
-            .Set(entity => entity.Contracts, option.Contracts)
-            .Set(entity => entity.LastRefresh, option.LastRefresh);
-
-        return this.collection.FindOneAndUpdateAsync(filter, update);
-    }
-
-    public Task CreateAsync(Option option)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateAsync),
-            $"{option.Ticker}-{option.Expiration}");
-
-        return this.collection.InsertOneAsync(option.AsEntity());
-    }
-
     public async Task<IEnumerable<Option>> FindByTickerAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindByTickerAsync), ticker);
@@ -82,6 +52,46 @@ public class OptionRepository : IOptionRepository
             .Where(entity => entity.Ticker == ticker)
             .Select(entity => entity.Expiration)
             .ToListAsync();
+    }
+
+    public Task<bool> ExistsAsync(string ticker, string expiration)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ExistsAsync),
+            $"{ticker}-{expiration}");
+
+        return this.collection.Find(entity => entity.Ticker == ticker && entity.Expiration == expiration).AnyAsync();
+    }
+
+    public async Task<Option?> FindExpirationAsync(string ticker, string expiration)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationAsync),
+            $"{ticker}-{expiration}");
+
+        var option = await this.collection.Find(entity => entity.Ticker == ticker && entity.Expiration == expiration).FirstOrDefaultAsync();
+
+        return option;
+    }
+
+    public Task CreateAsync(Option option)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateAsync),
+            $"{option.Ticker}-{option.Expiration}");
+
+        return this.collection.InsertOneAsync(option.AsEntity());
+    }
+
+    public Task UpdateAsync(Option option)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateAsync),
+            $"{option.Ticker}-{option.Expiration}");
+
+        var filter = Builders<OptionEntity>.Filter.Where(entity =>
+            entity.Ticker == option.Ticker && entity.Expiration == option.Expiration);
+        var update = Builders<OptionEntity>.Update
+            .Set(entity => entity.Contracts, option.Contracts)
+            .Set(entity => entity.LastRefresh, option.LastRefresh);
+
+        return this.collection.FindOneAndUpdateAsync(filter, update);
     }
 
     public async Task RemoveAsync(IDictionary<string, ISet<string>> expirations)

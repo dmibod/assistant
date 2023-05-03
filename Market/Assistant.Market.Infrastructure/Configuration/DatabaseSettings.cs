@@ -5,4 +5,6 @@ public class DatabaseSettings : Common.Infrastructure.Configuration.DatabaseSett
     public string StockCollectionName { get; set; } = null!;
     
     public string OptionCollectionName { get; set; } = null!;
+    
+    public string OptionChangeCollectionName { get; set; } = null!;
 }

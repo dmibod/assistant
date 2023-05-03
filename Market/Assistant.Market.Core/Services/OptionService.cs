@@ -7,11 +7,14 @@ using Microsoft.Extensions.Logging;
 public class OptionService : IOptionService
 {
     private readonly IOptionRepository repository;
+    private readonly IOptionChangeRepository changeRepository;
     private readonly ILogger<OptionService> logger;
 
-    public OptionService(IOptionRepository repository, ILogger<OptionService> logger)
+    public OptionService(IOptionRepository repository, IOptionChangeRepository changeRepository,
+        ILogger<OptionService> logger)
     {
         this.repository = repository;
+        this.changeRepository = changeRepository;
         this.logger = logger;
     }
 
@@ -20,31 +23,21 @@ public class OptionService : IOptionService
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindAsync), ticker);
 
         ticker = ticker.ToUpper();
-        
+
         var options = await this.repository.FindByTickerAsync(ticker);
 
         return options.AsChain(ticker);
     }
 
-    public async Task UpdateAsync(OptionChain options)
+    public async Task<OptionChain> FindChangeAsync(string ticker)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateAsync), options.Ticker);
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindChangeAsync), ticker);
 
-        foreach (var expiration in options.Expirations.Keys)
-        {
-            var option = options.Expirations[expiration].AsOption(options.Ticker);
-            
-            option.LastRefresh = DateTime.UtcNow;
+        ticker = ticker.ToUpper();
 
-            if (await this.repository.ExistsAsync(options.Ticker, expiration))
-            {
-                await this.repository.UpdateAsync(option);
-            }
-            else
-            {
-                await this.repository.CreateAsync(option);
-            }
-        }
+        var options = await this.changeRepository.FindByTickerAsync(ticker);
+
+        return options.AsChain(ticker);
     }
 
     public Task<IEnumerable<string>> FindExpirationsAsync(string ticker)
@@ -54,10 +47,93 @@ public class OptionService : IOptionService
         return this.repository.FindExpirationsAsync(ticker);
     }
 
-    public Task RemoveAsync(IDictionary<string, ISet<string>> expirations)
+    public async Task UpdateAsync(OptionChain options)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateAsync), options.Ticker);
+
+        foreach (var expiration in options.Expirations.Keys)
+        {
+            var option = options.Expirations[expiration].AsOption(options.Ticker);
+
+            option.LastRefresh = DateTime.UtcNow;
+
+            if (await this.repository.ExistsAsync(options.Ticker, expiration))
+            {
+                var values = await this.repository.FindExpirationAsync(options.Ticker, expiration);
+
+                await this.repository.UpdateAsync(option);
+
+                var change = new Option
+                {
+                    Ticker = option.Ticker,
+                    Expiration = option.Expiration,
+                    LastRefresh = DateTime.UtcNow,
+                    Contracts = Difference(values.Contracts, option.Contracts).Where(item => item != null).ToArray()
+                };
+                
+                await this.changeRepository.CreateOrUpdateAsync(change);
+            }
+            else
+            {
+                await this.repository.CreateAsync(option);
+            }
+        }
+    }
+
+    private static IEnumerable<OptionContract?> Difference(OptionContract[] prev, OptionContract[] next)
+    {
+        var oldContracts = prev.ToDictionary(contract => contract.Ticker);
+
+        foreach (var newContract in next)
+        {
+            var ticker = newContract.Ticker;
+            
+            if (oldContracts.ContainsKey(ticker))
+            {
+                yield return Difference(oldContracts[ticker], newContract);
+            }
+        }
+    }
+
+    private static OptionContract? Difference(OptionContract prev, OptionContract next)
+    {
+        if (prev.TimeStamp == next.TimeStamp)
+        {
+            return null;
+        }
+
+        return new OptionContract
+        {
+            Ticker = next.Ticker,
+            Ask = next.Ask - prev.Ask,
+            Bid = next.Bid - prev.Bid,
+            Last = next.Last - prev.Last,
+            Vol = next.Vol - prev.Vol,
+            OI = next.OI - prev.OI,
+            TimeStamp = next.TimeStamp
+        };
+    }
+
+    public async Task RemoveAsync(IDictionary<string, ISet<string>> expirations)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), expirations.Count);
 
-        return this.repository.RemoveAsync(expirations);
+        try
+        {
+            await this.repository.RemoveAsync(expirations);
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError(e, e.Message);
+        }
+
+        try
+        {
+            await this.changeRepository.RemoveAsync(expirations);
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError(e, e.Message);
+        }
     }
 }

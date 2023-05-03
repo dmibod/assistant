@@ -86,6 +86,18 @@ public class MarketController : ControllerBase
     }
 
     /// <summary>
+    /// Gets options change by the stock ticker
+    /// </summary>
+    /// <param name="ticker"></param>
+    [HttpGet("Stocks/{ticker}/OptionsChange")]
+    public async Task<ActionResult> GetOptionChangeAsync(string ticker)
+    {
+        var chain = await this.optionService.FindChangeAsync(ticker);
+
+        return this.Ok(chain);
+    }
+
+    /// <summary>
     /// Adds stock to the system
     /// </summary>
     [HttpPost("Stocks/{ticker}"), Authorize("publishing")]

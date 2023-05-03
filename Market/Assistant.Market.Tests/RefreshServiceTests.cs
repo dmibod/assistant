@@ -23,12 +23,19 @@ public class RefreshServiceTests
             "option", 
             Substitute.For<ILogger<OptionRepository>>());
 
+    private static IOptionChangeRepository OptionChangeRepository =>
+        new OptionChangeRepository(
+            "mongodb://localhost:27017",
+            "assistant", 
+            "option-change", 
+            Substitute.For<ILogger<OptionChangeRepository>>());
+
     [TestMethod]
     public async Task GetOptionChainAsync_ReturnsExpectedResult()
     {
         // Arrange
         var stockService = new StockService(StockRepository, Substitute.For<ILogger<StockService>>());
-        var optionService = new OptionService(OptionRepository, Substitute.For<ILogger<OptionService>>());
+        var optionService = new OptionService(OptionRepository,  OptionChangeRepository, Substitute.For<ILogger<OptionService>>());
         var service = new RefreshService(Substitute.For<IMarketDataService>(), stockService, optionService, Substitute.For<ILogger<RefreshService>>());
         
         // Act

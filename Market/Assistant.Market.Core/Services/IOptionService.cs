@@ -6,6 +6,8 @@ public interface IOptionService
 {
     Task<OptionChain> FindAsync(string ticker);
     
+    Task<OptionChain> FindChangeAsync(string ticker);
+    
     Task UpdateAsync(OptionChain options);
     
     Task<IEnumerable<string>> FindExpirationsAsync(string ticker);
