@@ -47,16 +47,18 @@ public class TenantService : ITenantService
         return identityName;
     }
 
-    public async Task<SuggestionFilter?> GetDefaultFilterAsync()
+    public async Task<RecommendationFilter?> GetDefaultFilterAsync()
     {
         this.logger.LogInformation("{Method}", nameof(this.GetDefaultFilterAsync));
 
-        var tenant = await this.GetOrCreateAsync();
+        var tenant = await this.EnsureExistsAsync();
 
-        return JsonSerializer.Deserialize<SuggestionFilter>(tenant.DefaultFilter);
+        var filter = await this.repository.FindDefaultFilterAsync(tenant);
+
+        return string.IsNullOrEmpty(filter) ? null : JsonSerializer.Deserialize<RecommendationFilter>(filter);
     }
 
-    public async Task UpdateDefaultFilterAsync(SuggestionFilter filter)
+    public async Task UpdateDefaultFilterAsync(RecommendationFilter filter)
     {
         this.logger.LogInformation("{Method}", nameof(this.GetDefaultFilterAsync));
 

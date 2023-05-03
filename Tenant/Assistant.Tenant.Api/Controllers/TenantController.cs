@@ -365,26 +365,26 @@ public class TenantController : ControllerBase
     }
 
     /// <summary>
-    /// Default filter for the 'Sell Puts' suggestions generation
+    /// Default filter for the recommendations
     /// </summary>
     /// <returns></returns>
-    [HttpGet("SellPuts/Filter")]
-    public Task<SuggestionFilter?> GetDefaultSellPutsFilterAsync()
+    [HttpGet("Recommendations/Filter")]
+    public Task<RecommendationFilter?> GetRecommendationFilterAsync()
     {
         return this.tenantService.GetDefaultFilterAsync();
     }
 
     /// <summary>
-    /// Allows to specify default filter for the 'Sell Puts' suggestions generation
+    /// Allows to specify default filter for the recommendations
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
     /// <param name="minPremium">Min premium (option contract price), $</param>
     /// <param name="maxDte">Max days till expiration, days</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
-    [HttpPost("SellPuts/Filter")]
-    public async Task UpdateDefaultSellPutsFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm)
+    [HttpPost("Recommendations/Filter")]
+    public async Task UpdateRecommendationFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm)
     {
-        var filter = new SuggestionFilter
+        var filter = new RecommendationFilter
         {
             MinAnnualPercent = minAnnualPercent,
             MinPremium = minPremium,
@@ -396,18 +396,18 @@ public class TenantController : ControllerBase
     }
 
     /// <summary>
-    /// Generates 'Sell Puts' suggestions (put options you need to pay attention to) based on your watch list, buy prices and filtering criteria 
+    /// Generates 'Sell Puts' recommendations (put options you need to pay attention to) based on your watch list, buy prices and filtering criteria 
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
     /// <param name="minPremium">Min premium (option contract price), $</param>
     /// <param name="maxDte">Max days till expiration, days</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
-    [HttpPost("SellPuts/Publish")]
+    [HttpPost("Recommendations/SellPuts")]
     public async Task PublishSellPutsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm)
     {
         var defaultFilter = await this.tenantService.GetDefaultFilterAsync();
 
-        var filter = defaultFilter ?? new SuggestionFilter();
+        var filter = defaultFilter ?? new RecommendationFilter();
 
         if (minAnnualPercent.HasValue)
         {

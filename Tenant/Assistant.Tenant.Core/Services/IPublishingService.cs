@@ -6,5 +6,5 @@ public interface IPublishingService
 {
     Task PublishPositionsAsync();
 
-    Task PublishSellPutsAsync(SuggestionFilter filter);
+    Task PublishSellPutsAsync(RecommendationFilter filter);
 }

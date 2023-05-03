@@ -1,6 +1,6 @@
 ﻿namespace Assistant.Tenant.Core.Models;
 
-public class SuggestionFilter
+public class RecommendationFilter
 {
     public int? MinAnnualPercent { get; set; }
     
@@ -14,28 +14,23 @@ public class SuggestionFilter
     {
         var filters = new List<string>();
             
-        if (MinAnnualPercent.HasValue)
+        if (this.MinAnnualPercent.HasValue)
         {
             filters.Add($"annual roi >= {MinAnnualPercent}%");
         }
-        if (MinPremium.HasValue)
+        if (this.MinPremium.HasValue)
         {
             filters.Add($"premium >= {MinPremium}$");
         }
-        if (MaxDte.HasValue)
+        if (this.MaxDte.HasValue)
         {
             filters.Add($"dte <= {MaxDte}");
         }
-        if (Otm.HasValue)
+        if (this.Otm.HasValue)
         {
             filters.Add(Otm.Value ? "otm" : "itm");
         }
 
-        if (filters.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        return filters.Aggregate((curr, el) => $"{curr}, {el}");
+        return filters.Count == 0 ? string.Empty : filters.Aggregate((curr, el) => $"{curr}, {el}");
     }
 }

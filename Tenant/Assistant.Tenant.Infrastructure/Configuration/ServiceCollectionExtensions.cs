@@ -39,7 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPositionService, PositionService>();
         services.AddSingleton<IWatchListService, WatchListService>();
         services.AddSingleton<IPublishingService, PublishingService>();
-        services.AddSingleton<ISuggestionService, SuggestionService>();
+        services.AddSingleton<IRecommendationService, RecommendationService>();
         services.AddSingleton<IMarketDataService, MarketDataService>();
         services.AddSingleton<ITenantRepository, TenantRepository>();
         

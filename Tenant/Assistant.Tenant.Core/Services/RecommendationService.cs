@@ -6,21 +6,21 @@ using Helper.Core.Domain;
 using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 
-public class SuggestionService : ISuggestionService
+public class RecommendationService : IRecommendationService
 {
     private readonly IWatchListService watchListService;
     private readonly IMarketDataService marketDataService;
-    private readonly ILogger<SuggestionService> logger;
+    private readonly ILogger<RecommendationService> logger;
 
-    public SuggestionService(IWatchListService watchListService, IMarketDataService marketDataService,
-        ILogger<SuggestionService> logger)
+    public RecommendationService(IWatchListService watchListService, IMarketDataService marketDataService,
+        ILogger<RecommendationService> logger)
     {
         this.watchListService = watchListService;
         this.marketDataService = marketDataService;
         this.logger = logger;
     }
 
-    public async Task<IEnumerable<SellOperation>> SellPutsAsync(SuggestionFilter filter, Func<int, ProgressTracker> trackerCreator)
+    public async Task<IEnumerable<SellOperation>> SellPutsAsync(RecommendationFilter filter, Func<int, ProgressTracker> trackerCreator)
     {
         this.logger.LogInformation("{Method}", nameof(this.SellPutsAsync));
 
@@ -42,7 +42,7 @@ public class SuggestionService : ISuggestionService
         return operations;
     }
 
-    private async Task<IEnumerable<SellOperation>> SellPutsAsync(WatchListItem item, SuggestionFilter filter)
+    private async Task<IEnumerable<SellOperation>> SellPutsAsync(WatchListItem item, RecommendationFilter filter)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SellPutsAsync), item.Ticker);
         
@@ -84,7 +84,7 @@ public class SuggestionService : ISuggestionService
         return sellOperations;
     }
 
-    private static bool AreConditionsMet(SellOperation op, SuggestionFilter filter)
+    private static bool AreConditionsMet(SellOperation op, RecommendationFilter filter)
     {
         if (filter.MinAnnualPercent.HasValue)
         {

@@ -5,7 +5,7 @@ using Assistant.Tenant.Core.Models;
 public interface ITenantRepository
 {
     Task<Tenant> FindByNameAsync(string name);
-
+    
     Task<bool> ExistsAsync(string name);
     
     Task CreateAsync(string name);
@@ -38,5 +38,7 @@ public interface ITenantRepository
     
     Task ReplaceTagAsync(string tenant, string oldValue, string newValue);
     
+    Task<string?> FindDefaultFilterAsync(string tenant);
+
     Task UpdateDefaultFilterAsync(string tenant, string filter);
 }

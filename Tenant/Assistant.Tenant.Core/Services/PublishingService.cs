@@ -10,19 +10,19 @@ public class PublishingService : IPublishingService
 {
     private const string Positions = "Positions";
     private const string SellPuts = "Sell Puts";
-    private readonly ISuggestionService suggestionService;
+    private readonly IRecommendationService recommendationService;
     private readonly IPositionService positionService;
     private readonly IMarketDataService marketDataService;
     private readonly IWatchListService watchListService;
     private readonly IKanbanService kanbanService;
     private readonly ILogger<PublishingService> logger;
 
-    public PublishingService(ISuggestionService suggestionService, IPositionService positionService,
+    public PublishingService(IRecommendationService recommendationService, IPositionService positionService,
         IMarketDataService marketDataService, IWatchListService watchListService,
         IKanbanService kanbanService,
         ILogger<PublishingService> logger)
     {
-        this.suggestionService = suggestionService;
+        this.recommendationService = recommendationService;
         this.positionService = positionService;
         this.marketDataService = marketDataService;
         this.watchListService = watchListService;
@@ -488,7 +488,7 @@ public class PublishingService : IPublishingService
         return value.Substring(0, 2) + new string(Enumerable.Repeat('*', value.Length - 2).ToArray());
     }
 
-    public async Task PublishSellPutsAsync(SuggestionFilter filter)
+    public async Task PublishSellPutsAsync(RecommendationFilter filter)
     {
         this.logger.LogInformation("{Method}", nameof(this.PublishSellPutsAsync));
 
@@ -514,9 +514,9 @@ public class PublishingService : IPublishingService
         }
     }
 
-    private async Task PublishSellPutsAsync(Board board, SuggestionFilter filter)
+    private async Task PublishSellPutsAsync(Board board, RecommendationFilter filter)
     {
-        var operations = await this.suggestionService.SellPutsAsync(filter,
+        var operations = await this.recommendationService.SellPutsAsync(filter,
             total =>
             {
                 return new ProgressTracker(total, 1,

@@ -20,6 +20,8 @@ public class AssetPrice
     public decimal? Ask { get; set; }
 
     public decimal? Last { get; set; }
+    
+    public DateTime TimeStamp { get; set; }
 }
 
 public class OptionAssetPrice : AssetPrice

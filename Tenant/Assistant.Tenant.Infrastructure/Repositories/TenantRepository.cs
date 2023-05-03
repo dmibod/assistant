@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 public class TenantRepository : ITenantRepository
 {
@@ -224,6 +225,17 @@ public class TenantRepository : ITenantRepository
         var update = Builders<TenantEntity>.Update.Set("Positions.$.Tag", newValue);
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public async Task<string?> FindDefaultFilterAsync(string tenant)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindDefaultFilterAsync), tenant);
+        
+        return await this.collection
+            .AsQueryable()
+            .Where(item => item.Name == tenant)
+            .Select(item => item.DefaultFilter)
+            .FirstOrDefaultAsync();
     }
 
     public Task UpdateDefaultFilterAsync(string tenant, string defaultFilter)
