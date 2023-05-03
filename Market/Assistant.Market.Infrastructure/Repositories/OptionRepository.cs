@@ -52,7 +52,9 @@ public class OptionRepository : IOptionRepository
 
         var filter = Builders<OptionEntity>.Filter.Where(entity =>
             entity.Ticker == option.Ticker && entity.Expiration == option.Expiration);
-        var update = Builders<OptionEntity>.Update.Set(entity => entity.Contracts, option.Contracts);
+        var update = Builders<OptionEntity>.Update
+            .Set(entity => entity.Contracts, option.Contracts)
+            .Set(entity => entity.LastRefresh, option.LastRefresh);
 
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
@@ -122,6 +124,7 @@ internal static class OptionExtensions
         {
             Ticker = option.Ticker,
             Expiration = option.Expiration,
+            LastRefresh = option.LastRefresh,
             Contracts = option.Contracts.ToArray()
         };
     }
