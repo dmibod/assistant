@@ -17,7 +17,8 @@ public class PublishingService : IPublishingService
     private readonly IKanbanService kanbanService;
     private readonly ILogger<PublishingService> logger;
 
-    public PublishingService(IStockService stockService, IOptionService optionService, IKanbanService kanbanService, ILogger<PublishingService> logger)
+    public PublishingService(IStockService stockService, IOptionService optionService, IKanbanService kanbanService,
+        ILogger<PublishingService> logger)
     {
         this.stockService = stockService;
         this.optionService = optionService;
@@ -32,7 +33,7 @@ public class PublishingService : IPublishingService
         var stocks = await this.stockService.FindAllAsync();
         var map = stocks.ToDictionary(stock => stock.Ticker);
         var counter = 1;
-        
+
         foreach (var chunk in map.Values.OrderBy(stock => stock.Ticker).Chunk(ChunkSize))
         {
             this.Publish(counter++, chunk);
@@ -54,7 +55,7 @@ public class PublishingService : IPublishingService
         {
             board.Name = name;
             board.Description = description;
-            
+
             this.kanbanService.UpdateBoardAsync(board).GetAwaiter().GetResult();
         }
         else
@@ -75,13 +76,14 @@ public class PublishingService : IPublishingService
         {
             this.kanbanService.SetBoardLoadingStateAsync(board.Id).GetAwaiter().GetResult();
 
-            var laneMap = this.PublishTickers(board, chunk);
-            
-            this.PublishExpirations(board, chunk, laneMap);
+            var stockLanes = this.PublishTickers(board, chunk);
+
+            this.PublishExpirations(board, chunk, stockLanes);
         }
         catch (Exception e)
         {
-            this.logger.LogError(e, "Failed to publish marked data for {Board} with {Content}", board.Name, board.Description);
+            this.logger.LogError(e, "Failed to publish marked data for {Board} with {Content}", board.Name,
+                board.Description);
         }
         finally
         {
@@ -91,7 +93,7 @@ public class PublishingService : IPublishingService
 
     private IDictionary<string, Lane> PublishTickers(Board board, Stock[] chunk)
     {
-        var laneMap = this.kanbanService
+        var stockLanes = this.kanbanService
             .FindBoardLanesAsync(board.Id)
             .Result
             .ToDictionary(lane => lane.Name, lane => lane);
@@ -102,55 +104,65 @@ public class PublishingService : IPublishingService
                 ? $"${Math.Round(stock.Last, 2)}, {stock.LastRefresh.ToShortDateString()} {stock.LastRefresh.ToShortTimeString()}"
                 : "n/a";
 
-            if (!laneMap.ContainsKey(stock.Ticker))
+            if (!stockLanes.ContainsKey(stock.Ticker))
             {
                 var lane = this.kanbanService
-                    .CreateBoardLaneAsync(board.Id, new Lane{ Name = stock.Ticker, Description = description})
+                    .CreateBoardLaneAsync(board.Id, new Lane { Name = stock.Ticker, Description = description })
                     .Result;
 
-                laneMap.Add(stock.Ticker, lane);
+                stockLanes.Add(stock.Ticker, lane);
             }
             else
             {
-                laneMap[stock.Ticker].Description = description;
-                
+                stockLanes[stock.Ticker].Description = description;
+
                 this.kanbanService
-                    .UpdateBoardLaneAsync(board.Id, laneMap[stock.Ticker])
+                    .UpdateBoardLaneAsync(board.Id, stockLanes[stock.Ticker])
                     .GetAwaiter()
                     .GetResult();
             }
         }
 
-        var map = chunk.ToDictionary(i => i.Ticker);
+        var tickers = chunk.Select(i => i.Ticker).ToHashSet();
         
-        laneMap.Keys.ToList().ForEach(ticker =>
+        // remove ticker lanes, which are not included in chunk
+        foreach (var pair in stockLanes.Where(pair => !tickers.Contains(pair.Key)))
         {
-            if (!map.ContainsKey(ticker))
-            {
-                this.kanbanService.RemoveBoardLaneAsync(board.Id, laneMap[ticker].Id).GetAwaiter().GetResult();
-            }
-        });
+            this.kanbanService.RemoveBoardLaneAsync(board.Id, pair.Value.Id).GetAwaiter().GetResult();
+        }
 
-        return laneMap;
+        return stockLanes;
     }
 
-    private void PublishExpirations(Board board, Stock[] chunk, IDictionary<string, Lane> laneMap)
+    private void PublishExpirations(Board board, Stock[] chunk, IDictionary<string, Lane> stockLanes)
     {
-        foreach (var stock in chunk.Where(i => laneMap.ContainsKey(i.Ticker)))
+        foreach (var stock in chunk.Where(i => stockLanes.ContainsKey(i.Ticker)))
         {
             var optionChain = this.optionService.FindAsync(stock.Ticker).Result;
 
-            var stockLane = laneMap[stock.Ticker];
-            var expirationLanes = this.kanbanService.FindLanesAsync(board.Id, stockLane.Id).Result.ToDictionary(l => l.Name);
+            var stockLane = stockLanes[stock.Ticker];
+            
+            var expirationLanes = this.kanbanService.FindLanesAsync(board.Id, stockLane.Id)
+                .Result
+                .ToDictionary(l => l.Name);
 
             foreach (var expiration in optionChain.Expirations.Keys.OrderBy(i => i))
             {
                 this.PublishExpiration(board, stockLane, stock, optionChain, expiration, expirationLanes);
             }
+
+            var optionChainExpirations = optionChain.Expirations.Keys.ToHashSet();
+            
+            // remove expiration lanes, which are not included in chain
+            foreach (var pair in expirationLanes.Where(pair => !optionChainExpirations.Contains(pair.Key)))
+            {
+                this.kanbanService.RemoveBoardLaneAsync(board.Id, pair.Value.Id).GetAwaiter().GetResult();
+            }
         }
     }
 
-    private void PublishExpiration(Board board, Lane stockLane, Stock stock, OptionChain chain, string expiration, IDictionary<string, Lane> expirationLanes)
+    private void PublishExpiration(Board board, Lane stockLane, Stock stock, OptionChain chain, string expiration,
+        IDictionary<string, Lane> expirationLanes)
     {
         if (!expirationLanes.ContainsKey(expiration))
         {
@@ -158,7 +170,7 @@ public class PublishingService : IPublishingService
             {
                 Name = expiration
             }).Result;
-            
+
             expirationLanes.Add(expiration, lane);
         }
 
@@ -167,39 +179,39 @@ public class PublishingService : IPublishingService
         var cardsMap = this.kanbanService.FindCardsAsync(board.Id, expirationLane.Id).Result.ToDictionary(c => c.Name);
 
         var callDesc = CallsContent(chain.Expirations[expiration]);
-        
+
         const string CallsCardName = "CALLS";
 
         if (!cardsMap.ContainsKey(CallsCardName))
         {
             this.kanbanService
-                .CreateCardAsync(board.Id, expirationLane.Id, new Card{ Name = CallsCardName, Description = callDesc })
+                .CreateCardAsync(board.Id, expirationLane.Id, new Card { Name = CallsCardName, Description = callDesc })
                 .GetAwaiter().GetResult();
         }
         else
         {
             cardsMap[CallsCardName].Description = callDesc;
-            
+
             this.kanbanService
                 .UpdateCardAsync(board.Id, cardsMap[CallsCardName])
                 .GetAwaiter()
                 .GetResult();
         }
-        
+
         var putDesc = PutsContent(chain.Expirations[expiration]);
-        
+
         const string PutsCardName = "PUTS";
 
         if (!cardsMap.ContainsKey(PutsCardName))
         {
             this.kanbanService
-                .CreateCardAsync(board.Id, expirationLane.Id, new Card{ Name = PutsCardName, Description = putDesc })
+                .CreateCardAsync(board.Id, expirationLane.Id, new Card { Name = PutsCardName, Description = putDesc })
                 .GetAwaiter().GetResult();
         }
         else
         {
             cardsMap[PutsCardName].Description = putDesc;
-            
+
             this.kanbanService
                 .UpdateCardAsync(board.Id, cardsMap[PutsCardName])
                 .GetAwaiter()
@@ -251,8 +263,11 @@ public class PublishingService : IPublishingService
         {
             return string.Empty;
         }
-        
-        var body = list.Select(x => RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1), RenderUtils.PropToContent(x.Item2))).Aggregate((curr, x) => $"{curr},{x}");
+
+        var body = list
+            .Select(x =>
+                RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1), RenderUtils.PropToContent(x.Item2)))
+            .Aggregate((curr, x) => $"{curr},{x}");
 
         return $"[{body}]";
     }

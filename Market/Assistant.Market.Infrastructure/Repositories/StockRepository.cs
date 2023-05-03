@@ -15,17 +15,25 @@ public class StockRepository : IStockRepository
     private readonly IMongoCollection<StockEntity> collection;
     private readonly ILogger<StockRepository> logger;
 
-    public StockRepository(IOptions<DatabaseSettings> databaseSettings, ILogger<StockRepository> logger)
+    public StockRepository(IOptions<DatabaseSettings> databaseSettings, ILogger<StockRepository> logger) :
+        this(databaseSettings.Value, logger)
     {
-        var mongoClient = new MongoClient(
-            databaseSettings.Value.ConnectionString);
+    }
+    
+    public StockRepository(DatabaseSettings databaseSettings, ILogger<StockRepository> logger) :
+        this(databaseSettings.ConnectionString,
+            databaseSettings.DatabaseName,
+            databaseSettings.StockCollectionName,
+            logger)
+    {
+    }
 
-        var mongoDatabase = mongoClient.GetDatabase(
-            databaseSettings.Value.DatabaseName);
-
-        this.collection = mongoDatabase.GetCollection<StockEntity>(
-            databaseSettings.Value.StockCollectionName);
-
+    public StockRepository(string connectionString, string databaseName, string collectionName,
+        ILogger<StockRepository> logger)
+    {
+        var mongoClient = new MongoClient(connectionString);
+        var mongoDatabase = mongoClient.GetDatabase(databaseName);
+        this.collection = mongoDatabase.GetCollection<StockEntity>(collectionName);
         this.logger = logger;
     }
 

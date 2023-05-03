@@ -32,7 +32,6 @@ public class RefreshService : IRefreshService
             var expirations = await this.optionService.FindExpirationsAsync(ticker);
                 
             var outdatedExpirations = expirations.Where(expiration => OptionUtils.ParseExpiration(expiration) < threshold).ToHashSet();
-
             if (outdatedExpirations.Count > 0)
             {
                 outdated.Add(ticker, outdatedExpirations);
