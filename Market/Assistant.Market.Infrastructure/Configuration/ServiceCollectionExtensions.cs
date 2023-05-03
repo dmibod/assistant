@@ -50,8 +50,8 @@ public static class ServiceCollectionExtensions
         
         services.AddIdentityProvider();
         
-        services.AddHostedService<RefreshDataTimerService>();
-        services.AddHostedService<RefreshDataWorkerService>();
+        services.AddHostedService<RefreshStockTimerService>();
+        services.AddHostedService<RefreshStockWorkerService>();
         services.AddHostedService<CleanDataTimerService>();
         services.AddHostedService<CleanDataWorkerService>();
         services.AddHostedService<MarketDataTimerService>();

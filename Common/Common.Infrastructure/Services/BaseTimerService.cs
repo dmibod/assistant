@@ -14,7 +14,7 @@ public abstract class BaseTimerService : BaseHostedService, IDisposable
 
     protected override Task OnStartAsync()
     {
-        this.timer = new Timer(this.DoWork, null, this.initialDelay, this.interval);
+        this.timer = new Timer(this.TryDoWork, null, this.initialDelay, this.interval);
 
         return Task.CompletedTask;
     }
@@ -24,6 +24,20 @@ public abstract class BaseTimerService : BaseHostedService, IDisposable
         this.timer?.Change(Timeout.Infinite, 0);
         
         return Task.CompletedTask;
+    }
+
+    private void TryDoWork(object? state)
+    {
+        try
+        {
+            this.LogMessage($"{this.ServiceName} is working...");
+
+            this.DoWork(state);
+        }
+        catch (Exception e)
+        {
+            this.LogError(e.Message);
+        }
     }
 
     protected abstract void DoWork(object? state);

@@ -47,12 +47,12 @@ public class StockService : IStockService
         await this.repository.UpdateAsync(stock);
     }
 
-    public Task<Stock?> FindOldestAsync(TimeSpan olderThan)
+    public Task<string?> FindOutdatedTickerAsync(TimeSpan olderThan)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOldestAsync),
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOutdatedTickerAsync),
             olderThan.ToString());
 
-        return this.repository.FindOldestAsync(olderThan);
+        return this.repository.FindOutdatedTickerAsync(olderThan);
     }
 
     public Task<IEnumerable<Stock>> FindAllAsync()

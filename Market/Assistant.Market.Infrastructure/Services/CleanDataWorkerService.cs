@@ -22,7 +22,7 @@ public class CleanDataWorkerService : BaseWorkerService
 
     protected override void DoWork(object? sender, MsgHandlerEventArgs args)
     {
-        this.refreshService.CleanAsync(DateTime.UtcNow);
+        this.refreshService.CleanAsync(DateTime.UtcNow).GetAwaiter().GetResult();
     }
 
     protected override void LogMessage(string message)

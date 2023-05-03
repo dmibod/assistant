@@ -19,17 +19,6 @@ public class RefreshService : IRefreshService
         this.logger = logger;
     }
 
-    public async Task RefreshAsync(TimeSpan lag)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RefreshAsync), lag.ToString());
-
-        var stock = await this.stockService.FindOldestAsync(lag);
-        if (stock != null)
-        {
-            await this.UpdateStockAsync(stock);
-        }
-    }
-
     public async Task CleanAsync(DateTime now)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CleanAsync), now.ToShortDateString());

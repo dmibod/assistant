@@ -22,9 +22,7 @@ public class MarketDataTimerService : BaseTimerService
 
     protected override void DoWork(object? state)
     {
-        this.LogMessage($"{this.ServiceName} is working...");
-
-        this.busService.PublishAsync(this.publishMarketDataTopic);
+        this.busService.PublishAsync(this.publishMarketDataTopic).GetAwaiter().GetResult();
     }
 
     protected override void LogMessage(string message)

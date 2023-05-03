@@ -22,9 +22,7 @@ public class CleanDataTimerService : BaseTimerService
 
     protected override void DoWork(object? state)
     {
-        this.LogMessage($"{this.ServiceName} is working...");
-
-        this.busService.PublishAsync(this.cleanDataRequestTopic);
+        this.busService.PublishAsync(this.cleanDataRequestTopic).GetAwaiter().GetResult();
     }
 
     protected override void LogMessage(string message)

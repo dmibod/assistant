@@ -17,22 +17,22 @@ public class MarketController : ControllerBase
 {
     private readonly IStockService stockService;
     private readonly IOptionService optionService;
-    private readonly IRefreshService refreshService;
     private readonly IBusService busService;
     private readonly IIdentityProvider identityProvider;
     private readonly string publishMarketDataTopic;
     private readonly string addStockRequestTopic;
+    private readonly string refreshStockRequestTopic;
 
-    public MarketController(IStockService stockService, IOptionService optionService, IRefreshService refreshService, IBusService busService,
+    public MarketController(IStockService stockService, IOptionService optionService, IBusService busService,
         IIdentityProvider identityProvider, IOptions<NatsSettings> options)
     {
         this.stockService = stockService;
         this.optionService = optionService;
-        this.refreshService = refreshService;
         this.busService = busService;
         this.identityProvider = identityProvider;
         this.publishMarketDataTopic = options.Value.PublishMarketDataTopic;
         this.addStockRequestTopic = options.Value.AddStockRequestTopic;
+        this.refreshStockRequestTopic = options.Value.RefreshStockRequestTopic;
     }
 
     /// <summary>
@@ -86,39 +86,28 @@ public class MarketController : ControllerBase
     }
 
     /// <summary>
-    /// Adds stock to the system immediately
+    /// Adds stock to the system
     /// </summary>
     [HttpPost("Stocks/{ticker}"), Authorize("publishing")]
-    public Task<Stock> AddStockAsync(string ticker)
-    {
-        return this.stockService.GetOrCreateAsync(ticker);
-    }
-
-    /// <summary>
-    /// Update stock data immediately
-    /// </summary>
-    [HttpPut("Stocks/{ticker}"), Authorize("publishing")]
-    public Task RefreshStockAsync(string ticker)
-    {
-        return this.refreshService.UpdateStockAsync(ticker);
-    }
-
-    /// <summary>
-    /// Enqueues add stock request
-    /// </summary>
-    /// <param name="ticker"></param>
-    /// <returns></returns>
-    [HttpPost("Stocks/{ticker}/Queue"), Authorize("publishing")]
-    public Task QueueAddStockAsync(string ticker)
+    public Task AddStockAsync(string ticker)
     {
         return this.busService.PublishAsync(this.addStockRequestTopic, ticker);
     }
 
     /// <summary>
-    /// Enqueues publish market data request
+    /// Refresh stock data
     /// </summary>
-    [HttpPost("Publish/Queue"), Authorize("publishing")]
-    public Task QueuePublishAsync()
+    [HttpPut("Stocks/{ticker}"), Authorize("publishing")]
+    public Task RefreshStockAsync(string ticker)
+    {
+        return this.busService.PublishAsync(this.refreshStockRequestTopic, ticker);
+    }
+
+    /// <summary>
+    /// Publish market data
+    /// </summary>
+    [HttpPost("Publish"), Authorize("publishing")]
+    public Task PublishAsync()
     {
         return this.busService.PublishAsync(this.publishMarketDataTopic);
     }

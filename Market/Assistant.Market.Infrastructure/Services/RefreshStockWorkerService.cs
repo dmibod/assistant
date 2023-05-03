@@ -1,5 +1,6 @@
 ﻿namespace Assistant.Market.Infrastructure.Services;
 
+using System.Text;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
 using Common.Infrastructure.Services;
@@ -7,14 +8,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NATS.Client;
 
-public class RefreshDataWorkerService : BaseWorkerService
+public class RefreshStockWorkerService : BaseWorkerService
 {
-    private readonly TimeSpan lag = TimeSpan.FromHours(4);
     private readonly IRefreshService refreshService;
-    private readonly ILogger<RefreshDataWorkerService> logger;
+    private readonly ILogger<RefreshStockWorkerService> logger;
 
-    public RefreshDataWorkerService(IRefreshService refreshService, IConnection connection,
-        IOptions<NatsSettings> options, ILogger<RefreshDataWorkerService> logger)
+    public RefreshStockWorkerService(IRefreshService refreshService, IConnection connection,
+        IOptions<NatsSettings> options, ILogger<RefreshStockWorkerService> logger)
         : base(connection, options.Value.RefreshStockRequestTopic)
     {
         this.refreshService = refreshService;
@@ -23,7 +23,9 @@ public class RefreshDataWorkerService : BaseWorkerService
 
     protected override void DoWork(object? sender, MsgHandlerEventArgs args)
     {
-        this.refreshService.RefreshAsync(this.lag);
+        var ticker = Encoding.UTF8.GetString(args.Message.Data);
+        
+        this.refreshService.UpdateStockAsync(ticker);
     }
 
     protected override void LogMessage(string message)

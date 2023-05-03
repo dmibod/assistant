@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 public class StockRepository : IStockRepository
 {
@@ -66,19 +67,19 @@ public class StockRepository : IStockRepository
         return this.collection.UpdateOneAsync(filter, update);
     }
 
-    public Task<Stock?> FindOldestAsync(TimeSpan olderThan)
+    public async Task<string?> FindOutdatedTickerAsync(TimeSpan olderThan)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOldestAsync),
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOutdatedTickerAsync),
             olderThan.ToString());
 
-        var outdated = DateTime.UtcNow - olderThan;
+        var threshold = DateTime.UtcNow - olderThan;
 
-        var entity = this.collection
+        return await this.collection
             .AsQueryable()
+            .Where(item => item.LastRefresh < threshold)
             .OrderBy(item => item.LastRefresh)
-            .FirstOrDefault(item => item.LastRefresh < outdated);
-
-        return Task.FromResult(entity as Stock);
+            .Select(item => item.Ticker)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<IEnumerable<Stock>> FindAllAsync()
@@ -90,11 +91,13 @@ public class StockRepository : IStockRepository
         return list;
     }
 
-    public Task<IEnumerable<string>> FindTickersAsync()
+    public async Task<IEnumerable<string>> FindTickersAsync()
     {
         this.logger.LogInformation("{Method}", nameof(this.FindTickersAsync));
 
-        return Task.FromResult(this.collection.AsQueryable().Select(doc => doc.Ticker).AsEnumerable());
+        var list = await this.collection.AsQueryable().Select(doc => doc.Ticker).ToListAsync();
+
+        return list;
     }
 }
 
