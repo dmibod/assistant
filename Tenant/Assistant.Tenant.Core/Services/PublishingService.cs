@@ -9,7 +9,8 @@ using Microsoft.Extensions.Logging;
 public class PublishingService : IPublishingService
 {
     private const string Positions = "Positions";
-    private const string SellPuts = "Sell Puts";
+    private const string Recommendations = "Recommendations";
+    private const string SellPuts = "sell puts";
     private readonly IRecommendationService recommendationService;
     private readonly IPositionService positionService;
     private readonly IMarketDataService marketDataService;
@@ -496,7 +497,7 @@ public class PublishingService : IPublishingService
         
         var board = await this.kanbanService.CreateBoardAsync(new Board
         {
-            Name = $"{SellPuts} {now.ToShortDateString()} {now.ToShortTimeString()}", 
+            Name = $"{Recommendations} ({SellPuts}) {now.ToShortDateString()} {now.ToShortTimeString()}", 
             Description = "Calculation..."
         });
 
