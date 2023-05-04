@@ -61,6 +61,13 @@ public class ApiClient : IDisposable
         return this.CreateBoardAsync(board);
     }
 
+    public async Task RemoveBoardAsync(string id)
+    {
+        using var response = await this.httpClient.DeleteAsync($"/v1/api/board/{id}");
+
+        response.EnsureSuccessStatusCode();
+    }
+
     public Task SetBoardLoadingStateAsync(Board board)
     {
         var command = CommandTypes.StateBoardCommand

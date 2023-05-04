@@ -42,8 +42,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRecommendationService, RecommendationService>();
         services.AddSingleton<IMarketDataService, MarketDataService>();
         services.AddSingleton<ITenantRepository, TenantRepository>();
+        services.AddSingleton<INotificationService, NotificationService>();
         
         services.AddHostedService<AddPositionWorkerService>();
+        services.AddHostedService<RefreshPositionsWorkerService>();
         
         return services;
     }

@@ -10,13 +10,15 @@ public class PositionService : IPositionService
     private readonly ITenantService tenantService;
     private readonly ITenantRepository repository;
     private readonly IMarketDataService marketDataService;
+    private readonly INotificationService notificationService;
     private readonly ILogger<PositionService> logger;
 
-    public PositionService(ITenantService tenantService, ITenantRepository repository, IMarketDataService marketDataService, ILogger<PositionService> logger)
+    public PositionService(ITenantService tenantService, ITenantRepository repository, IMarketDataService marketDataService, INotificationService notificationService, ILogger<PositionService> logger)
     {
         this.tenantService = tenantService;
         this.repository = repository;
         this.marketDataService = marketDataService;
+        this.notificationService = notificationService;
         this.logger = logger;
     }
 
@@ -42,6 +44,8 @@ public class PositionService : IPositionService
             await this.marketDataService.EnsureStockAsync(position.Ticker);
         }
 
+        await this.RefreshNotificationAsync();
+
         return position;
     }
 
@@ -56,6 +60,8 @@ public class PositionService : IPositionService
         {
             await this.repository.UpdatePositionAsync(tenant, position);
             
+            await this.RefreshNotificationAsync();
+            
             return existing;
         }
 
@@ -65,6 +71,8 @@ public class PositionService : IPositionService
         {
             await this.marketDataService.EnsureStockAsync(position.Ticker);
         }
+        
+        await this.RefreshNotificationAsync();
 
         return position;
     }
@@ -76,6 +84,8 @@ public class PositionService : IPositionService
         var tenant = await this.tenantService.EnsureExistsAsync();
         
         await this.repository.RemovePositionAsync(tenant, account, ticker);
+        
+        await this.RefreshNotificationAsync();
     }
 
     public async Task ResetTagAsync()
@@ -85,6 +95,8 @@ public class PositionService : IPositionService
         var tenant = await this.tenantService.EnsureExistsAsync();
         
         await this.repository.ResetTagAsync(tenant);
+        
+        await this.RefreshNotificationAsync();
     }
 
     public async Task ReplaceTagAsync(string oldValue, string newValue)
@@ -94,6 +106,8 @@ public class PositionService : IPositionService
         var tenant = await this.tenantService.EnsureExistsAsync();
         
         await this.repository.ReplaceTagAsync(tenant, oldValue, newValue);
+        
+        await this.RefreshNotificationAsync();
     }
 
     public async Task UpdateTagAsync(string account, string ticker, string tag)
@@ -103,6 +117,8 @@ public class PositionService : IPositionService
         var tenant = await this.tenantService.EnsureExistsAsync();
         
         await this.repository.TagPositionAsync(tenant, account, ticker, tag);
+
+        await this.RefreshNotificationAsync();
     }
 
     public async Task AutoTagOptionsAsync()
@@ -117,12 +133,26 @@ public class PositionService : IPositionService
             .Where(p => string.IsNullOrEmpty(p.Tag) && p.Type == AssetType.Option)
             .GroupBy(p => $"{p.Account}-{OptionUtils.GetStock(p.Ticker)}-{OptionUtils.GetExpiration(p.Ticker)}");
 
+        var publishRefreshNotification = false;
+        
         foreach (var group in groups.Where(g => g.Count() > 1))
         {
             foreach (var position in group)
             {
                 await this.repository.TagPositionAsync(tenant, position.Account, position.Ticker, group.Key);
+
+                publishRefreshNotification = true;
             }
         }
+
+        if (publishRefreshNotification)
+        {
+            await this.RefreshNotificationAsync();
+        }
+    }
+
+    private Task RefreshNotificationAsync()
+    {
+        return this.notificationService.NotifyRefreshPositionsAsync();
     }
 }

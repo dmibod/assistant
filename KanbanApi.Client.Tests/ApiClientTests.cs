@@ -42,4 +42,19 @@ public class ApiClientTests
         // Assert
         Assert.IsNotNull(board);
     }
+    
+    [TestMethod]
+    public async Task RemoveBoardsAsync_ReturnsExpectedResult()
+    {
+        // Arrange
+        var name = Guid.NewGuid().ToString();
+        var board = await client.CreateBoardAsync(Owner, name, string.Empty, LayoutTypes.V);
+        
+        // Act
+        await client.RemoveBoardAsync(board.Id);
+
+        // Assert
+        var boards = await client.GetBoardsAsync(Owner);
+        Assert.IsNull(boards.FirstOrDefault(board => board.Name == name));
+    }
 }
