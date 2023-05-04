@@ -6,6 +6,7 @@ using Assistant.Market.Infrastructure.Repositories;
 using Assistant.Market.Infrastructure.Services;
 using Common.Core.Services;
 using Common.Infrastructure.Configuration;
+using Common.Infrastructure.Services;
 using KanbanApi.Client.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +26,7 @@ public static class ServiceCollectionExtensions
         });
         services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
         services.AddSingleton<IBusService, BusService>();
+        
         services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
 
         var polygonSettings = configuration.GetSection("PolygonApiSettings").Get<PolygonApiSettings>();
@@ -33,23 +35,25 @@ public static class ServiceCollectionExtensions
             client.BaseAddress = new Uri(polygonSettings.ApiUrl);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {polygonSettings.ApiKey}");
         });
+        
         var kanbanSettings = configuration.GetSection("KanbanApiSettings").Get<KanbanApiSettings>();
         services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>
         {
             client.BaseAddress = new Uri(kanbanSettings.ApiUrl);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");
         });
-        services.AddSingleton<IKanbanService, KanbanService>();
-        services.AddSingleton<IMarketDataService, MarketDataService>();
-        services.AddSingleton<IPublishingService, PublishingService>();
-        services.AddSingleton<IRefreshService, RefreshService>();
-        services.AddSingleton<IStockService, StockService>();
-        services.AddSingleton<IStockRepository, StockRepository>();
-        services.AddSingleton<IOptionService, OptionService>();
-        services.AddSingleton<IOptionRepository, OptionRepository>();
-        services.AddSingleton<IOptionChangeRepository, OptionChangeRepository>();
-        
+
         services.AddIdentityProvider();
+
+        services.AddScoped<IKanbanService, KanbanService>();
+        services.AddScoped<IMarketDataService, MarketDataService>();
+        services.AddScoped<IPublishingService, PublishingService>();
+        services.AddScoped<IRefreshService, RefreshService>();
+        services.AddScoped<IStockService, StockService>();
+        services.AddScoped<IStockRepository, StockRepository>();
+        services.AddScoped<IOptionService, OptionService>();
+        services.AddScoped<IOptionRepository, OptionRepository>();
+        services.AddScoped<IOptionChangeRepository, OptionChangeRepository>();
         
         services.AddHostedService<RefreshStockTimerService>();
         services.AddHostedService<RefreshStockWorkerService>();

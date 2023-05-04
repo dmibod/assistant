@@ -6,27 +6,14 @@ using Microsoft.AspNetCore.Http;
 
 public class IdentityProvider : IIdentityProvider
 {
-    private static readonly IIdentity DefaultIdentity = new Identity
-    {
-        Name = "anonymous",
-        AuthenticationType = string.Empty,
-        IsAuthenticated = false
-    };
-    
-    private readonly IHttpContextAccessor accessor;
+    private readonly IHttpContextAccessor httpContextAccessor;
+    private readonly IIdentityAccessor identityAccessor;
 
-    public IdentityProvider(IHttpContextAccessor accessor)
+    public IdentityProvider(IHttpContextAccessor httpContextAccessor, IIdentityAccessor identityAccessor)
     {
-        this.accessor = accessor;
+        this.httpContextAccessor = httpContextAccessor;
+        this.identityAccessor = identityAccessor;
     }
 
-    public IIdentity Identity => this.accessor.HttpContext?.User?.Identity ?? DefaultIdentity;
+    public IIdentity Identity => this.httpContextAccessor.HttpContext?.User?.Identity ?? this.identityAccessor.Identity;
 }
-
-internal class Identity : IIdentity
-{
-    public string? AuthenticationType { get; set; }
-    public bool IsAuthenticated { get; set; }
-    public string? Name { get; set; }
-}
-

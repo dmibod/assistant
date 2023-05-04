@@ -4,28 +4,34 @@ using System.Text;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
 using Common.Infrastructure.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NATS.Client;
 
 public class AddStockWorkerService : BaseWorkerService
 {
-    private readonly IStockService stockService;
+    private readonly IServiceProvider serviceProvider;
     private readonly ILogger<AddStockWorkerService> logger;
 
-    public AddStockWorkerService(IStockService stockService, IConnection connection,
+    public AddStockWorkerService(IServiceProvider serviceProvider, IConnection connection,
         IOptions<NatsSettings> options, ILogger<AddStockWorkerService> logger)
-        : base(connection, options.Value.AddStockRequestTopic)
+        : base(options.Value.AddStockRequestTopic, connection)
     {
-        this.stockService = stockService;
+        this.serviceProvider = serviceProvider;
         this.logger = logger;
     }
 
     protected override void DoWork(object? sender, MsgHandlerEventArgs args)
     {
         var ticker = Encoding.UTF8.GetString(args.Message.Data);
-        
-        this.stockService.GetOrCreateAsync(ticker).GetAwaiter().GetResult();
+
+        this.serviceProvider.Execute("system", scope =>
+        {
+            var service = scope.ServiceProvider.GetRequiredService<IStockService>();
+            
+            service.GetOrCreateAsync(ticker).GetAwaiter().GetResult();
+        });
     }
 
     protected override void LogMessage(string message)

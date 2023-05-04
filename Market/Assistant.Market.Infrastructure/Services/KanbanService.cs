@@ -9,7 +9,7 @@ using Lane = Assistant.Market.Core.Services.Lane;
 
 public class KanbanService : IKanbanService
 {
-    public const string KanbanOwner = "test";
+    public const string KanbanOwner = "system";
 
     private readonly ApiClient apiClient;
     private readonly ILogger<KanbanService> logger;

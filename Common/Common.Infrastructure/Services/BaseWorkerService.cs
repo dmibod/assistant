@@ -2,29 +2,31 @@
 
 using NATS.Client;
 
-public abstract class BaseWorkerService : BaseHostedService, IDisposable
+public abstract class BaseWorkerService : BaseHostedService
 {
     private readonly IConnection connection;
     private readonly string topic;
     private IAsyncSubscription subscription;
 
-    protected BaseWorkerService(IConnection connection, string topic)
+    protected BaseWorkerService(string topic, IConnection connection)
     {
         this.connection = connection;
         this.topic = topic;
     }
 
-    protected override Task OnStartAsync()
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         this.subscription = this.connection.SubscribeAsync(this.topic, this.TryDoWork);
         
         return Task.CompletedTask;
     }
 
-    protected override async Task OnStopAsync()
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
         this.subscription.Unsubscribe();
         await this.subscription.DrainAsync();
+
+        await base.StopAsync(cancellationToken);
     }
 
     private void TryDoWork(object? sender, MsgHandlerEventArgs args)
@@ -42,8 +44,4 @@ public abstract class BaseWorkerService : BaseHostedService, IDisposable
     }
 
     protected abstract void DoWork(object? sender, MsgHandlerEventArgs args);
-
-    public virtual void Dispose()
-    {
-    }
 }

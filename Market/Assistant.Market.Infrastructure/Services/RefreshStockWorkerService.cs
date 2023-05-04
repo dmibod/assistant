@@ -4,28 +4,37 @@ using System.Text;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
 using Common.Infrastructure.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NATS.Client;
 
 public class RefreshStockWorkerService : BaseWorkerService
 {
-    private readonly IRefreshService refreshService;
+    private readonly IServiceProvider serviceProvider;
     private readonly ILogger<RefreshStockWorkerService> logger;
 
-    public RefreshStockWorkerService(IRefreshService refreshService, IConnection connection,
-        IOptions<NatsSettings> options, ILogger<RefreshStockWorkerService> logger)
-        : base(connection, options.Value.RefreshStockRequestTopic)
+    public RefreshStockWorkerService(
+        IServiceProvider serviceProvider,
+        IConnection connection,
+        IOptions<NatsSettings> options,
+        ILogger<RefreshStockWorkerService> logger)
+        : base(options.Value.RefreshStockRequestTopic, connection)
     {
-        this.refreshService = refreshService;
+        this.serviceProvider = serviceProvider;
         this.logger = logger;
     }
 
     protected override void DoWork(object? sender, MsgHandlerEventArgs args)
     {
         var ticker = Encoding.UTF8.GetString(args.Message.Data);
-        
-        this.refreshService.UpdateStockAsync(ticker);
+
+        this.serviceProvider.Execute("system", scope =>
+        {
+            var service = scope.ServiceProvider.GetRequiredService<IRefreshService>();
+
+            service.UpdateStockAsync(ticker);
+        });
     }
 
     protected override void LogMessage(string message)

@@ -1,4 +1,4 @@
-﻿namespace Assistant.Market.Infrastructure.Services;
+﻿namespace Common.Infrastructure.Services;
 
 using System.Text;
 using System.Text.Json;
