@@ -12,18 +12,18 @@ public abstract class BaseTimerService : BaseHostedService, IDisposable
         this.initialDelay = initialDelay;
     }
 
-    protected override Task OnStartAsync()
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         this.timer = new Timer(this.TryDoWork, null, this.initialDelay, this.interval);
 
         return Task.CompletedTask;
     }
 
-    protected override Task OnStopAsync()
+    public override Task StopAsync(CancellationToken cancellationToken)
     {
         this.timer?.Change(Timeout.Infinite, 0);
-        
-        return Task.CompletedTask;
+
+        return base.StopAsync(cancellationToken);
     }
 
     private void TryDoWork(object? state)
@@ -49,8 +49,10 @@ public abstract class BaseTimerService : BaseHostedService, IDisposable
         return from + random;
     }
 
-    public virtual void Dispose()
+    public override void Dispose()
     {
         this.timer?.Dispose();
+        
+        base.Dispose();
     }
 }

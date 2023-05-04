@@ -3,26 +3,32 @@
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
 using Common.Infrastructure.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NATS.Client;
 
 public class CleanDataWorkerService : BaseWorkerService
 {
-    private readonly IRefreshService refreshService;
+    private readonly IServiceProvider serviceProvider;
     private readonly ILogger<CleanDataWorkerService> logger;
 
-    public CleanDataWorkerService(IRefreshService refreshService, IConnection connection,
+    public CleanDataWorkerService(IServiceProvider serviceProvider, IConnection connection,
         IOptions<NatsSettings> options, ILogger<CleanDataWorkerService> logger)
-        : base(connection, options.Value.CleanDataRequestTopic)
+        : base(options.Value.CleanDataRequestTopic, connection)
     {
-        this.refreshService = refreshService;
+        this.serviceProvider = serviceProvider;
         this.logger = logger;
     }
 
     protected override void DoWork(object? sender, MsgHandlerEventArgs args)
     {
-        this.refreshService.CleanAsync(DateTime.UtcNow).GetAwaiter().GetResult();
+        this.serviceProvider.Execute("system", scope =>
+        {
+            var service = scope.ServiceProvider.GetRequiredService<IRefreshService>();
+            
+            service.CleanAsync(DateTime.UtcNow).GetAwaiter().GetResult();
+        });
     }
 
     protected override void LogMessage(string message)

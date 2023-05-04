@@ -12,6 +12,7 @@ out/
 
 # App settings
 appsettings.Development.json
+appsettings.Test.json
 
 # Env vars
 .env

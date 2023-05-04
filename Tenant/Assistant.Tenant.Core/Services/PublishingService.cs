@@ -35,9 +35,7 @@ public class PublishingService : IPublishingService
     {
         this.logger.LogInformation("{Method}", nameof(this.PublishPositionsAsync));
 
-        var now = DateTime.UtcNow;
-        var board = await this.kanbanService.CreateBoardAsync(new Board
-            { Name = $"{Positions} {now.ToShortDateString()} {now.ToShortTimeString()}" });
+        var board = await this.GetPositionsBoardAsync();
 
         try
         {
@@ -51,6 +49,24 @@ public class PublishingService : IPublishingService
         {
             await this.kanbanService.ResetBoardStateAsync(board.Id);
         }
+    }
+
+    private async Task<Board> GetPositionsBoardAsync()
+    {
+        var boards = await this.kanbanService.FindBoardsAsync();
+        
+        var board = boards.FirstOrDefault(board => board.Name.StartsWith(Positions));
+
+        if (board != null)
+        {
+            await this.kanbanService.RemoveBoardAsync(board.Id);
+        }
+        
+        var now = DateTime.UtcNow;
+        return await this.kanbanService.CreateBoardAsync(new Board
+        {
+            Name = $"{Positions} {now.ToShortDateString()} {now.ToShortTimeString()}"
+        });
     }
 
     private async Task PublishPositionsAsync(Board board)

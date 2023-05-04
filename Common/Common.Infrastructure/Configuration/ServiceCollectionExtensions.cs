@@ -9,7 +9,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddIdentityProvider(this IServiceCollection services)
     {
         services.AddHttpContextAccessor();
-        services.AddSingleton<IIdentityProvider, IdentityProvider>();
+        services.AddScoped<IdentityManager>();
+        services.AddScoped<IIdentityAccessor>(sp => sp.GetRequiredService<IdentityManager>());
+        services.AddScoped<IIdentityHolder>(sp => sp.GetRequiredService<IdentityManager>());
+        services.AddScoped<IIdentityProvider, IdentityProvider>();
 
         return services;
     }

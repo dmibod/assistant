@@ -2,7 +2,7 @@
 
 using Microsoft.Extensions.Hosting;
 
-public abstract class BaseHostedService : IHostedService
+public abstract class BaseHostedService : BackgroundService
 {
     private readonly Lazy<string> nameOf;
 
@@ -17,25 +17,21 @@ public abstract class BaseHostedService : IHostedService
     
     protected abstract void LogError(string error);
     
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public override async Task StartAsync(CancellationToken cancellationToken)
     {
         this.LogMessage($"{this.ServiceName} is starting...");
 
-        await this.OnStartAsync();
+        await base.StartAsync(cancellationToken);
 
         this.LogMessage($"{this.ServiceName} has started.");
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
         this.LogMessage($"{this.ServiceName} is stopping...");
 
-        await this.OnStopAsync();
+        await base.StopAsync(cancellationToken);
 
         this.LogMessage($"{this.ServiceName} has stopped.");
     }
-
-    protected abstract Task OnStartAsync();
-    
-    protected abstract Task OnStopAsync();
 }

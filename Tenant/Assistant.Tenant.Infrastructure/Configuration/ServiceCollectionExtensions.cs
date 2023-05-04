@@ -1,12 +1,12 @@
 ﻿namespace Assistant.Tenant.Infrastructure.Configuration;
 
-using Assistant.Market.Infrastructure.Services;
 using Assistant.Tenant.Core.Repositories;
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Repositories;
 using Assistant.Tenant.Infrastructure.Services;
 using Common.Core.Services;
 using Common.Infrastructure.Configuration;
+using Common.Infrastructure.Services;
 using KanbanApi.Client.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,15 +34,15 @@ public static class ServiceCollectionExtensions
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");
         });
         services.AddIdentityProvider();
-        services.AddSingleton<IKanbanService, KanbanService>();
-        services.AddSingleton<ITenantService, TenantService>();
-        services.AddSingleton<IPositionService, PositionService>();
-        services.AddSingleton<IWatchListService, WatchListService>();
-        services.AddSingleton<IPublishingService, PublishingService>();
-        services.AddSingleton<IRecommendationService, RecommendationService>();
-        services.AddSingleton<IMarketDataService, MarketDataService>();
-        services.AddSingleton<ITenantRepository, TenantRepository>();
-        services.AddSingleton<INotificationService, NotificationService>();
+        services.AddScoped<IKanbanService, KanbanService>();
+        services.AddScoped<ITenantService, TenantService>();
+        services.AddScoped<IPositionService, PositionService>();
+        services.AddScoped<IWatchListService, WatchListService>();
+        services.AddScoped<IPublishingService, PublishingService>();
+        services.AddScoped<IRecommendationService, RecommendationService>();
+        services.AddScoped<IMarketDataService, MarketDataService>();
+        services.AddScoped<ITenantRepository, TenantRepository>();
+        services.AddScoped<INotificationService, NotificationService>();
         
         services.AddHostedService<AddPositionWorkerService>();
         services.AddHostedService<RefreshPositionsWorkerService>();

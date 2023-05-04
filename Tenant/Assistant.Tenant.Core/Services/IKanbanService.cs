@@ -8,6 +8,8 @@ public interface IKanbanService
 
     Task UpdateBoardAsync(Board board);
 
+    Task RemoveBoardAsync(string boardId);
+
     Task SetBoardLoadingStateAsync(string boardId);
 
     Task SetBoardProgressStateAsync(string boardId, int progress);

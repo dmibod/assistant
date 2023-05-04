@@ -73,6 +73,13 @@ public class KanbanService : IKanbanService
         await this.apiClient.DescribeBoardAsync(kanbanBoard, board.Description);
     }
 
+    public Task RemoveBoardAsync(string boardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveBoardAsync), boardId);
+
+        return this.apiClient.RemoveBoardAsync(boardId);
+    }
+
     public Task SetBoardLoadingStateAsync(string boardId)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SetBoardLoadingStateAsync),

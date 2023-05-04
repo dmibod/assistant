@@ -6,20 +6,24 @@ using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Configuration;
 using Common.Infrastructure.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NATS.Client;
 
 public class AddPositionWorkerService : BaseWorkerService
 {
-    private readonly IPositionService positionService;
+    private readonly IServiceProvider serviceProvider;
     private readonly ILogger<AddPositionWorkerService> logger;
 
-    public AddPositionWorkerService(IPositionService positionService, IConnection connection,
-        IOptions<NatsSettings> options, ILogger<AddPositionWorkerService> logger)
-        : base(connection, options.Value.AddTenantPositionTopic)
+    public AddPositionWorkerService(
+        IServiceProvider serviceProvider, 
+        IOptions<NatsSettings> options, 
+        IConnection connection, 
+        ILogger<AddPositionWorkerService> logger)
+        : base(options.Value.AddTenantPositionTopic, connection)
     {
-        this.positionService = positionService;
+        this.serviceProvider = serviceProvider;
         this.logger = logger;
     }
 
@@ -28,7 +32,12 @@ public class AddPositionWorkerService : BaseWorkerService
         var json = Encoding.UTF8.GetString(args.Message.Data);
         var data = JsonSerializer.Deserialize<TenantPosition>(json);
 
-        this.positionService.CreateOrUpdateAsync(data.Tenant, data.AsPosition()).GetAwaiter().GetResult();
+        this.serviceProvider.Execute(data.Tenant, scope =>
+        {
+            var service = scope.ServiceProvider.GetRequiredService<IPositionService>();
+            
+            service.CreateOrUpdateAsync(data.AsPosition()).GetAwaiter().GetResult();    
+        });
     }
 
     protected override void LogMessage(string message)
