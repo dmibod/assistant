@@ -49,7 +49,7 @@ public class OptionService : IOptionService
 
     public async Task UpdateAsync(OptionChain options)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateAsync), options.Ticker);
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateAsync), $"{options.Ticker}-{options.Expirations.Count}");
 
         foreach (var expiration in options.Expirations.Keys)
         {

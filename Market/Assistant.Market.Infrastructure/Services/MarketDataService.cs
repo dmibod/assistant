@@ -23,7 +23,7 @@ public class MarketDataService : IMarketDataService
     public async Task<AssetPrice?> GetStockPriceAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.GetStockPriceAsync), ticker);
-        
+
         var response = await this.ApiClient.PrevCloseAsync(new PrevCloseRequest
         {
             Ticker = ticker
@@ -32,7 +32,7 @@ public class MarketDataService : IMarketDataService
         return response.AsAssetPrice();
     }
 
-    public Task<OptionChain?> GetOptionChainAsync(string ticker)
+    public async Task<OptionChain?> GetOptionChainAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.GetOptionChainAsync), ticker);
 
@@ -42,12 +42,7 @@ public class MarketDataService : IMarketDataService
             Expirations = new Dictionary<string, OptionExpiration>()
         };
 
-        var optionChain = this.ApiClient
-            .OptionChainStream(new OptionChainRequest { Ticker = ticker })
-            .SelectMany(item => item.Results)
-            .Where(item => item.Day.Close > decimal.Zero)
-            .GroupBy(item => item.Details.ExpirationDate)
-            .ToDictionary(item => item.Key.Replace("-", string.Empty), item => item.ToList());
+        var optionChain = await this.GetOptionChainDataAsync(ticker);
 
         foreach (var expiration in optionChain.Keys)
         {
@@ -66,7 +61,7 @@ public class MarketDataService : IMarketDataService
                 {
                     Strike = strikePrice
                 };
-                
+
                 resultExpiration.Contracts.Add(strikePrice, resultContracts);
 
                 var call = expirationOptions.FirstOrDefault(item =>
@@ -74,19 +69,54 @@ public class MarketDataService : IMarketDataService
 
                 if (call != null)
                 {
-                    resultContracts.Call = ToContract(OptionUtils.OptionTicker(ticker, expiration, Formatting.FormatStrike(strikePrice), true), call);
+                    resultContracts.Call =
+                        ToContract(
+                            OptionUtils.OptionTicker(ticker, expiration, Formatting.FormatStrike(strikePrice), true),
+                            call);
                 }
 
                 var put = expirationOptions.FirstOrDefault(item =>
                     item.Details.StrikePrice == strikePrice && item.Details.ContractType == "put");
                 if (put != null)
                 {
-                    resultContracts.Put = ToContract(OptionUtils.OptionTicker(ticker, expiration, Formatting.FormatStrike(strikePrice), false), put);
+                    resultContracts.Put =
+                        ToContract(
+                            OptionUtils.OptionTicker(ticker, expiration, Formatting.FormatStrike(strikePrice), false),
+                            put);
                 }
             }
         }
 
-        return Task.FromResult<OptionChain?>(resultChain);
+        return resultChain;
+    }
+
+    private async Task<Dictionary<string, List<OptionChainItemResponse>>> GetOptionChainDataAsync(string ticker)
+    {
+        var results = new List<OptionChainResponse>();
+        
+        try
+        {
+            var stream = this.ApiClient.OptionChainStreamAsync(new OptionChainRequest { Ticker = ticker });
+
+            await foreach (var response in stream)
+            {
+                if (response != null)
+                {
+                    results.Add(response);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError(e, e.Message);
+            
+            throw;
+        }
+
+        return results.SelectMany(item => item.Results)
+            .Where(item => item.Day.Close > decimal.Zero)
+            .GroupBy(item => item.Details.ExpirationDate)
+            .ToDictionary(item => item.Key.Replace("-", string.Empty), item => item.ToList());
     }
 
     private static OptionContract ToContract(string ticker, OptionChainItemResponse item)

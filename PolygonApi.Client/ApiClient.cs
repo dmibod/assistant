@@ -65,6 +65,11 @@ public class ApiClient : IDisposable
 
             var content = await response.Content.ReadAsStringAsync();
 
+            if (string.IsNullOrEmpty(content))
+            {
+                break;
+            }
+
             var chainResponse = JsonSerializer.Deserialize<OptionChainResponse>(content);
 
             if (chainResponse == null)
@@ -90,6 +95,11 @@ public class ApiClient : IDisposable
             response.EnsureSuccessStatusCode();
 
             var content = response.Content.ReadAsStringAsync().Result;
+
+            if (string.IsNullOrEmpty(content))
+            {
+                break;
+            }
 
             var chainResponse = JsonSerializer.Deserialize<OptionChainResponse>(content);
 

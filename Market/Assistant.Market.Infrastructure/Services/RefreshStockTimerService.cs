@@ -31,8 +31,6 @@ public class RefreshStockTimerService : BaseTimerService
 
     protected override void DoWork(object? state)
     {
-        this.LogMessage($"{this.ServiceName} is working...");
-
         this.serviceProvider.Execute("system", scope =>
         {
             var service = scope.ServiceProvider.GetRequiredService<IStockService>();
@@ -40,7 +38,7 @@ public class RefreshStockTimerService : BaseTimerService
             var ticker = service.FindOutdatedTickerAsync(Lag).Result;
             if (ticker != null)
             {
-                this.busService.PublishAsync(this.refreshStockRequestTopic, ticker);
+                this.busService.PublishAsync(this.refreshStockRequestTopic, ticker).GetAwaiter().GetResult();
             }
         });
     }

@@ -33,7 +33,7 @@ public class RefreshStockWorkerService : BaseWorkerService
         {
             var service = scope.ServiceProvider.GetRequiredService<IRefreshService>();
 
-            service.UpdateStockAsync(ticker);
+            service.UpdateStockAsync(ticker).GetAwaiter().GetResult();
         });
     }
 

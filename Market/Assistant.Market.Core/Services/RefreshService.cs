@@ -53,6 +53,10 @@ public class RefreshService : IRefreshService
         {
             await this.UpdateStockAsync(stock);
         }
+        else
+        {
+            this.logger.LogWarning("{Method} execution {Message}", nameof(IStockService.GetOrCreateAsync), $"{ticker} data is not obtained");
+        }
     }
 
     private async Task UpdateStockAsync(Stock stock)
@@ -67,11 +71,19 @@ public class RefreshService : IRefreshService
             
             await this.stockService.UpdateAsync(stock);
         }
+        else
+        {
+            this.logger.LogWarning("{Method} execution {Message}", nameof(IMarketDataService.GetStockPriceAsync), $"{stock.Ticker} data is not obtained");
+        }
 
         var optionChain = await this.marketDataService.GetOptionChainAsync(stock.Ticker);
         if (optionChain != null)
         {
             await this.optionService.UpdateAsync(optionChain);
+        }
+        else
+        {
+            this.logger.LogWarning("{Method} execution {Message}", nameof(IMarketDataService.GetOptionChainAsync), $"{stock.Ticker} data is not obtained");
         }
     }
 }
