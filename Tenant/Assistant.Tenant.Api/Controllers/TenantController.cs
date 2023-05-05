@@ -311,9 +311,18 @@ public class TenantController : ControllerBase
     }
 
     /// <summary>
-    /// Allows to tag/untag account position
+    /// Allows to modify account position quantity and average cost
     /// </summary>
     [HttpPut("Positions/{account}/{ticker}")]
+    public Task TagPositionAsync(string account, string ticker, int quantity, decimal averageCost)
+    {
+        return this.positionService.UpdateAsync(account.ToUpper(), ticker.ToUpper(), quantity, averageCost);
+    }
+
+    /// <summary>
+    /// Allows to tag/untag account position
+    /// </summary>
+    [HttpPut("Positions/{account}/{ticker}/Tag")]
     public Task TagPositionAsync(string account, string ticker, string? tag)
     {
         return this.positionService.UpdateTagAsync(account.ToUpper(), ticker.ToUpper(), tag ?? string.Empty);

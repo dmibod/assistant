@@ -9,14 +9,16 @@ public interface IPositionService
     Task<Position> CreateAsync(Position position);
 
     Task<Position> CreateOrUpdateAsync(Position position);
+    
+    Task UpdateAsync(string account, string ticker, int quantity, decimal averageCost);
+
+    Task UpdateTagAsync(string account, string ticker, string tag);
 
     Task RemoveAsync(string account, string ticker);
 
     Task ResetTagAsync();
 
     Task ReplaceTagAsync(string oldValue, string newValue);
-
-    Task UpdateTagAsync(string account, string ticker, string tag);
 
     Task AutoTagOptionsAsync();
 }

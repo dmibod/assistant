@@ -78,6 +78,36 @@ public class PositionService : IPositionService
         return position;
     }
 
+    public async Task UpdateAsync(string account, string ticker, int quantity, decimal averageCost)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateAsync), $"{account}-{ticker}-{quantity}-{averageCost}");
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        var position = new Position
+        {
+            Account = account,
+            Ticker = ticker,
+            Quantity = quantity,
+            AverageCost = averageCost
+        };
+        
+        await this.repository.UpdatePositionAsync(tenant, position);
+
+        await this.RefreshNotificationAsync();
+    }
+
+    public async Task UpdateTagAsync(string account, string ticker, string tag)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateTagAsync), $"{account}-{ticker}-{tag}");
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+        
+        await this.repository.TagPositionAsync(tenant, account, ticker, tag);
+
+        await this.RefreshNotificationAsync();
+    }
+
     public async Task RemoveAsync(string account, string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), $"{account}-{ticker}");
@@ -108,17 +138,6 @@ public class PositionService : IPositionService
         
         await this.repository.ReplaceTagAsync(tenant, oldValue, newValue);
         
-        await this.RefreshNotificationAsync();
-    }
-
-    public async Task UpdateTagAsync(string account, string ticker, string tag)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateTagAsync), $"{account}-{ticker}-{tag}");
-
-        var tenant = await this.tenantService.EnsureExistsAsync();
-        
-        await this.repository.TagPositionAsync(tenant, account, ticker, tag);
-
         await this.RefreshNotificationAsync();
     }
 
