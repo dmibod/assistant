@@ -16,8 +16,7 @@ public class MarketDataServiceTests
         // Arrange
         var httpClient = new HttpClient(new HttpClientHandler());
         httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Token}");
-        var client = new ApiClient(httpClient);
-        var service = new MarketDataService(client, Substitute.For<ILogger<MarketDataService>>());
+        var service = new MarketDataService(new HttpClientFactory(httpClient), Substitute.For<ILogger<MarketDataService>>());
         
         // Act
         var stockPrice = await service.GetStockPriceAsync("FSR");
@@ -32,8 +31,7 @@ public class MarketDataServiceTests
         // Arrange
         var httpClient = new HttpClient(new HttpClientHandler());
         httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {Token}");
-        var client = new ApiClient(httpClient);
-        var service = new MarketDataService(client, Substitute.For<ILogger<MarketDataService>>());
+        var service = new MarketDataService(new HttpClientFactory(httpClient), Substitute.For<ILogger<MarketDataService>>());
         
         // Act
         var optionChain = await service.GetOptionChainAsync("FSR");
@@ -41,5 +39,20 @@ public class MarketDataServiceTests
         // Assert
         var put = optionChain.Expirations["20230519"].Contracts[5].Put;
         Assert.IsTrue(put.Last < 0.9m);
+    }
+}
+
+internal class HttpClientFactory : IHttpClientFactory
+{
+    private readonly HttpClient httpClient;
+
+    public HttpClientFactory(HttpClient httpClient)
+    {
+        this.httpClient = httpClient;
+    }
+
+    public HttpClient CreateClient(string name)
+    {
+        return this.httpClient;
     }
 }

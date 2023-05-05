@@ -30,14 +30,14 @@ public static class ServiceCollectionExtensions
         services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
 
         var polygonSettings = configuration.GetSection("PolygonApiSettings").Get<PolygonApiSettings>();
-        services.AddHttpClient<PolygonApi.Client.ApiClient>("PolygonApiClient", client =>
+        services.AddHttpClient("PolygonApiClient", client =>
         {
             client.BaseAddress = new Uri(polygonSettings.ApiUrl);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {polygonSettings.ApiKey}");
         });
         
         var kanbanSettings = configuration.GetSection("KanbanApiSettings").Get<KanbanApiSettings>();
-        services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>
+        services.AddHttpClient("KanbanApiClient", client =>
         {
             client.BaseAddress = new Uri(kanbanSettings.ApiUrl);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");

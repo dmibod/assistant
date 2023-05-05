@@ -25,15 +25,18 @@ public static class ServiceCollectionExtensions
         });
         services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
         services.AddSingleton<IBusService, BusService>();
+        
         services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
 
         var kanbanSettings = configuration.GetSection("KanbanApiSettings").Get<KanbanApiSettings>();
-        services.AddHttpClient<KanbanApi.Client.ApiClient>("KanbanApiClient", client =>
+        services.AddHttpClient("KanbanApiClient", client =>
         {
             client.BaseAddress = new Uri(kanbanSettings.ApiUrl);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");
         });
+        
         services.AddIdentityProvider();
+        
         services.AddScoped<IKanbanService, KanbanService>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IPositionService, PositionService>();
@@ -41,8 +44,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPublishingService, PublishingService>();
         services.AddScoped<IRecommendationService, RecommendationService>();
         services.AddScoped<IMarketDataService, MarketDataService>();
-        services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<INotificationService, NotificationService>();
+
+        services.AddScoped<ITenantRepository, TenantRepository>();
         
         services.AddHostedService<AddPositionWorkerService>();
         services.AddHostedService<RefreshPositionsWorkerService>();

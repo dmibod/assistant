@@ -11,20 +11,22 @@ public class KanbanService : IKanbanService
 {
     public const string KanbanOwner = "system";
 
-    private readonly ApiClient apiClient;
+    private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<KanbanService> logger;
 
-    public KanbanService(ApiClient apiClient, ILogger<KanbanService> logger)
+    public KanbanService(IHttpClientFactory httpClientFactory, ILogger<KanbanService> logger)
     {
-        this.apiClient = apiClient;
+        this.httpClientFactory = httpClientFactory;
         this.logger = logger;
     }
 
+    private ApiClient ApiClient => new(this.httpClientFactory.CreateClient("KanbanApiClient"));
+    
     public async Task<IEnumerable<Board>> FindBoardsAsync()
     {
         this.logger.LogInformation("{Method}", nameof(this.FindBoardsAsync));
 
-        var boards = await this.apiClient.GetBoardsAsync(KanbanOwner);
+        var boards = await this.ApiClient.GetBoardsAsync(KanbanOwner);
 
         return boards.Select(board => new Board
         {
@@ -39,7 +41,7 @@ public class KanbanService : IKanbanService
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateBoardAsync), board.Name);
 
         var kanbanBoard =
-            await this.apiClient.CreateBoardAsync(KanbanOwner, board.Name, board.Description, LayoutTypes.V);
+            await this.ApiClient.CreateBoardAsync(KanbanOwner, board.Name, board.Description, LayoutTypes.V);
 
         return new Board
         {
@@ -58,8 +60,8 @@ public class KanbanService : IKanbanService
             Id = board.Id
         };
 
-        await this.apiClient.NameBoardAsync(kanbanBoard, board.Name);
-        await this.apiClient.DescribeBoardAsync(kanbanBoard, board.Description);
+        await this.ApiClient.NameBoardAsync(kanbanBoard, board.Name);
+        await this.ApiClient.DescribeBoardAsync(kanbanBoard, board.Description);
     }
 
     public Task SetBoardLoadingStateAsync(string boardId)
@@ -67,7 +69,7 @@ public class KanbanService : IKanbanService
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SetBoardLoadingStateAsync),
             boardId);
 
-        return this.apiClient.SetBoardLoadingStateAsync(new KanbanApi.Client.Board
+        return this.ApiClient.SetBoardLoadingStateAsync(new KanbanApi.Client.Board
         {
             Id = boardId
         });
@@ -78,7 +80,7 @@ public class KanbanService : IKanbanService
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SetBoardProgressStateAsync),
             $"{boardId}-{progress}");
 
-        return this.apiClient.SetBoardProgressStateAsync(new KanbanApi.Client.Board
+        return this.ApiClient.SetBoardProgressStateAsync(new KanbanApi.Client.Board
         {
             Id = boardId
         }, progress);
@@ -88,7 +90,7 @@ public class KanbanService : IKanbanService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ResetBoardStateAsync), boardId);
 
-        return this.apiClient.ResetBoardStateAsync(new KanbanApi.Client.Board
+        return this.ApiClient.ResetBoardStateAsync(new KanbanApi.Client.Board
         {
             Id = boardId
         });
@@ -98,7 +100,7 @@ public class KanbanService : IKanbanService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindBoardLanesAsync), boardId);
 
-        var lanes = await this.apiClient.GetLanesAsync(new KanbanApi.Client.Board
+        var lanes = await this.ApiClient.GetLanesAsync(new KanbanApi.Client.Board
         {
             Id = boardId
         });
@@ -117,7 +119,7 @@ public class KanbanService : IKanbanService
             $"{boardId}-{lane.Name}");
 
         var kanbanLane =
-            await this.apiClient.CreateLaneAsync(new KanbanApi.Client.Board
+            await this.ApiClient.CreateLaneAsync(new KanbanApi.Client.Board
             {
                 Id = boardId
             }, boardId, lane.Name, lane.Description, LayoutTypes.H);
@@ -140,7 +142,7 @@ public class KanbanService : IKanbanService
             Id = boardId
         };
 
-        return this.apiClient.DescribeLaneAsync(kanbanBoard, new KanbanApi.Client.Lane { Id = lane.Id },
+        return this.ApiClient.DescribeLaneAsync(kanbanBoard, new KanbanApi.Client.Lane { Id = lane.Id },
             lane.Description);
     }
 
@@ -149,7 +151,7 @@ public class KanbanService : IKanbanService
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveBoardLaneAsync),
             $"{boardId}-{laneId}");
 
-        return this.apiClient.RemoveLaneAsync(new KanbanApi.Client.Board
+        return this.ApiClient.RemoveLaneAsync(new KanbanApi.Client.Board
         {
             Id = boardId
         }, new KanbanApi.Client.Lane
@@ -162,7 +164,7 @@ public class KanbanService : IKanbanService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindLanesAsync), $"{boardId}-{parentLaneId}");
 
-        var lanes = await this.apiClient.GetCardLanesAsync(new KanbanApi.Client.Board
+        var lanes = await this.ApiClient.GetCardLanesAsync(new KanbanApi.Client.Board
         {
             Id = boardId
         }, new KanbanApi.Client.Lane
@@ -184,7 +186,7 @@ public class KanbanService : IKanbanService
             $"{boardId}-{parentLaneId}-{lane.Name}");
 
         var kanbanLane =
-            await this.apiClient.CreateCardLaneAsync(new KanbanApi.Client.Board
+            await this.ApiClient.CreateCardLaneAsync(new KanbanApi.Client.Board
             {
                 Id = boardId
             }, parentLaneId, lane.Name, lane.Description);
@@ -201,7 +203,7 @@ public class KanbanService : IKanbanService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindCardsAsync), $"{boardId}-{cardLaneId}");
 
-        var cards = await this.apiClient.GetCardsAsync(new KanbanApi.Client.Board
+        var cards = await this.ApiClient.GetCardsAsync(new KanbanApi.Client.Board
         {
             Id = boardId
         }, new CardLane
@@ -223,7 +225,7 @@ public class KanbanService : IKanbanService
             $"{boardId}-{cardLaneId}-{card.Name}");
 
         var kanbanCard =
-            await this.apiClient.CreateCardAsync(new KanbanApi.Client.Board
+            await this.ApiClient.CreateCardAsync(new KanbanApi.Client.Board
             {
                 Id = boardId
             }, new CardLane
@@ -249,6 +251,6 @@ public class KanbanService : IKanbanService
             Id = boardId
         };
 
-        await this.apiClient.DescribeCardAsync(kanbanBoard, new KanbanApi.Client.Card { Id = card.Id }, card.Description);
+        await this.ApiClient.DescribeCardAsync(kanbanBoard, new KanbanApi.Client.Card { Id = card.Id }, card.Description);
     }
 }

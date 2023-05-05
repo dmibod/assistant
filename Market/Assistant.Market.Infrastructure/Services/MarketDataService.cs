@@ -9,20 +9,22 @@ using PolygonApi.Client.Utils;
 
 public class MarketDataService : IMarketDataService
 {
-    private readonly ApiClient apiClient;
+    private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<MarketDataService> logger;
 
-    public MarketDataService(ApiClient apiClient, ILogger<MarketDataService> logger)
+    public MarketDataService(IHttpClientFactory httpClientFactory, ILogger<MarketDataService> logger)
     {
-        this.apiClient = apiClient;
+        this.httpClientFactory = httpClientFactory;
         this.logger = logger;
     }
+
+    private ApiClient ApiClient => new(this.httpClientFactory.CreateClient("PolygonApiClient"));
 
     public async Task<AssetPrice?> GetStockPriceAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.GetStockPriceAsync), ticker);
         
-        var response = await this.apiClient.PrevCloseAsync(new PrevCloseRequest
+        var response = await this.ApiClient.PrevCloseAsync(new PrevCloseRequest
         {
             Ticker = ticker
         });
@@ -40,7 +42,7 @@ public class MarketDataService : IMarketDataService
             Expirations = new Dictionary<string, OptionExpiration>()
         };
 
-        var optionChain = this.apiClient
+        var optionChain = this.ApiClient
             .OptionChainStream(new OptionChainRequest { Ticker = ticker })
             .SelectMany(item => item.Results)
             .Where(item => item.Day.Close > decimal.Zero)
