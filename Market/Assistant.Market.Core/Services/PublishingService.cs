@@ -42,7 +42,7 @@ public class PublishingService : IPublishingService
 
     private void Publish(int chunkNo, Stock[] chunk)
     {
-        var key = $"{MarketData}#{chunkNo}";
+        var key = $"{MarketData} {chunkNo}";
         var name = $"{key} ({chunk.Length})";
         var description = chunk.Select(item => item.Ticker).Aggregate((curr, i) => $"{curr}, {i}");
 
