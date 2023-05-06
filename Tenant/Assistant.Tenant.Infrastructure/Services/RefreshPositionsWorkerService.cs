@@ -33,9 +33,9 @@ public class RefreshPositionsWorkerService : BaseWorkerService
         
         this.serviceProvider.Execute(tenant, scope =>
         {
-            var service = scope.ServiceProvider.GetRequiredService<IPublishingService>();
+            var service = scope.ServiceProvider.GetRequiredService<IPositionPublishingService>();
             
-            service.PublishPositionsAsync().GetAwaiter().GetResult();
+            service.PublishAsync().GetAwaiter().GetResult();
         });
     }
 

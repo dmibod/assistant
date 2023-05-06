@@ -15,17 +15,24 @@ using Microsoft.AspNetCore.Mvc;
 public class TenantController : ControllerBase
 {
     private readonly IPositionService positionService;
+    private readonly IPositionPublishingService positionPublishingService;
     private readonly IWatchListService watchListService;
     private readonly IPublishingService publishingService;
     private readonly ITenantService tenantService;
     private readonly IIdentityProvider identityProvider;
     private readonly IMarketDataService marketDataService;
 
-    public TenantController(IPositionService positionService, IWatchListService watchListService,
-        IPublishingService publishingService, ITenantService tenantService,
-        IIdentityProvider identityProvider, IMarketDataService marketDataService)
+    public TenantController(
+        IPositionService positionService,
+        IPositionPublishingService positionPublishingService,
+        IWatchListService watchListService,
+        IPublishingService publishingService, 
+        ITenantService tenantService,
+        IIdentityProvider identityProvider, 
+        IMarketDataService marketDataService)
     {
         this.positionService = positionService;
+        this.positionPublishingService = positionPublishingService;
         this.watchListService = watchListService;
         this.publishingService = publishingService;
         this.tenantService = tenantService;
@@ -449,7 +456,7 @@ public class TenantController : ControllerBase
     [HttpPost("Positions/Publish")]
     public Task PublishPositionsAsync()
     {
-        return this.publishingService.PublishPositionsAsync();
+        return this.positionPublishingService.PublishAsync();
     }
 
     /// <summary>
@@ -482,6 +489,44 @@ public class TenantController : ControllerBase
         };
 
         await this.tenantService.UpdateDefaultFilterAsync(filter);
+    }
+
+    /// <summary>
+    /// Generates 'Sell Calls' recommendations (call options you need to pay attention to) based on your watch list, sell prices and filtering criteria 
+    /// </summary>
+    /// <param name="minAnnualPercent">Min annual yield, %</param>
+    /// <param name="minPremium">Min premium (option contract price), $</param>
+    /// <param name="maxDte">Max days till expiration, days</param>
+    /// <param name="otm">true - out of the money options, false - in the money options</param>
+    /// <param name="considerPositions">true - to check if there is stock position available for 'covered' calls</param>
+    [HttpPost("Recommendations/SellCalls")]
+    public async Task PublishSellCallsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm, bool considerPositions)
+    {
+        var defaultFilter = await this.tenantService.GetDefaultFilterAsync();
+
+        var filter = defaultFilter ?? new RecommendationFilter();
+
+        if (minAnnualPercent.HasValue)
+        {
+            filter.MinAnnualPercent = minAnnualPercent;
+        }
+
+        if (minPremium.HasValue)
+        {
+            filter.MinPremium = minPremium;
+        }
+
+        if (maxDte.HasValue)
+        {
+            filter.MaxDte = maxDte;
+        }
+
+        if (otm.HasValue)
+        {
+            filter.Otm = otm;
+        }
+
+        await this.publishingService.PublishSellCallsAsync(filter, considerPositions);
     }
 
     /// <summary>

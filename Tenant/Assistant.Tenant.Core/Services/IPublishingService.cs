@@ -4,7 +4,7 @@ using Assistant.Tenant.Core.Models;
 
 public interface IPublishingService
 {
-    Task PublishPositionsAsync();
-
     Task PublishSellPutsAsync(RecommendationFilter filter);
+    
+    Task PublishSellCallsAsync(RecommendationFilter filter, bool considerPositions);
 }
