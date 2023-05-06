@@ -56,7 +56,7 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<IMessageHandlerTypesProvider, MessageHandlerTypesProvider>(sp => handlerTypesProvider);
-        services.AddHostedService<MessagingWorkerService>();
+        services.AddHostedService<MessagingService>();
 
         return services;
     }

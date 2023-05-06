@@ -8,19 +8,19 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NATS.Client;
 
-public class MessagingWorkerService : BaseMessagingService
+public class MessagingService : BaseMessagingService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IMessageHandlerTypesProvider messageHandlerTypesProvider;
     private readonly ITopicResolver topicResolver;
-    private readonly ILogger<MessagingWorkerService> logger;
+    private readonly ILogger<MessagingService> logger;
 
-    public MessagingWorkerService(
+    public MessagingService(
         IServiceProvider serviceProvider,
         IMessageHandlerTypesProvider messageHandlerTypesProvider,
         ITopicResolver topicResolver,
         IConnection connection,
-        ILogger<MessagingWorkerService> logger) : base(connection)
+        ILogger<MessagingService> logger) : base(connection)
     {
         this.serviceProvider = serviceProvider;
         this.messageHandlerTypesProvider = messageHandlerTypesProvider;
@@ -36,6 +36,14 @@ public class MessagingWorkerService : BaseMessagingService
     protected override void LogError(string error)
     {
         this.logger.LogError(error);
+    }
+
+    protected override void SubscribeHandlers(Action<Type> action)
+    {
+        foreach (var messageHandlerType in this.messageHandlerTypesProvider.HandlerTypes)
+        {
+            action(messageHandlerType);
+        }
     }
 
     protected override string ResolveTopic(string topic)
@@ -60,14 +68,6 @@ public class MessagingWorkerService : BaseMessagingService
             
             return method.Invoke(service, parameters) as Task;
         });
-    }
-
-    protected override void SubscribeHandlers(Action<Type> action)
-    {
-        foreach (var messageHandlerType in this.messageHandlerTypesProvider.HandlerTypes)
-        {
-            action(messageHandlerType);
-        }
     }
 }
 

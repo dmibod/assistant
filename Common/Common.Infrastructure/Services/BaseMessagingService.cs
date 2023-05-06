@@ -1,5 +1,6 @@
 ﻿namespace Common.Infrastructure.Services;
 
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using Common.Core.Messaging;
@@ -11,7 +12,7 @@ public abstract class BaseMessagingService : BaseHostedService
     private readonly IConnection connection;
 
     private readonly IDictionary<string, IAsyncSubscription> subscriptions =
-        new Dictionary<string, IAsyncSubscription>();
+        new ConcurrentDictionary<string, IAsyncSubscription>();
 
     protected BaseMessagingService(IConnection connection)
     {
@@ -23,11 +24,6 @@ public abstract class BaseMessagingService : BaseHostedService
     protected abstract string ResolveTopic(string topic);
     
     protected abstract Task HandleAsync(object message);
-
-    private static string GetTopicFromTypeAttribute(Type handlerType)
-    {
-        return handlerType.GetTypeAttribute<HandlerAttribute>().Topic;
-    }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -66,5 +62,10 @@ public abstract class BaseMessagingService : BaseHostedService
         }
 
         await base.StopAsync(cancellationToken);
+    }
+    
+    private static string GetTopicFromTypeAttribute(Type handlerType)
+    {
+        return handlerType.GetTypeAttribute<HandlerAttribute>().Topic;
     }
 }
