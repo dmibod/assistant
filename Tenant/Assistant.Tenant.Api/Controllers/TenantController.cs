@@ -9,7 +9,6 @@ using Common.Core.Utils;
 using Common.Infrastructure.Security;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
 
 [ApiController]
 [Route("[controller]")]
@@ -110,7 +109,8 @@ public class TenantController : ControllerBase
     /// <param name="buyPricePercent">The % amount below current price, for ex. stock price 100$ in case buyPricePercent is 10%, buy price is 90$</param>
     /// <param name="sellPricePercent">The % amount above current price, for ex. stock price 100$ in case sellPricePercent is 10%, sell price is 110$</param>
     [HttpPost("WatchList/AddMultiple")]
-    public async Task<ActionResult> AddWatchListItemsAsync(string tickers, decimal buyPricePercent, decimal sellPricePercent)
+    public async Task<ActionResult> AddWatchListItemsAsync(string tickers, decimal buyPricePercent,
+        decimal sellPricePercent)
     {
         var validatedTickers = tickers
             .ToUpper()
@@ -130,7 +130,8 @@ public class TenantController : ControllerBase
             });
         }
 
-        var prices = (await this.marketDataService.FindStockPricesAsync(validatedTickers)).ToDictionary(item => item.Ticker);
+        var prices =
+            (await this.marketDataService.FindStockPricesAsync(validatedTickers)).ToDictionary(item => item.Ticker);
 
         var buyPriceFactor = (100.0m - buyPricePercent) / 100.0m;
         var sellPriceFactor = (100.0m + sellPricePercent) / 100.0m;
@@ -143,15 +144,19 @@ public class TenantController : ControllerBase
             var item = new WatchListItem
             {
                 Ticker = ticker,
-                BuyPrice = prices.ContainsKey(ticker) && last.HasValue ? Math.Round(last.Value * buyPriceFactor) : decimal.Zero,
-                SellPrice = prices.ContainsKey(ticker) && last.HasValue ? Math.Round(last.Value * sellPriceFactor) : decimal.Zero
+                BuyPrice = prices.ContainsKey(ticker) && last.HasValue
+                    ? Math.Round(last.Value * buyPriceFactor)
+                    : decimal.Zero,
+                SellPrice = prices.ContainsKey(ticker) && last.HasValue
+                    ? Math.Round(last.Value * sellPriceFactor)
+                    : decimal.Zero
             };
 
             item = await this.watchListService.CreateOrUpdateAsync(item, true);
-            
+
             list.Add(item);
         }
-        
+
         return this.Ok(new
         {
             list.Count,
@@ -219,6 +224,80 @@ public class TenantController : ControllerBase
             ticker == (p.Type == AssetType.Stock
                 ? p.Ticker
                 : OptionUtils.GetStock(p.Ticker))).ToList();
+
+        var result = new
+        {
+            filtered.Count,
+            Items = filtered.OrderBy(position => position.Account).ThenBy(position => position.Ticker).ToArray()
+        };
+
+        return this.Ok(result);
+    }
+
+    /// <summary>
+    /// The list of your positions filtered by account, stock ticker, tag, ordered by 'Account' then 'Ticker'
+    /// </summary>
+    /// <param name="contains">True - applies 'contains' for the criteria, false - 'does not contain', empty - 'exact match'.</param>
+    /// <returns></returns>
+    [HttpGet("Positions/Search")]
+    public async Task<ActionResult> GetPositionsByCriteriaAsync(string? account, string? ticker, string? tag,
+        bool? contains)
+    {
+        var searchAccount = !string.IsNullOrWhiteSpace(account);
+        if (searchAccount)
+        {
+            account = account.ToUpper();
+        }
+
+        var searchTicker = !string.IsNullOrWhiteSpace(ticker);
+        if (searchTicker)
+        {
+            ticker = ticker.ToUpper();
+        }
+
+        var searchTag = !string.IsNullOrWhiteSpace(tag);
+        if (searchTag)
+        {
+            tag = tag.ToUpper();
+        }
+
+        Func<string?, string> safeStr = s => s ?? string.Empty;
+        Func<string?, string?, bool> containsFn = (s1, s2) => safeStr(s1).Contains(safeStr(s2));
+        Func<string?, string?, bool> doesNotContainFn = (s1, s2) => !containsFn(s1, s2);
+        Func<string?, string?, bool> equalityFn = (s1, s2) => safeStr(s1) == safeStr(s2);
+
+        var comparison = contains.HasValue
+            ? contains.Value ? containsFn : doesNotContainFn
+            : equalityFn;
+
+        var positions = await this.positionService.FindAllAsync();
+
+        var filtered = positions.Where(p =>
+        {
+            if (searchAccount && comparison(p.Account, account))
+            {
+                return true;
+            }
+
+            if (searchTag && comparison(p.Tag, tag))
+            {
+                return true;
+            }
+
+            if (searchTicker)
+            {
+                var positionTicker = p.Type == AssetType.Stock
+                    ? p.Ticker
+                    : OptionUtils.GetStock(p.Ticker);
+
+                if (comparison(positionTicker, ticker))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }).ToList();
 
         var result = new
         {
@@ -391,7 +470,8 @@ public class TenantController : ControllerBase
     /// <param name="maxDte">Max days till expiration, days</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
     [HttpPost("Recommendations/Filter")]
-    public async Task UpdateRecommendationFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm)
+    public async Task UpdateRecommendationFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte,
+        bool? otm)
     {
         var filter = new RecommendationFilter
         {
