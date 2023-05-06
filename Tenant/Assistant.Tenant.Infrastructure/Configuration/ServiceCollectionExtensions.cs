@@ -1,9 +1,11 @@
 ﻿namespace Assistant.Tenant.Infrastructure.Configuration;
 
+using Assistant.Tenant.Core.Messaging;
 using Assistant.Tenant.Core.Repositories;
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Repositories;
 using Assistant.Tenant.Infrastructure.Services;
+using Common.Core.Messaging;
 using Common.Core.Services;
 using Common.Infrastructure.Configuration;
 using Common.Infrastructure.Services;
@@ -14,18 +16,9 @@ using NATS.Client;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection ConfigureInfrastructure(this IServiceCollection services, ConfigurationManager configuration)
+    public static IServiceCollection ConfigureInfrastructure(this IServiceCollection services,
+        ConfigurationManager configuration)
     {
-        services.AddNatsClient(options =>
-        {
-            var settings = configuration.GetSection("NatsSettings").Get<NatsSettings>();
-            options.User = settings.User;
-            options.Password = settings.Password;
-            options.Url = settings.Url;
-        });
-        services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
-        services.AddSingleton<IBusService, BusService>();
-        
         services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
 
         var kanbanSettings = configuration.GetSection("KanbanApiSettings").Get<KanbanApiSettings>();
@@ -34,9 +27,10 @@ public static class ServiceCollectionExtensions
             client.BaseAddress = new Uri(kanbanSettings.ApiUrl);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");
         });
-        
+
+        services.ConfigureMessaging(configuration);
         services.AddIdentityProvider();
-        
+
         services.AddScoped<IKanbanService, KanbanService>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IPositionService, PositionService>();
@@ -45,12 +39,43 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRecommendationService, RecommendationService>();
         services.AddScoped<IMarketDataService, MarketDataService>();
         services.AddScoped<INotificationService, NotificationService>();
-
         services.AddScoped<ITenantRepository, TenantRepository>();
-        
-        services.AddHostedService<AddPositionWorkerService>();
-        services.AddHostedService<RefreshPositionsWorkerService>();
-        
+
+        return services;
+    }
+
+    public static IServiceCollection ConfigureMessaging(this IServiceCollection services,
+        ConfigurationManager configuration)
+    {
+        var settings = configuration.GetSection("NatsSettings").Get<NatsSettings>();
+
+        services.AddNatsClient(options =>
+        {
+            options.User = settings.User;
+            options.Password = settings.Password;
+            options.Url = settings.Url;
+        });
+        services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
+        services.AddSingleton<IBusService, BusService>();
+
+        services.AddSingleton<ITopicResolver, TopicResolver>(sp =>
+        {
+            var topics = new Dictionary<string, string>
+            {
+                ["{StockCreateTopic}"] = settings.StockCreateTopic,
+                ["{PositionCreateTopic}"] = settings.PositionCreateTopic,
+                ["{PositionRefreshTopic}"] = settings.PositionRefreshTopic,
+                ["{PositionRemoveTopic}"] = settings.PositionRemoveTopic
+            };
+
+            return new TopicResolver(topics);
+        });
+
+        services.ConfigureMessaging(new[]
+        {
+            typeof(PositionRemoveMessageHandler).Assembly
+        }, ServiceLifetime.Scoped);
+
         return services;
     }
 }

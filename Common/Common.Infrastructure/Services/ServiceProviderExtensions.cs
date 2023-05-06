@@ -16,4 +16,15 @@ public static class ServiceProviderExtensions
         
         action(scope);
     }
+    
+    public static Task ExecuteAsync(this IServiceProvider serviceProvider, string name, Func<IServiceScope, Task> action)
+    {
+        using var scope = serviceProvider.CreateScope();
+
+        var holder = scope.ServiceProvider.GetService<IIdentityHolder>();
+
+        holder.Identity = new Identity(name);
+        
+        return action(scope);
+    }
 }

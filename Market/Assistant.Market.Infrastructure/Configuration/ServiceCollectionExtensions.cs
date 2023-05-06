@@ -1,9 +1,11 @@
 ﻿namespace Assistant.Market.Infrastructure.Configuration;
 
+using Assistant.Market.Core.Messaging;
 using Assistant.Market.Core.Repositories;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Repositories;
 using Assistant.Market.Infrastructure.Services;
+using Common.Core.Messaging;
 using Common.Core.Services;
 using Common.Infrastructure.Configuration;
 using Common.Infrastructure.Services;
@@ -17,16 +19,6 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection ConfigureInfrastructure(this IServiceCollection services, ConfigurationManager configuration)
     {
-        services.AddNatsClient(options =>
-        {
-            var settings = configuration.GetSection("NatsSettings").Get<NatsSettings>();
-            options.User = settings.User;
-            options.Password = settings.Password;
-            options.Url = settings.Url;
-        });
-        services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
-        services.AddSingleton<IBusService, BusService>();
-        
         services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
 
         var polygonSettings = configuration.GetSection("PolygonApiSettings").Get<PolygonApiSettings>();
@@ -43,6 +35,7 @@ public static class ServiceCollectionExtensions
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");
         });
 
+        services.ConfigureMessaging(configuration);
         services.AddIdentityProvider();
 
         services.AddScoped<IKanbanService, KanbanService>();
@@ -56,13 +49,45 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOptionChangeRepository, OptionChangeRepository>();
         
         services.AddHostedService<RefreshStockTimerService>();
-        services.AddHostedService<RefreshStockWorkerService>();
         services.AddHostedService<CleanDataTimerService>();
-        services.AddHostedService<CleanDataWorkerService>();
         services.AddHostedService<MarketDataTimerService>();
-        services.AddHostedService<MarketDataWorkerService>();
-        services.AddHostedService<AddStockWorkerService>();
 
         return services;
     }
+    
+    public static IServiceCollection ConfigureMessaging(this IServiceCollection services,
+        ConfigurationManager configuration)
+    {
+        var settings = configuration.GetSection("NatsSettings").Get<NatsSettings>();
+
+        services.AddNatsClient(options =>
+        {
+            options.User = settings.User;
+            options.Password = settings.Password;
+            options.Url = settings.Url;
+        });
+        services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
+        services.AddSingleton<IBusService, BusService>();
+
+        services.AddSingleton<ITopicResolver, TopicResolver>(sp =>
+        {
+            var topics = new Dictionary<string, string>
+            {
+                ["{StockCreateTopic}"] = settings.StockCreateTopic,
+                ["{StockRefreshTopic}"] = settings.StockRefreshTopic,
+                ["{DataCleanTopic}"] = settings.DataCleanTopic,
+                ["{DataPublishTopic}"] = settings.DataPublishTopic
+            };
+
+            return new TopicResolver(topics);
+        });
+
+        services.ConfigureMessaging(new[]
+        {
+            typeof(StockCreateMessageHandler).Assembly
+        }, ServiceLifetime.Scoped);
+
+        return services;
+    }
+
 }

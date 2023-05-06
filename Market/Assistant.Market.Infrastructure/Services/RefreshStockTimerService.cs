@@ -2,6 +2,7 @@
 
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
+using Common.Core.Messaging;
 using Common.Core.Services;
 using Common.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +12,7 @@ using Microsoft.Extensions.Options;
 public class RefreshStockTimerService : BaseTimerService
 {
     private static readonly TimeSpan Lag = TimeSpan.FromHours(4);
-    private readonly string refreshStockRequestTopic;
+    private readonly string stockRefreshTopic;
     private readonly IServiceProvider serviceProvider;
     private readonly IBusService busService;
     private readonly ILogger<RefreshStockTimerService> logger;
@@ -19,11 +20,11 @@ public class RefreshStockTimerService : BaseTimerService
     public RefreshStockTimerService(
         IServiceProvider serviceProvider,
         IBusService busService,
-        IOptions<NatsSettings> options,
+        ITopicResolver topicResolver,
         ILogger<RefreshStockTimerService> logger)
         : base(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(GetInitialDelay(10, 30)))
     {
-        this.refreshStockRequestTopic = options.Value.RefreshStockRequestTopic;
+        this.stockRefreshTopic = topicResolver.Resolve("{StockRefreshTopic}");
         this.serviceProvider = serviceProvider;
         this.busService = busService;
         this.logger = logger;
@@ -38,7 +39,8 @@ public class RefreshStockTimerService : BaseTimerService
             var ticker = service.FindOutdatedTickerAsync(Lag).Result;
             if (ticker != null)
             {
-                this.busService.PublishAsync(this.refreshStockRequestTopic, ticker).GetAwaiter().GetResult();
+                this.busService.PublishAsync(this.stockRefreshTopic, new StockMessage { Ticker = ticker })
+                    .GetAwaiter().GetResult();
             }
         });
     }

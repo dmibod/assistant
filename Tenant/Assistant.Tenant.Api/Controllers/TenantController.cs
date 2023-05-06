@@ -2,13 +2,19 @@
 
 using System.Security.Claims;
 using System.Text.RegularExpressions;
+using Assistant.Tenant.Core.Messaging;
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Services;
+using Assistant.Tenant.Infrastructure.Configuration;
+using Common.Core.Messaging;
 using Common.Core.Security;
+using Common.Core.Services;
 using Common.Core.Utils;
 using Common.Infrastructure.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 [ApiController]
 [Route("[controller]")]
@@ -20,10 +26,18 @@ public class TenantController : ControllerBase
     private readonly ITenantService tenantService;
     private readonly IIdentityProvider identityProvider;
     private readonly IMarketDataService marketDataService;
+    private readonly IBusService busService;
+    private readonly string testMessageTopic;
 
-    public TenantController(IPositionService positionService, IWatchListService watchListService,
-        IPublishingService publishingService, ITenantService tenantService,
-        IIdentityProvider identityProvider, IMarketDataService marketDataService)
+    public TenantController(
+        IPositionService positionService,
+        IWatchListService watchListService,
+        IPublishingService publishingService,
+        ITenantService tenantService,
+        IIdentityProvider identityProvider,
+        IMarketDataService marketDataService,
+        ITopicResolver topicResolver,
+        IBusService busService)
     {
         this.positionService = positionService;
         this.watchListService = watchListService;
@@ -31,6 +45,8 @@ public class TenantController : ControllerBase
         this.tenantService = tenantService;
         this.identityProvider = identityProvider;
         this.marketDataService = marketDataService;
+        this.busService = busService;
+        this.testMessageTopic = topicResolver.Resolve("{PositionRemoveTopic}");
     }
 
     /// <summary>
@@ -519,5 +535,16 @@ public class TenantController : ControllerBase
         }
 
         await this.publishingService.PublishSellPutsAsync(filter);
+    }
+
+    [HttpPost("Test"), Authorize("administration")]
+    public Task TestAsync(string account, string ticker)
+    {
+        return this.busService.PublishAsync(this.testMessageTopic, new PositionRemoveMessage
+        {
+            Tenant = this.identityProvider.Identity.Name,
+            Account = account.ToUpper(),
+            Ticker = ticker.ToUpper()
+        });
     }
 }

@@ -1,15 +1,13 @@
 ﻿namespace Assistant.Market.Api.Controllers;
 
 using System.Security.Claims;
-using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Services;
-using Assistant.Market.Infrastructure.Configuration;
+using Common.Core.Messaging;
 using Common.Core.Security;
 using Common.Core.Services;
 using Common.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 [ApiController]
 [Route("[controller]")]
@@ -19,20 +17,24 @@ public class MarketController : ControllerBase
     private readonly IOptionService optionService;
     private readonly IBusService busService;
     private readonly IIdentityProvider identityProvider;
-    private readonly string publishMarketDataTopic;
-    private readonly string addStockRequestTopic;
-    private readonly string refreshStockRequestTopic;
+    private readonly string dataPublishTopic;
+    private readonly string stockCreateTopic;
+    private readonly string stockRefreshTopic;
 
-    public MarketController(IStockService stockService, IOptionService optionService, IBusService busService,
-        IIdentityProvider identityProvider, IOptions<NatsSettings> options)
+    public MarketController(
+        IStockService stockService,
+        IOptionService optionService,
+        IIdentityProvider identityProvider,
+        IBusService busService,
+        ITopicResolver topicResolver)
     {
         this.stockService = stockService;
         this.optionService = optionService;
-        this.busService = busService;
         this.identityProvider = identityProvider;
-        this.publishMarketDataTopic = options.Value.PublishMarketDataTopic;
-        this.addStockRequestTopic = options.Value.AddStockRequestTopic;
-        this.refreshStockRequestTopic = options.Value.RefreshStockRequestTopic;
+        this.busService = busService;
+        this.dataPublishTopic = topicResolver.Resolve("{DataPublishTopic}");
+        this.stockCreateTopic = topicResolver.Resolve("{StockCreateTopic}");
+        this.stockRefreshTopic = topicResolver.Resolve("{StockRefreshTopic}");
     }
 
     /// <summary>
@@ -103,7 +105,10 @@ public class MarketController : ControllerBase
     [HttpPost("Stocks/{ticker}"), Authorize("publishing")]
     public Task AddStockAsync(string ticker)
     {
-        return this.busService.PublishAsync(this.addStockRequestTopic, ticker);
+        return this.busService.PublishAsync(this.stockCreateTopic, new StockMessage
+        {
+            Ticker = ticker
+        });
     }
 
     /// <summary>
@@ -112,7 +117,7 @@ public class MarketController : ControllerBase
     [HttpPut("Stocks/{ticker}"), Authorize("publishing")]
     public Task RefreshStockAsync(string ticker)
     {
-        return this.busService.PublishAsync(this.refreshStockRequestTopic, ticker);
+        return this.busService.PublishAsync(this.stockRefreshTopic, ticker);
     }
 
     /// <summary>
@@ -121,6 +126,6 @@ public class MarketController : ControllerBase
     [HttpPost("Publish"), Authorize("publishing")]
     public Task PublishAsync()
     {
-        return this.busService.PublishAsync(this.publishMarketDataTopic);
+        return this.busService.PublishAsync(this.dataPublishTopic);
     }
 }
