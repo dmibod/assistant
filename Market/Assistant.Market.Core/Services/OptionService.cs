@@ -68,7 +68,7 @@ public class OptionService : IOptionService
                     Ticker = option.Ticker,
                     Expiration = option.Expiration,
                     LastRefresh = DateTime.UtcNow,
-                    Contracts = Difference(values.Contracts, option.Contracts).Where(item => item != null).ToArray()
+                    Contracts = Difference(values.Contracts, option.Contracts).Where(item => item.OI != decimal.Zero).ToArray()
                 };
                 
                 await this.changeRepository.CreateOrUpdateAsync(change);
@@ -87,10 +87,17 @@ public class OptionService : IOptionService
         foreach (var newContract in next)
         {
             var ticker = newContract.Ticker;
-            
-            if (oldContracts.ContainsKey(ticker))
+
+            if (!oldContracts.ContainsKey(ticker))
             {
-                yield return Difference(oldContracts[ticker], newContract);
+                continue;
+            }
+            
+            var difference = Difference(oldContracts[ticker], newContract);
+
+            if (difference != null)
+            {
+                yield return difference;
             }
         }
     }

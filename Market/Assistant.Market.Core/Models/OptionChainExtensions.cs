@@ -20,10 +20,13 @@ public static class OptionChainExtensions
         var groups = options
             .SelectMany(option => option.Contracts)
             .GroupBy(contract => OptionUtils.GetStrike(contract.Ticker));
+
+        var option = options.FirstOrDefault(o => o.Expiration == expiration);
         
         return new OptionExpiration
         {
             Expiration = expiration,
+            LastRefresh = option == null ? DateTime.UnixEpoch : option.LastRefresh,
             Contracts = groups.ToDictionary(group => group.Key, group => new OptionContracts
             {
                 Strike = group.Key,
