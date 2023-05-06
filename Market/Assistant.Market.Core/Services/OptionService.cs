@@ -70,8 +70,11 @@ public class OptionService : IOptionService
                     LastRefresh = DateTime.UtcNow,
                     Contracts = Difference(values.Contracts, option.Contracts).Where(item => item.OI != decimal.Zero).ToArray()
                 };
-                
-                await this.changeRepository.CreateOrUpdateAsync(change);
+
+                if (change.Contracts.Length > 0)
+                {
+                    await this.changeRepository.CreateOrUpdateAsync(change);
+                }
             }
             else
             {
