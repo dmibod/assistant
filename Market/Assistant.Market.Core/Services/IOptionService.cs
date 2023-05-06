@@ -5,6 +5,8 @@ using Assistant.Market.Core.Models;
 public interface IOptionService
 {
     Task<OptionChain> FindAsync(string ticker);
+
+    Task<OptionExpiration?> FindExpirationAsync(string ticker, string expiration);
     
     Task<OptionChain> FindChangeAsync(string ticker);
     

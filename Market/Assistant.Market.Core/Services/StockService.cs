@@ -68,4 +68,13 @@ public class StockService : IStockService
 
         return this.repository.FindTickersAsync();
     }
+
+    public Task<Stock?> FindByTickerAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindByTickerAsync), ticker);
+
+        ticker = ticker.ToUpper();
+        
+        return this.repository.FindByTickerAsync(ticker);
+    }
 }
