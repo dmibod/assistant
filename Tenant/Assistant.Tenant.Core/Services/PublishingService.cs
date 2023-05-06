@@ -587,9 +587,14 @@ public class PublishingService : IPublishingService
                 tracker.Increase();
             }
         }
+
+        var opMap = operations
+            .GroupBy(op => op.Option.Stock.Id)
+            .ToDictionary(group => group.Key, group => group.ToList());
         
-        board.Description = operations.Select(item => item.Option.Stock.Id).Distinct().OrderBy(ticker => ticker)
-            .Aggregate("", (curr, el) => curr + (string.IsNullOrEmpty(curr) ? "" : ", ") + el);
+        board.Description = opMap.Keys
+            .OrderBy(ticker => ticker)
+            .Aggregate(string.Empty, (curr, ticker) => curr + (string.IsNullOrEmpty(curr) ? "" : ", ") + $"{ticker} ({opMap[ticker].Count})");
 
         await this.kanbanService.UpdateBoardAsync(board);
     }
