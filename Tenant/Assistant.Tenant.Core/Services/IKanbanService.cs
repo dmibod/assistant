@@ -6,6 +6,8 @@ public interface IKanbanService
     
     Task<IEnumerable<Board>> FindBoardsAsync();
 
+    Task<Board?> FindBoardAsync(string id);
+
     Task<Board> CreateBoardAsync(Board board);
 
     Task UpdateBoardAsync(Board board);
@@ -18,11 +20,21 @@ public interface IKanbanService
 
     Task ResetBoardStateAsync(string boardId);
     
+    Task<IEnumerable<Lane>> FindBoardLanesAsync(string boardId);
+
     Task<Lane> CreateBoardLaneAsync(string boardId, Lane lane);
+
+    Task<IEnumerable<Lane>> FindLanesAsync(string boardId, string parentLaneId);
     
     Task<Lane> CreateCardLaneAsync(string boardId, string parentLaneId, Lane lane);
-    
+        
+    Task UpdateLaneAsync(string boardId, string laneId, string description);
+
+    Task<IEnumerable<Card>> FindCardsAsync(string boardId, string cardLaneId); 
+
     Task<Card> CreateCardAsync(string boardId, string cardLaneId, Card card);
+        
+    Task UpdateCardAsync(string boardId, string cardId, string description);
 }
 
 public abstract class Entity

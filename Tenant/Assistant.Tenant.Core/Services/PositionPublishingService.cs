@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 public class PositionPublishingService : IPositionPublishingService
 {
     private const string Positions = "Positions";
+
     private static readonly IDictionary<string, string> FontStyle = new Dictionary<string, string>
     {
         ["fontSize"] = "50%"
@@ -22,8 +23,8 @@ public class PositionPublishingService : IPositionPublishingService
 
     public PositionPublishingService(
         IPositionService positionService,
-        IMarketDataService marketDataService, 
-        IKanbanService kanbanService, 
+        IMarketDataService marketDataService,
+        IKanbanService kanbanService,
         ILogger<PositionPublishingService> logger)
     {
         this.positionService = positionService;
@@ -52,37 +53,27 @@ public class PositionPublishingService : IPositionPublishingService
             await this.kanbanService.ResetBoardStateAsync(board.Id);
         }
     }
-    
+
     private async Task<Board> GetBoardAsync()
     {
-        var boards = await this.kanbanService.FindBoardsAsync();
-        
         var boardId = await this.positionService.FindPositionsBoardId();
-
-        var board = boards.FirstOrDefault(board => string.IsNullOrEmpty(boardId) ? board.Name.StartsWith(Positions) : board.Id == boardId);
-
-        if (board != null)
+        if (!string.IsNullOrEmpty(boardId))
         {
-            try
+            await this.positionService.UpdatePositionsBoardId(string.Empty);
+            var board = await this.kanbanService.FindBoardAsync(boardId);
+            if (board != null)
             {
-                await this.positionService.UpdatePositionsBoardId(string.Empty);
-                await this.kanbanService.RemoveBoardAsync(board.Id);
-            }
-            catch (Exception e)
-            {
-                this.logger.LogError(e, e.Message);
-                await this.positionService.UpdatePositionsBoardId(boardId);
-                throw;
+                return board;
             }
         }
-        
+
         var now = DateTime.UtcNow;
         return await this.kanbanService.CreateBoardAsync(new Board
         {
             Name = $"{Positions} {now.ToShortDateString()} {now.ToShortTimeString()}"
         });
     }
-    
+
     private async Task PublishAsync(Board board)
     {
         var positions = (await this.positionService.FindAllAsync()).ToList();
@@ -95,17 +86,17 @@ public class PositionPublishingService : IPositionPublishingService
             progress =>
             {
                 this.kanbanService.SetBoardProgressStateAsync(board.Id, progress).GetAwaiter().GetResult();
-                this.logger.LogInformation($"{progress}");
             });
 
         var totalOptions = 0;
         var totalCombos = 0;
         var totalStocks = 0;
 
+        var lanes = await this.kanbanService.FindBoardLanesAsync(board.Id);
+
         foreach (var entity in positions.GroupBy(p => p.Account, p => p))
         {
-            var account = await this.kanbanService.CreateBoardLaneAsync(board.Id,
-                new Lane { Name = "ACCOUNT", Description = Hide(entity.Key) });
+            var account = await this.GetOrCreateAccountLaneAsync(board, "ACCOUNT", Hide(entity.Key), lanes);
 
             var accountPositions = entity.ToList();
 
@@ -114,19 +105,38 @@ public class PositionPublishingService : IPositionPublishingService
                 .GroupBy(p => p.Tag ?? string.Empty, p => p)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            totalOptions += await this.PublishOptionsAsync(board, account, optionGroups, stocks, expirations, tracker);
-            totalCombos += await this.PublishCombosAsync(board, account, optionGroups, stocks, expirations, tracker);
+            var accountLanes = await this.kanbanService.FindLanesAsync(board.Id, account.Id);
+
+            totalOptions += await this.PublishOptionsAsync(board, account, accountLanes, optionGroups, stocks, expirations, tracker);
+            totalCombos += await this.PublishCombosAsync(board, account, accountLanes, optionGroups, stocks, expirations, tracker);
             totalStocks +=
-                await this.PublishStocksAsync(board, account, accountPositions, stocks, expirations, tracker);
+                await this.PublishStocksAsync(board, account, accountLanes, accountPositions, stocks, expirations, tracker);
         }
-        
+
         tracker.Finish();
 
         board.Description = $"Stocks ({totalStocks}), Options ({totalOptions}), Combos ({totalCombos})";
         await this.kanbanService.UpdateBoardAsync(board);
     }
-    
-    private async Task<int> PublishOptionsAsync(Board board, Lane account,
+
+    private async Task<Lane> GetOrCreateAccountLaneAsync(Board board, string name, string description, IEnumerable<Lane> lanes)
+    {
+        var lane = lanes.FirstOrDefault(lane => lane.Name == name && lane.Description == description);
+        if (lane != null)
+        {
+            if (lane.Description != description)
+            {
+                await this.kanbanService.UpdateLaneAsync(board.Id, lane.Id, description);
+            }
+
+            return lane;
+        }
+
+        return await this.kanbanService.CreateBoardLaneAsync(board.Id,
+            new Lane { Name = name, Description = description });
+    }
+
+    private async Task<int> PublishOptionsAsync(Board board, Lane account, IEnumerable<Lane> accountLanes,
         IDictionary<string, List<Position>> optionGroups,
         IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations,
         ProgressTracker tracker)
@@ -139,8 +149,9 @@ public class PositionPublishingService : IPositionPublishingService
             return 0;
         }
 
-        var options = await this.kanbanService.CreateCardLaneAsync(board.Id, account.Id,
-            new Lane { Name = "OPTIONS", Description = $"{singleOptionPositions.Count}" });
+        var options = await this.GetOrCreateLaneAsync(board, account, "OPTIONS", $"{singleOptionPositions.Count}", accountLanes);
+
+        var cards = await this.kanbanService.FindCardsAsync(board.Id, options.Id);
 
         foreach (var p in singleOptionPositions.OrderBy(p => p.Ticker))
         {
@@ -148,7 +159,7 @@ public class PositionPublishingService : IPositionPublishingService
                 $"{OptionUtils.GetSide(p.Ticker)}${OptionUtils.GetStrike(p.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(p.Ticker))}";
             var description = this.PositionToContent(p, stocks, expirations);
 
-            var card = await this.kanbanService.CreateCardAsync(board.Id, options.Id, new Card { Name = name, Description = description });
+            var card = await this.GetOrCreateCardAsync(board, options, name, description, cards);
 
             await this.positionService.UpdateCardIdAsync(p.Account, p.Ticker, card.Id);
 
@@ -157,8 +168,43 @@ public class PositionPublishingService : IPositionPublishingService
 
         return singleOptionPositions.Count;
     }
-    
-    private async Task<int> PublishCombosAsync(Board board, Lane account,
+
+    private async Task<Lane> GetOrCreateLaneAsync(Board board, Lane account, string name, string description, IEnumerable<Lane> lanes)
+    {
+        var lane = lanes.FirstOrDefault(lane => lane.Name == name);
+        if (lane != null)
+        {
+            if (lane.Description != description)
+            {
+                await this.kanbanService.UpdateLaneAsync(board.Id, account.Id, description);
+            }
+
+            return lane;
+        }
+
+        return await this.kanbanService.CreateCardLaneAsync(board.Id, account.Id,
+            new Lane { Name = name, Description = description });
+    }
+
+    private async Task<Card> GetOrCreateCardAsync(Board board, Lane lane, string name, string description,
+        IEnumerable<Card> cards)
+    {
+        var card = cards.FirstOrDefault(card => card.Name == name);
+        if (card != null)
+        {
+            if (card.Description != description)
+            {
+                await this.kanbanService.UpdateCardAsync(board.Id, card.Id, description);
+            }
+
+            return card;
+        }
+
+        return await this.kanbanService.CreateCardAsync(board.Id, lane.Id,
+            new Card { Name = name, Description = description });
+    }
+
+    private async Task<int> PublishCombosAsync(Board board, Lane account, IEnumerable<Lane> accountLanes,
         IDictionary<string, List<Position>> optionGroups, IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations, ProgressTracker tracker)
     {
@@ -169,8 +215,9 @@ public class PositionPublishingService : IPositionPublishingService
             return 0;
         }
 
-        var combos = await this.kanbanService.CreateCardLaneAsync(board.Id, account.Id,
-            new Lane { Name = "COMBOS", Description = $"{comboOptionPositions.Count}" });
+        var combos = await this.GetOrCreateLaneAsync(board, account, "COMBOS", $"{comboOptionPositions.Count}", accountLanes);
+
+        var cards = await this.kanbanService.FindCardsAsync(board.Id, combos.Id);
 
         foreach (var p in comboOptionPositions.OrderBy(p => p.Key))
         {
@@ -180,8 +227,7 @@ public class PositionPublishingService : IPositionPublishingService
 
             var description = this.PositionToContent(p.Value, stocks, expirations);
 
-            var card = await this.kanbanService.CreateCardAsync(board.Id, combos.Id,
-                new Card { Name = name, Description = description });
+            var card = await this.GetOrCreateCardAsync(board, combos, name, description, cards);
 
             foreach (var l in p.Value)
             {
@@ -193,8 +239,8 @@ public class PositionPublishingService : IPositionPublishingService
 
         return comboOptionPositions.Count;
     }
-    
-    private async Task<int> PublishStocksAsync(Board board, Lane account, IEnumerable<Position> positions,
+
+    private async Task<int> PublishStocksAsync(Board board, Lane account, IEnumerable<Lane> accountLanes, IEnumerable<Position> positions,
         IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations,
         ProgressTracker tracker)
     {
@@ -205,17 +251,17 @@ public class PositionPublishingService : IPositionPublishingService
             return 0;
         }
 
-        var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, account.Id,
-            new Lane { Name = "STOCKS", Description = $"{stockPositions.Count}" });
+        var stocksLane = await this.GetOrCreateLaneAsync(board, account, "STOCKS", $"{stockPositions.Count}", accountLanes);
+
+        var cards = await this.kanbanService.FindCardsAsync(board.Id, stocksLane.Id);
 
         foreach (var p in stockPositions.OrderBy(p => p.Ticker))
         {
             var name = p.Ticker;
             var description = this.PositionToContent(p, stocks, expirations);
 
-            var card = await this.kanbanService.CreateCardAsync(board.Id, stocksLane.Id,
-                new Card { Name = name, Description = description });
-            
+            var card = await this.GetOrCreateCardAsync(board, stocksLane, name, description, cards);
+
             await this.positionService.UpdateCardIdAsync(p.Account, p.Ticker, card.Id);
 
             tracker.Increase();
@@ -223,7 +269,7 @@ public class PositionPublishingService : IPositionPublishingService
 
         return stockPositions.Count;
     }
-    
+
     private static int RevealComboSize(IEnumerable<Position> legs)
     {
         var list = legs.ToList();
@@ -266,7 +312,7 @@ public class PositionPublishingService : IPositionPublishingService
                + this.PriceToContent(legs, expirations) +
                "]";
     }
-    
+
     private string StockPositionToContent(Position pos, IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
@@ -282,7 +328,7 @@ public class PositionPublishingService : IPositionPublishingService
                "]";
     }
 
-        private string ShortPutToContent(Position pos, IDictionary<string, AssetPrice> stocks,
+    private string ShortPutToContent(Position pos, IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
         var ticker = OptionUtils.GetStock(pos.Ticker);
@@ -342,7 +388,7 @@ public class PositionPublishingService : IPositionPublishingService
             ? this.StockPositionToContent(pos, stocks, expirations)
             : this.OptionPositionToContent(pos, stocks, expirations);
     }
-    
+
     private string PriceToContent(IEnumerable<Position> legs, IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
         const string label = "price";
@@ -383,7 +429,7 @@ public class PositionPublishingService : IPositionPublishingService
             RenderUtils.PropToContent(
                 $"${Math.Round(comboChange.Item1, 2)} (${Math.Round(Math.Abs(comboChange.Item2), 2)})", style));
     }
-    
+
     private string PriceToContent(Position pos, IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations, bool percents = true, string? label = null,
         IDictionary<string, string> extraValues = null)
@@ -460,8 +506,9 @@ public class PositionPublishingService : IPositionPublishingService
         return new Tuple<decimal, decimal, decimal>(Math.Round(pos.AverageCost, 2), Math.Round(diff, 2),
             CalculationUtils.Percent(diff / pos.AverageCost, 2));
     }
-    
-    private static Tuple<decimal, decimal, decimal> GetStockPriceChange(Position pos, IDictionary<string, AssetPrice> stocks)
+
+    private static Tuple<decimal, decimal, decimal> GetStockPriceChange(Position pos,
+        IDictionary<string, AssetPrice> stocks)
     {
         var ticker = pos.Ticker;
 
@@ -477,7 +524,7 @@ public class PositionPublishingService : IPositionPublishingService
         return new Tuple<decimal, decimal, decimal>(Math.Round(pos.AverageCost, 2), Math.Round(diff, 2),
             CalculationUtils.Percent(diff / pos.AverageCost, 2));
     }
-    
+
     private static IDictionary<string, string> GetStyle(Position pos, decimal priceChange,
         IDictionary<string, string> extraValues = null)
     {
@@ -501,7 +548,7 @@ public class PositionPublishingService : IPositionPublishingService
 
         return style;
     }
-    
+
     private static string FormatPrice(decimal? price)
     {
         return $"${Math.Round(price ?? decimal.Zero, 2)}";

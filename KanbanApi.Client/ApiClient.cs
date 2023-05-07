@@ -1,5 +1,6 @@
 ﻿namespace KanbanApi.Client;
 
+using System.Net;
 using System.Net.Http.Json;
 using KanbanApi.Client.Abstract;
 using KanbanApi.Client.Extensions;
@@ -32,6 +33,11 @@ public class ApiClient : IDisposable
     public async Task<Board?> GetBoardAsync(string id)
     {
         using var response = await this.httpClient.GetAsync($"/v1/api/board/{id}");
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
 
         response.EnsureSuccessStatusCode();
 
