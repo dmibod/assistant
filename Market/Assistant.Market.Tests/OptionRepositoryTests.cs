@@ -3,7 +3,7 @@
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Repositories;
 using Assistant.Market.Infrastructure.Repositories;
-using Common.Core.Utils;
+using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 

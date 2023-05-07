@@ -1,11 +1,10 @@
 ﻿namespace Assistant.Market.Infrastructure.Services;
 
 using Assistant.Market.Infrastructure.Configuration;
-using Common.Core.Messaging;
+using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
 using Common.Infrastructure.Services;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 public class CleanDataTimerService : BaseTimerService
 {
@@ -13,11 +12,12 @@ public class CleanDataTimerService : BaseTimerService
     private readonly string dataCleanTopic;
     private readonly ILogger<CleanDataTimerService> logger;
 
-    public CleanDataTimerService(IBusService busService, ITopicResolver topicResolver, ILogger<CleanDataTimerService> logger) 
+    public CleanDataTimerService(IBusService busService, ITopicResolver topicResolver,
+        ILogger<CleanDataTimerService> logger)
         : base(TimeSpan.FromHours(24), TimeSpan.FromSeconds(GetInitialDelay(10, 60)))
     {
         this.busService = busService;
-        this.dataCleanTopic = topicResolver.Resolve("{DataCleanTopic}");
+        this.dataCleanTopic = topicResolver.ResolveConfig(nameof(NatsSettings.DataCleanTopic));
         this.logger = logger;
     }
 

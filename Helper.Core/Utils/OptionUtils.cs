@@ -1,11 +1,23 @@
-﻿namespace Common.Core.Utils;
+﻿namespace Helper.Core.Utils;
 
 using System.Text.RegularExpressions;
 
 public static class OptionUtils
 {
-    private const string OptionTickerPattern = @"(.+)(\d{8})([C|P])(\d{8})";
-    private const string ExpirationPattern = @"(\d{4})(\d{2})(\d{2})";
+    private const string OptionTickerPattern = @"^([A-Z]+)(\d{8})([C|P])(\d{8})$";
+    private const string ExpirationPattern = @"^(\d{4})(\d{2})(\d{2})$";
+
+    public static string Format(string rawOptionTicker)
+    {
+        var optionTicker = rawOptionTicker.ToUpper();
+
+        return IsValid(optionTicker) ? optionTicker : throw new FormatException($"Invalid option ticker {rawOptionTicker}");
+    }
+
+    public static bool IsValid(string optionTicker)
+    {
+        return !string.IsNullOrWhiteSpace(optionTicker) && Regex.IsMatch(optionTicker, OptionTickerPattern);
+    }
 
     public static string OptionTicker(string stockTicker, string expiration, string strike, bool isCall)
     {
@@ -86,8 +98,8 @@ public static class OptionUtils
         return new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
     }
     
-    public static string AsYYYYMMDD(DateTime expiraion)
+    public static string AsYYYYMMDD(DateTime expiration)
     {
-        return expiraion.ToString("yyyyMMdd");
+        return expiration.ToString("yyyyMMdd");
     }
 }

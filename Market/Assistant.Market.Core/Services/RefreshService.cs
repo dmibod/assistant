@@ -1,7 +1,7 @@
 ﻿namespace Assistant.Market.Core.Services;
 
 using Assistant.Market.Core.Models;
-using Common.Core.Utils;
+using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 
 public class RefreshService : IRefreshService

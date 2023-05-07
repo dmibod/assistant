@@ -2,10 +2,12 @@
 
 using Assistant.Market.Core.Services;
 using Common.Core.Messaging;
+using Common.Core.Messaging.Attributes;
+using Common.Core.Messaging.Models;
 using Microsoft.Extensions.Logging;
 
 [Handler("{StockRefreshTopic}")]
-public class StockRefreshMessageHandler : IMessageHandler<StockMessage>
+public class StockRefreshMessageHandler : IMessageHandler<TextMessage>
 {
     private readonly IRefreshService refreshService;
     private readonly ILogger<StockRefreshMessageHandler> logger;
@@ -16,10 +18,10 @@ public class StockRefreshMessageHandler : IMessageHandler<StockMessage>
         this.logger = logger;
     }
 
-    public Task HandleAsync(StockMessage message)
+    public Task HandleAsync(TextMessage message)
     {
-        this.logger.LogInformation("Received stock refresh message for '{Ticker}'", message.Ticker);
+        this.logger.LogInformation("Received stock refresh message for '{Ticker}'", message.Text);
         
-        return this.refreshService.UpdateStockAsync(message.Ticker);
+        return this.refreshService.UpdateStockAsync(message.Text);
     }
 }

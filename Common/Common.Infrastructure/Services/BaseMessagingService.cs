@@ -4,53 +4,45 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using Common.Core.Messaging;
+using Common.Core.Messaging.Attributes;
+using Common.Core.Messaging.TopicResolver;
+using Common.Core.Messaging.TypesProvider;
 using Common.Core.Utils;
 using NATS.Client;
 
 public abstract class BaseMessagingService : BaseHostedService
 {
+    private readonly IHandlerTypesProvider handlerTypesProvider;
+    private readonly ITopicResolver topicResolver;
     private readonly IConnection connection;
 
     private readonly IDictionary<string, IAsyncSubscription> subscriptions =
         new ConcurrentDictionary<string, IAsyncSubscription>();
 
-    protected BaseMessagingService(IConnection connection)
+    protected BaseMessagingService(
+        IHandlerTypesProvider handlerTypesProvider,
+        ITopicResolver topicResolver, 
+        IConnection connection)
     {
+        this.handlerTypesProvider = handlerTypesProvider;
+        this.topicResolver = topicResolver;
         this.connection = connection;
     }
-
-    protected abstract void SubscribeHandlers(Action<Type> action);
-
-    protected abstract string ResolveTopic(string topic);
     
     protected abstract Task HandleAsync(object message);
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        this.SubscribeHandlers(handlerType =>
+        foreach (var handlerType in this.handlerTypesProvider.HandlerTypes)
         {
-            var topic = this.ResolveTopic(GetTopicFromTypeAttribute(handlerType));
-            var messageType = handlerType.GenericParameterOf(typeof(IMessageHandler<>));
-            
-            var subscription = this.connection.SubscribeAsync(topic, (sender, args) =>
-            {
-                try
-                {
-                    var json = Encoding.UTF8.GetString(args.Message.Data);
-                    var message = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize(json, messageType);
+            var topic = this.GetHandlerTopic(handlerType);
 
-                    this.HandleAsync(message).GetAwaiter().GetResult();
-                }
-                catch (Exception e)
-                {
-                    this.LogError(e.Message);
-                }
-            });
+            var messageType = handlerType.GenericArgumentOf(typeof(IMessageHandler<>));
+            
+            var subscription = this.connection.SubscribeAsync(topic, (_, args) => this.OnMessage(messageType, args.Message));
             
             this.subscriptions.Add(topic, subscription);
-        });
-
-        return Task.CompletedTask;
+        }
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
@@ -63,9 +55,29 @@ public abstract class BaseMessagingService : BaseHostedService
 
         await base.StopAsync(cancellationToken);
     }
-    
-    private static string GetTopicFromTypeAttribute(Type handlerType)
+
+    private void OnMessage(Type payloadType, Msg message)
     {
-        return handlerType.GetTypeAttribute<HandlerAttribute>().Topic;
+        try
+        {
+            var json = Encoding.UTF8.GetString(message.Data);
+            
+            var payload = string.IsNullOrEmpty(json) 
+                ? null 
+                : JsonSerializer.Deserialize(json, payloadType);
+
+            this.HandleAsync(payload!).GetAwaiter().GetResult();
+        }
+        catch (Exception e)
+        {
+            this.LogError(e.Message);
+        }
+    }
+
+    private string GetHandlerTopic(Type handlerType)
+    {
+        var topic = handlerType.GetAttribute<HandlerAttribute>().Topic;
+
+        return this.topicResolver.Resolve(topic);
     }
 }

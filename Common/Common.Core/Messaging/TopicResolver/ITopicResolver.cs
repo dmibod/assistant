@@ -1,4 +1,4 @@
-﻿namespace Common.Core.Messaging;
+﻿namespace Common.Core.Messaging.TopicResolver;
 
 public interface ITopicResolver
 {

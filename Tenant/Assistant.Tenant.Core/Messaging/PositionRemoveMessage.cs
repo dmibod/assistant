@@ -1,6 +1,7 @@
 ﻿namespace Assistant.Tenant.Core.Messaging;
 
 using Common.Core.Messaging;
+using Common.Core.Messaging.Models;
 
 public class PositionRemoveMessage : TenantMessage
 {

@@ -6,15 +6,15 @@ using Assistant.Tenant.Core.Messaging;
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Configuration;
-using Common.Core.Messaging;
+using Common.Core.Messaging.TopicResolver;
 using Common.Core.Security;
 using Common.Core.Services;
 using Common.Core.Utils;
 using Common.Infrastructure.Security;
+using Helper.Core.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 [ApiController]
 [Route("[controller]")]
@@ -46,7 +46,7 @@ public class TenantController : ControllerBase
         this.identityProvider = identityProvider;
         this.marketDataService = marketDataService;
         this.busService = busService;
-        this.testMessageTopic = topicResolver.Resolve("{PositionRemoveTopic}");
+        this.testMessageTopic = topicResolver.ResolveConfig(nameof(NatsSettings.PositionRemoveTopic));
     }
 
     /// <summary>

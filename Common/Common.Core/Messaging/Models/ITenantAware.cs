@@ -1,4 +1,4 @@
-﻿namespace Common.Core.Messaging;
+﻿namespace Common.Core.Messaging.Models;
 
 public interface ITenantAware
 {

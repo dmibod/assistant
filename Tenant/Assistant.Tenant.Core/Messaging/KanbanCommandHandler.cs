@@ -1,6 +1,7 @@
 ﻿namespace Assistant.Tenant.Core.Messaging;
 
 using Common.Core.Messaging;
+using Common.Core.Messaging.Attributes;
 using Microsoft.Extensions.Logging;
 
 [Handler("command", enabled: false)]

@@ -1,11 +1,10 @@
 ﻿namespace Assistant.Market.Infrastructure.Services;
 
 using Assistant.Market.Infrastructure.Configuration;
-using Common.Core.Messaging;
+using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
 using Common.Infrastructure.Services;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 public class MarketDataTimerService : BaseTimerService
 {
@@ -13,11 +12,12 @@ public class MarketDataTimerService : BaseTimerService
     private readonly string dataPublishTopic;
     private readonly ILogger<MarketDataTimerService> logger;
 
-    public MarketDataTimerService(IBusService busService, ITopicResolver topicResolver, ILogger<MarketDataTimerService> logger) 
+    public MarketDataTimerService(IBusService busService, ITopicResolver topicResolver,
+        ILogger<MarketDataTimerService> logger)
         : base(TimeSpan.FromHours(1), TimeSpan.FromHours(1))
     {
         this.busService = busService;
-        this.dataPublishTopic = topicResolver.Resolve("{DataPublishTopic}");
+        this.dataPublishTopic = topicResolver.ResolveConfig(nameof(NatsSettings.DataPublishTopic));
         this.logger = logger;
     }
 
@@ -30,7 +30,7 @@ public class MarketDataTimerService : BaseTimerService
     {
         this.logger.LogInformation(message);
     }
-    
+
     protected override void LogError(string error)
     {
         this.logger.LogError(error);

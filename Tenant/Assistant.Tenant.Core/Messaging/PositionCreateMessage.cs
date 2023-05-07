@@ -2,6 +2,7 @@
 
 using Assistant.Tenant.Core.Models;
 using Common.Core.Messaging;
+using Common.Core.Messaging.Models;
 
 public class PositionCreateMessage : Position, ITenantAware
 {

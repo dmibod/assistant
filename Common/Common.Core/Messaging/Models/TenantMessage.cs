@@ -1,4 +1,4 @@
-﻿namespace Common.Core.Messaging;
+﻿namespace Common.Core.Messaging.Models;
 
 public class TenantMessage : ITenantAware
 {

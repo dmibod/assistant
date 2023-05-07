@@ -2,6 +2,7 @@
 
 using System.Reflection;
 using Common.Core.Messaging;
+using Common.Core.Messaging.TypesProvider;
 using Common.Core.Security;
 using Common.Core.Utils;
 using Common.Infrastructure.Security;
@@ -28,12 +29,11 @@ public static class ServiceCollectionExtensions
     {
         var mht = typeof(IMessageHandler<>);
 
-        var handlerTypesProvider = new MessageHandlerTypesProvider(assemblies); 
-        var handlerTypes = handlerTypesProvider.HandlerTypes;
+        var typesProvider = new AssemblyHandlerTypesProvider(assemblies); 
 
-        foreach (var handlerType in handlerTypes)
+        foreach (var handlerType in typesProvider.HandlerTypes)
         {
-            var interfaceType = handlerType.GenericParameterOf(mht).GenericTypeFrom(mht);
+            var interfaceType = handlerType.GenericArgumentOf(mht).GenericTypeFrom(mht);
             
             switch (lifetime)
             {
@@ -52,10 +52,12 @@ public static class ServiceCollectionExtensions
                     services.AddSingleton(interfaceType, handlerType);
 
                 } break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(lifetime), lifetime, null);
             }
         }
 
-        services.AddSingleton<IMessageHandlerTypesProvider, MessageHandlerTypesProvider>(sp => handlerTypesProvider);
+        services.AddSingleton<IHandlerTypesProvider, AssemblyHandlerTypesProvider>(sp => typesProvider);
         services.AddHostedService<MessagingService>();
 
         return services;

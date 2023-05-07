@@ -1,6 +1,9 @@
-﻿namespace Assistant.Tenant.Core.Services;
+﻿namespace Assistant.Tenant.Infrastructure.Services;
 
-using Common.Core.Messaging;
+using Assistant.Tenant.Core.Services;
+using Assistant.Tenant.Infrastructure.Configuration;
+using Common.Core.Messaging.Models;
+using Common.Core.Messaging.TopicResolver;
 using Common.Core.Security;
 using Common.Core.Services;
 using Microsoft.Extensions.Logging;
@@ -13,12 +16,12 @@ public class NotificationService : INotificationService
     private readonly string refreshPositionTopic;
 
     public NotificationService(
-        IIdentityProvider identityProvider, 
-        ITopicResolver topicResolver, 
+        IIdentityProvider identityProvider,
+        ITopicResolver topicResolver,
         IBusService busService,
         ILogger<NotificationService> logger)
     {
-        this.refreshPositionTopic = topicResolver.Resolve("{PositionRefreshTopic}");
+        this.refreshPositionTopic = topicResolver.ResolveConfig(nameof(NatsSettings.PositionRefreshTopic));
         this.identityProvider = identityProvider;
         this.busService = busService;
         this.logger = logger;
@@ -30,7 +33,7 @@ public class NotificationService : INotificationService
 
         return this.busService.PublishAsync(this.refreshPositionTopic, new TenantMessage
         {
-            Tenant = this.identityProvider.Identity.Name
+            Tenant = this.identityProvider.Identity.Name!
         });
     }
 }

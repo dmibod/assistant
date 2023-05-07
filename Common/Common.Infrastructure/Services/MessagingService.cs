@@ -3,7 +3,11 @@
 using System.Collections.Concurrent;
 using System.Reflection;
 using Common.Core.Messaging;
+using Common.Core.Messaging.Models;
+using Common.Core.Messaging.TopicResolver;
+using Common.Core.Messaging.TypesProvider;
 using Common.Core.Utils;
+using Common.Infrastructure.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NATS.Client;
@@ -11,20 +15,16 @@ using NATS.Client;
 public class MessagingService : BaseMessagingService
 {
     private readonly IServiceProvider serviceProvider;
-    private readonly IMessageHandlerTypesProvider messageHandlerTypesProvider;
-    private readonly ITopicResolver topicResolver;
     private readonly ILogger<MessagingService> logger;
 
     public MessagingService(
         IServiceProvider serviceProvider,
-        IMessageHandlerTypesProvider messageHandlerTypesProvider,
+        IHandlerTypesProvider handlerTypesProvider,
         ITopicResolver topicResolver,
         IConnection connection,
-        ILogger<MessagingService> logger) : base(connection)
+        ILogger<MessagingService> logger) : base(handlerTypesProvider, topicResolver, connection)
     {
         this.serviceProvider = serviceProvider;
-        this.messageHandlerTypesProvider = messageHandlerTypesProvider;
-        this.topicResolver = topicResolver;
         this.logger = logger;
     }
 
@@ -38,24 +38,11 @@ public class MessagingService : BaseMessagingService
         this.logger.LogError(error);
     }
 
-    protected override void SubscribeHandlers(Action<Type> action)
-    {
-        foreach (var messageHandlerType in this.messageHandlerTypesProvider.HandlerTypes)
-        {
-            action(messageHandlerType);
-        }
-    }
-
-    protected override string ResolveTopic(string topic)
-    {
-        return this.topicResolver.Resolve(topic);
-    }
-
     protected override Task HandleAsync(object message)
     {
         var tenantAware = message as ITenantAware;
 
-        return this.serviceProvider.ExecuteAsync(tenantAware?.Tenant ?? "system", scope =>
+        return this.serviceProvider.ExecuteAsync(tenantAware?.Tenant ?? Identity.System, scope =>
         {
             var service = scope.ServiceProvider.GetRequiredService(TypeCache.GetHandlerType(message));
 
@@ -66,13 +53,14 @@ public class MessagingService : BaseMessagingService
                 message
             };
             
-            return method.Invoke(service, parameters) as Task;
+            return (method.Invoke(service, parameters) as Task)!;
         });
     }
 }
 
 internal static class TypeCache
 {
+    private static readonly Type Mht = typeof(IMessageHandler<>);
     private static readonly IDictionary<Type, Type> Cache = new ConcurrentDictionary<Type, Type>();
 
     public static Type GetHandlerType(object message)
@@ -84,7 +72,7 @@ internal static class TypeCache
             return type;
         }
         
-        Cache.Add(messageType, messageType.GenericTypeFrom(typeof(IMessageHandler<>)));
+        Cache.Add(messageType, messageType.GenericTypeFrom(Mht));
 
         return Cache[messageType];
     }
@@ -92,6 +80,7 @@ internal static class TypeCache
 
 internal static class MethodCache
 {
+    private const string MethodName = nameof(IMessageHandler<object>.HandleAsync);
     private static readonly IDictionary<Type, MethodInfo> Cache = new ConcurrentDictionary<Type, MethodInfo>();
 
     public static MethodInfo GetMethod(object message)
@@ -103,7 +92,7 @@ internal static class MethodCache
             return method;
         }
         
-        Cache.Add(messageType, TypeCache.GetHandlerType(message).GetMethod("HandleAsync")!);
+        Cache.Add(messageType, TypeCache.GetHandlerType(message).GetMethod(MethodName)!);
 
         return Cache[messageType];
     }

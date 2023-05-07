@@ -1,10 +1,10 @@
-﻿namespace Common.Core.Messaging;
+﻿namespace Common.Core.Messaging.TopicResolver;
 
-public class TopicResolver : ITopicResolver
+public class MapTopicResolver : ITopicResolver
 {
     private readonly IDictionary<string, string> map;
 
-    public TopicResolver(IDictionary<string, string> map)
+    public MapTopicResolver(IDictionary<string, string> map)
     {
         this.map = map;
     }

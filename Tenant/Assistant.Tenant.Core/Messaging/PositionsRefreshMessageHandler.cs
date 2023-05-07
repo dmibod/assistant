@@ -2,6 +2,8 @@
 
 using Assistant.Tenant.Core.Services;
 using Common.Core.Messaging;
+using Common.Core.Messaging.Attributes;
+using Common.Core.Messaging.Models;
 using Microsoft.Extensions.Logging;
 
 [Handler("{PositionRefreshTopic}")]

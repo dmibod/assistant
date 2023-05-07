@@ -1,4 +1,4 @@
-﻿namespace Common.Core.Messaging;
+﻿namespace Common.Core.Messaging.Attributes;
 
 [AttributeUsage(AttributeTargets.Class)]
 public class HandlerAttribute : Attribute

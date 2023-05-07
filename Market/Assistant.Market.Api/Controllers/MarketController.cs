@@ -2,7 +2,9 @@
 
 using System.Security.Claims;
 using Assistant.Market.Core.Services;
-using Common.Core.Messaging;
+using Assistant.Market.Infrastructure.Configuration;
+using Common.Core.Messaging.Models;
+using Common.Core.Messaging.TopicResolver;
 using Common.Core.Security;
 using Common.Core.Services;
 using Common.Infrastructure.Security;
@@ -32,9 +34,9 @@ public class MarketController : ControllerBase
         this.optionService = optionService;
         this.identityProvider = identityProvider;
         this.busService = busService;
-        this.dataPublishTopic = topicResolver.Resolve("{DataPublishTopic}");
-        this.stockCreateTopic = topicResolver.Resolve("{StockCreateTopic}");
-        this.stockRefreshTopic = topicResolver.Resolve("{StockRefreshTopic}");
+        this.dataPublishTopic = topicResolver.ResolveConfig(nameof(NatsSettings.DataPublishTopic));
+        this.stockCreateTopic = topicResolver.ResolveConfig(nameof(NatsSettings.StockCreateTopic));
+        this.stockRefreshTopic = topicResolver.ResolveConfig(nameof(NatsSettings.StockRefreshTopic));
     }
 
     /// <summary>
@@ -105,9 +107,9 @@ public class MarketController : ControllerBase
     [HttpPost("Stocks/{ticker}"), Authorize("publishing")]
     public Task AddStockAsync(string ticker)
     {
-        return this.busService.PublishAsync(this.stockCreateTopic, new StockMessage
+        return this.busService.PublishAsync(this.stockCreateTopic, new TextMessage
         {
-            Ticker = ticker
+            Text = ticker
         });
     }
 

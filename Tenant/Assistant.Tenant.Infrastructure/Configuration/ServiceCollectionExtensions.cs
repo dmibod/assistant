@@ -5,8 +5,9 @@ using Assistant.Tenant.Core.Repositories;
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Repositories;
 using Assistant.Tenant.Infrastructure.Services;
-using Common.Core.Messaging;
+using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
+using Common.Core.Utils;
 using Common.Infrastructure.Configuration;
 using Common.Infrastructure.Services;
 using KanbanApi.Client.Configuration;
@@ -19,9 +20,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection ConfigureInfrastructure(this IServiceCollection services,
         ConfigurationManager configuration)
     {
-        services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
+        services.Configure<DatabaseSettings>(configuration.GetSection(nameof(DatabaseSettings)));
 
-        var kanbanSettings = configuration.GetSection("KanbanApiSettings").Get<KanbanApiSettings>();
+        var kanbanSettings = configuration.GetSection(nameof(KanbanApiSettings)).Get<KanbanApiSettings>();
         services.AddHttpClient("KanbanApiClient", client =>
         {
             client.BaseAddress = new Uri(kanbanSettings.ApiUrl);
@@ -47,28 +48,29 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection ConfigureMessaging(this IServiceCollection services,
         ConfigurationManager configuration)
     {
-        var settings = configuration.GetSection("NatsSettings").Get<NatsSettings>();
+        var natsSection = configuration.GetSection(nameof(NatsSettings));
+        var natsSettings = natsSection.Get<NatsSettings>();
 
         services.AddNatsClient(options =>
         {
-            options.User = settings.User;
-            options.Password = settings.Password;
-            options.Url = settings.Url;
+            options.User = natsSettings!.User;
+            options.Password = natsSettings.Password;
+            options.Url = natsSettings.Url;
         });
-        services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
+        services.Configure<NatsSettings>(natsSection);
         services.AddSingleton<IBusService, BusService>();
 
-        services.AddSingleton<ITopicResolver, TopicResolver>(sp =>
+        services.AddSingleton<ITopicResolver, MapTopicResolver>(_ =>
         {
             var topics = new Dictionary<string, string>
             {
-                ["{StockCreateTopic}"] = settings.StockCreateTopic,
-                ["{PositionCreateTopic}"] = settings.PositionCreateTopic,
-                ["{PositionRefreshTopic}"] = settings.PositionRefreshTopic,
-                ["{PositionRemoveTopic}"] = settings.PositionRemoveTopic
+                [TopicUtils.AsTopic(nameof(NatsSettings.StockCreateTopic))] = natsSettings!.StockCreateTopic,
+                [TopicUtils.AsTopic(nameof(NatsSettings.PositionCreateTopic))] = natsSettings.PositionCreateTopic,
+                [TopicUtils.AsTopic(nameof(NatsSettings.PositionRefreshTopic))] = natsSettings.PositionRefreshTopic,
+                [TopicUtils.AsTopic(nameof(NatsSettings.PositionRemoveTopic))] = natsSettings.PositionRemoveTopic
             };
 
-            return new TopicResolver(topics);
+            return new MapTopicResolver(topics);
         });
 
         services.ConfigureMessaging(new[]

@@ -1,6 +1,7 @@
 ﻿namespace Assistant.Market.Infrastructure.Services;
 
 using Assistant.Market.Core.Services;
+using Common.Infrastructure.Security;
 using KanbanApi.Client;
 using Microsoft.Extensions.Logging;
 using Board = Assistant.Market.Core.Services.Board;
@@ -9,7 +10,7 @@ using Lane = Assistant.Market.Core.Services.Lane;
 
 public class KanbanService : IKanbanService
 {
-    public const string KanbanOwner = "system";
+    public const string KanbanOwner = Identity.System;
 
     private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<KanbanService> logger;
