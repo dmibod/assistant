@@ -1,13 +1,14 @@
 ﻿namespace Assistant.Market.Api.Controllers;
 
 using System.Security.Claims;
+using Assistant.Market.Core.Messaging;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
-using Common.Core.Messaging.Models;
 using Common.Core.Messaging.TopicResolver;
 using Common.Core.Security;
 using Common.Core.Services;
 using Common.Infrastructure.Security;
+using Helper.Core.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -84,7 +85,7 @@ public class MarketController : ControllerBase
     [HttpGet("Stocks/{ticker}/Options")]
     public async Task<ActionResult> GetOptionChainAsync(string ticker)
     {
-        var chain = await this.optionService.FindAsync(ticker);
+        var chain = await this.optionService.FindAsync(StockUtils.Format(ticker));
 
         return this.Ok(chain);
     }
@@ -96,7 +97,7 @@ public class MarketController : ControllerBase
     [HttpGet("Stocks/{ticker}/OptionsChange")]
     public async Task<ActionResult> GetOptionChangeAsync(string ticker)
     {
-        var chain = await this.optionService.FindChangeAsync(ticker);
+        var chain = await this.optionService.FindChangeAsync(StockUtils.Format(ticker));
 
         return this.Ok(chain);
     }
@@ -107,9 +108,9 @@ public class MarketController : ControllerBase
     [HttpPost("Stocks/{ticker}"), Authorize("publishing")]
     public Task AddStockAsync(string ticker)
     {
-        return this.busService.PublishAsync(this.stockCreateTopic, new TextMessage
+        return this.busService.PublishAsync(this.stockCreateTopic, new StockCreateMessage
         {
-            Text = ticker
+            Ticker = StockUtils.Format(ticker)
         });
     }
 
@@ -119,7 +120,10 @@ public class MarketController : ControllerBase
     [HttpPut("Stocks/{ticker}"), Authorize("publishing")]
     public Task RefreshStockAsync(string ticker)
     {
-        return this.busService.PublishAsync(this.stockRefreshTopic, ticker);
+        return this.busService.PublishAsync(this.stockRefreshTopic, new StockRefreshMessage
+        {
+            Ticker = StockUtils.Format(ticker)
+        });
     }
 
     /// <summary>

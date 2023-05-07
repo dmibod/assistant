@@ -3,6 +3,7 @@
 using Assistant.Tenant.Core.Services;
 using Common.Core.Messaging;
 using Common.Core.Messaging.Attributes;
+using Common.Core.Messaging.Models;
 using Microsoft.Extensions.Logging;
 
 [Handler("{PositionRemoveTopic}")]
@@ -29,4 +30,11 @@ public class PositionRemoveMessageHandler : IMessageHandler<PositionRemoveMessag
         
         this.logger.LogInformation(position == null ? "Position is not found" : $"Position is found, size is '{position.Quantity}', cost is '{position.AverageCost}'");
     }
+}
+
+public class PositionRemoveMessage : TenantMessage
+{
+    public string Account { get; set; }
+    
+    public string Ticker { get; set; }
 }

@@ -29,12 +29,19 @@ public static class ServiceCollectionExtensions
     {
         var mht = typeof(IMessageHandler<>);
 
-        var typesProvider = new AssemblyHandlerTypesProvider(assemblies); 
+        var typesProvider = new AssemblyHandlerTypesProvider(assemblies);
+
+        var set = new HashSet<Type>();
 
         foreach (var handlerType in typesProvider.HandlerTypes)
         {
             var interfaceType = handlerType.GenericArgumentOf(mht).GenericTypeFrom(mht);
-            
+
+            if (!set.Add(interfaceType))
+            {
+                throw new InvalidOperationException($"Message handler of type '{interfaceType.FullName}' has been registered already");
+            }
+
             switch (lifetime)
             {
                 case ServiceLifetime.Transient:

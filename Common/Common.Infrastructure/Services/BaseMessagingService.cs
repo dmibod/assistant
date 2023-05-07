@@ -21,26 +21,29 @@ public abstract class BaseMessagingService : BaseHostedService
 
     protected BaseMessagingService(
         IHandlerTypesProvider handlerTypesProvider,
-        ITopicResolver topicResolver, 
+        ITopicResolver topicResolver,
         IConnection connection)
     {
         this.handlerTypesProvider = handlerTypesProvider;
         this.topicResolver = topicResolver;
         this.connection = connection;
     }
-    
-    protected abstract Task HandleAsync(object message);
+
+    protected abstract Task HandleAsync(object message, Type serviceType);
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var mht = typeof(IMessageHandler<>);
+
         foreach (var handlerType in this.handlerTypesProvider.HandlerTypes)
         {
             var topic = this.GetHandlerTopic(handlerType);
 
-            var messageType = handlerType.GenericArgumentOf(typeof(IMessageHandler<>));
-            
-            var subscription = this.connection.SubscribeAsync(topic, (_, args) => this.OnMessage(messageType, args.Message));
-            
+            var messageType = handlerType.GenericArgumentOf(mht);
+
+            var subscription =
+                this.connection.SubscribeAsync(topic, (_, args) => this.OnMessage(messageType, args.Message, messageType.GenericTypeFrom(mht)));
+
             this.subscriptions.Add(topic, subscription);
         }
     }
@@ -56,17 +59,17 @@ public abstract class BaseMessagingService : BaseHostedService
         await base.StopAsync(cancellationToken);
     }
 
-    private void OnMessage(Type payloadType, Msg message)
+    private void OnMessage(Type payloadType, Msg message, Type serviceType)
     {
         try
         {
             var json = Encoding.UTF8.GetString(message.Data);
-            
-            var payload = string.IsNullOrEmpty(json) 
-                ? null 
+
+            var payload = string.IsNullOrEmpty(json)
+                ? null
                 : JsonSerializer.Deserialize(json, payloadType);
 
-            this.HandleAsync(payload!).GetAwaiter().GetResult();
+            this.HandleAsync(payload!, serviceType).GetAwaiter().GetResult();
         }
         catch (Exception e)
         {

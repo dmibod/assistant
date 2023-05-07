@@ -46,7 +46,7 @@ public class MarketDataService : IMarketDataService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.EnsureStockAsync), ticker);
         
-        return this.busService.PublishAsync(this.stockCreateTopic, new TextMessage { Text = StockUtils.Format(ticker) });
+        return this.busService.PublishAsync(this.stockCreateTopic, new StockCreateMessage { Ticker = StockUtils.Format(ticker) });
     }
 
     public async Task<IEnumerable<AssetPrice>> FindStockPricesAsync(ISet<string> tickers)
@@ -93,4 +93,9 @@ internal class OptionPriceEntity : OptionPrice
     public string Id { get; set; }
     
     public DateTime LastRefresh { get; set; }
+}
+
+internal class StockCreateMessage
+{
+    public string Ticker { get; set; }
 }

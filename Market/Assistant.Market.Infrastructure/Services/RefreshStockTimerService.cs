@@ -1,12 +1,13 @@
 ﻿namespace Assistant.Market.Infrastructure.Services;
 
+using Assistant.Market.Core.Messaging;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
-using Common.Core.Messaging.Models;
 using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
 using Common.Infrastructure.Security;
 using Common.Infrastructure.Services;
+using Helper.Core.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -41,7 +42,7 @@ public class RefreshStockTimerService : BaseTimerService
             if (ticker != null)
             {
                 this.busService
-                    .PublishAsync(this.stockRefreshTopic, new TextMessage { Text = ticker })
+                    .PublishAsync(this.stockRefreshTopic, new StockRefreshMessage { Ticker = StockUtils.Format(ticker) })
                     .GetAwaiter()
                     .GetResult();
             }

@@ -1,5 +1,6 @@
 ﻿namespace Assistant.Tenant.Infrastructure.Services;
 
+using Assistant.Tenant.Core.Messaging;
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Configuration;
 using Common.Core.Messaging.Models;
@@ -31,7 +32,7 @@ public class NotificationService : INotificationService
     {
         this.logger.LogInformation("{Method}", nameof(this.NotifyRefreshPositionsAsync));
 
-        return this.busService.PublishAsync(this.refreshPositionTopic, new TenantMessage
+        return this.busService.PublishAsync(this.refreshPositionTopic, new PositionRefreshMessage
         {
             Tenant = this.identityProvider.Identity.Name!
         });

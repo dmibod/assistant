@@ -1,5 +1,6 @@
 ﻿namespace Assistant.Tenant.Core.Messaging;
 
+using System.Text.Json.Serialization;
 using Common.Core.Messaging;
 using Common.Core.Messaging.Attributes;
 using Microsoft.Extensions.Logging;
@@ -28,4 +29,29 @@ public class KanbanNotificationHandler : IMessageHandler<List<KanbanNotification
         
         return Task.CompletedTask;
     }
+}
+
+public enum KanbanNotificationType
+{
+    RefreshCardNotification,
+    RefreshLaneNotification,
+    RefreshBoardNotification,
+    RemoveCardNotification,
+    RemoveLaneNotification,
+    RemoveBoardNotification,
+    CreateCardNotification,
+    CreateLaneNotification,
+    CreateBoardNotification
+}
+
+public class KanbanNotification
+{
+    [JsonPropertyName("id")]
+    public string EntityId { get; set; }
+    
+    [JsonPropertyName("board_id")]
+    public string BoardId { get; set; }
+
+    [JsonPropertyName("type")]
+    public KanbanNotificationType NotificationType { get; set; }
 }

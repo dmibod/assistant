@@ -3,25 +3,28 @@
 using Assistant.Market.Core.Services;
 using Common.Core.Messaging;
 using Common.Core.Messaging.Attributes;
-using Common.Core.Messaging.Models;
 using Microsoft.Extensions.Logging;
 
 [Handler("{DataPublishTopic}")]
-public class DataPublishMessageHandler : IMessageHandler<EmptyMessage>
+public class DataPublishMessageHandler : IMessageHandler<DataPublishMessage>
 {
     private readonly IPublishingService publishingService;
-    private readonly Logger<DataPublishMessageHandler> logger;
+    private readonly ILogger<DataPublishMessageHandler> logger;
 
-    public DataPublishMessageHandler(IPublishingService publishingService, Logger<DataPublishMessageHandler> logger)
+    public DataPublishMessageHandler(IPublishingService publishingService, ILogger<DataPublishMessageHandler> logger)
     {
         this.publishingService = publishingService;
         this.logger = logger;
     }
 
-    public Task HandleAsync(EmptyMessage message)
+    public Task HandleAsync(DataPublishMessage message)
     {
         this.logger.LogInformation("Received publish data message");
         
         return this.publishingService.PublishAsync();
     }
 }
+
+public class DataPublishMessage
+{
+} 

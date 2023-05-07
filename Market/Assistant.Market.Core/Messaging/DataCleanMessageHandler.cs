@@ -3,11 +3,10 @@
 using Assistant.Market.Core.Services;
 using Common.Core.Messaging;
 using Common.Core.Messaging.Attributes;
-using Common.Core.Messaging.Models;
 using Microsoft.Extensions.Logging;
 
 [Handler("{DataCleanTopic}")]
-public class DataCleanMessageHandler : IMessageHandler<EmptyMessage>
+public class DataCleanMessageHandler : IMessageHandler<DataCleanMessage>
 {
     private readonly IRefreshService refreshService;
     private readonly ILogger<DataCleanMessageHandler> logger;
@@ -18,10 +17,14 @@ public class DataCleanMessageHandler : IMessageHandler<EmptyMessage>
         this.logger = logger;
     }
 
-    public Task HandleAsync(EmptyMessage message)
+    public Task HandleAsync(DataCleanMessage message)
     {
         this.logger.LogInformation("Received clean data message");
         
         return this.refreshService.CleanAsync(DateTime.UtcNow);
     }
+}
+
+public class DataCleanMessage
+{
 }

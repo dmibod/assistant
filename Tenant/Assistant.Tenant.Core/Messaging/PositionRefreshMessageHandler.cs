@@ -7,21 +7,25 @@ using Common.Core.Messaging.Models;
 using Microsoft.Extensions.Logging;
 
 [Handler("{PositionRefreshTopic}")]
-public class PositionsRefreshMessageHandler : IMessageHandler<TenantMessage>
+public class PositionRefreshMessageHandler : IMessageHandler<PositionRefreshMessage>
 {
     private readonly IPublishingService publishingService;
-    private readonly ILogger<PositionsRefreshMessageHandler> logger;
+    private readonly ILogger<PositionRefreshMessageHandler> logger;
 
-    public PositionsRefreshMessageHandler(IPublishingService publishingService, ILogger<PositionsRefreshMessageHandler> logger)
+    public PositionRefreshMessageHandler(IPublishingService publishingService, ILogger<PositionRefreshMessageHandler> logger)
     {
         this.publishingService = publishingService;
         this.logger = logger;
     }
 
-    public Task HandleAsync(TenantMessage message)
+    public Task HandleAsync(PositionRefreshMessage message)
     {
         this.logger.LogInformation("Received positions refresh message for {Tenant}", message.Tenant);
         
         return this.publishingService.PublishPositionsAsync();
     }
+}
+
+public class PositionRefreshMessage : TenantMessage
+{
 }
