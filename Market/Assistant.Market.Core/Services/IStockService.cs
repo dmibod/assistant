@@ -13,4 +13,6 @@ public interface IStockService
     Task<IEnumerable<Stock>> FindAllAsync();
     
     Task<IEnumerable<string>> FindTickersAsync();
+    
+    Task<Stock?> FindByTickerAsync(string ticker);
 }

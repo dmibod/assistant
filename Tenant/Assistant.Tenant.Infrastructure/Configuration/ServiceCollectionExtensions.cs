@@ -34,6 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IKanbanService, KanbanService>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IPositionService, PositionService>();
+        services.AddScoped<IPositionPublishingService, PositionPublishingService>();
         services.AddScoped<IWatchListService, WatchListService>();
         services.AddScoped<IPublishingService, PublishingService>();
         services.AddScoped<IRecommendationService, RecommendationService>();

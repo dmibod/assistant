@@ -29,6 +29,24 @@ public class OptionService : IOptionService
         return options.AsChain(ticker);
     }
 
+    public async Task<OptionExpiration?> FindExpirationAsync(string ticker, string expiration)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationAsync), $"{ticker}-{expiration}");
+
+        ticker = ticker.ToUpper();
+        
+        var option = await this.repository.FindExpirationAsync(ticker, expiration);
+
+        if (option == null)
+        {
+            return null;
+        }
+        
+        var array = new[] { option };
+        
+        return array.AsEnumerable().AsExpiration(expiration);
+    }
+
     public async Task<OptionChain> FindChangeAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindChangeAsync), ticker);
@@ -44,6 +62,8 @@ public class OptionService : IOptionService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationsAsync), ticker);
 
+        ticker = ticker.ToUpper();
+        
         return this.repository.FindExpirationsAsync(ticker);
     }
 

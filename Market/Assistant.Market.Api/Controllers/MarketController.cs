@@ -79,9 +79,19 @@ public class MarketController : ControllerBase
     }
 
     /// <summary>
+    /// Get stock by ticker
+    /// </summary>
+    /// <param name="ticker">Stock ticker</param>
+    [HttpGet("Stocks/{ticker}")]
+    public Task<Stock?> GetStockAsync(string ticker)
+    {
+        return this.stockService.FindByTickerAsync(ticker);
+    }
+
+    /// <summary>
     /// Gets option chain by the stock ticker
     /// </summary>
-    /// <param name="ticker"></param>
+    /// <param name="ticker">Stock ticker</param>
     [HttpGet("Stocks/{ticker}/Options")]
     public async Task<ActionResult> GetOptionChainAsync(string ticker)
     {
@@ -91,13 +101,55 @@ public class MarketController : ControllerBase
     }
 
     /// <summary>
+    /// Gets option expiration data
+    /// </summary>
+    /// <param name="ticker">Stock ticker</param>
+    /// <param name="expiration">Expiration in format YYYYMMDD</param>
+    /// <returns></returns>
+    [HttpGet("Stocks/{ticker}/{expiration}/Options")]
+    public Task<OptionExpiration?> GetOptionExpirationAsync(string ticker, string expiration)
+    {
+        return this.optionService.FindExpirationAsync(ticker, expiration);
+    }
+
+    /// <summary>
     /// Gets options change by the stock ticker
     /// </summary>
-    /// <param name="ticker"></param>
+    /// <param name="ticker">Stock ticker</param>
+    /// <param name="minOpenInterest">Minimum open interest</param>
     [HttpGet("Stocks/{ticker}/OptionsChange")]
-    public async Task<ActionResult> GetOptionChangeAsync(string ticker)
+    public async Task<ActionResult> GetOptionChangeAsync(string ticker, decimal? minOpenInterest)
     {
         var chain = await this.optionService.FindChangeAsync(StockUtils.Format(ticker));
+
+        if (minOpenInterest.HasValue)
+        {
+            Func<OptionContracts, bool> filter = contracts =>
+            {
+                if (contracts.Call != null && contracts.Call.OI >= minOpenInterest.Value)
+                {
+                    return true;
+                }
+
+                if (contracts.Put != null && contracts.Put.OI >= minOpenInterest.Value)
+                {
+                    return true;
+                }
+
+                return false;
+            };
+            
+            chain.Expirations.Values.ToList().ForEach(expiration =>
+            {
+                expiration.Contracts = expiration.Contracts
+                    .Where(pair => filter(pair.Value))
+                    .ToDictionary(pair => pair.Key, pair => pair.Value);
+            });
+            
+            chain.Expirations = chain.Expirations
+                .Where(pair => pair.Value.Contracts.Count > 0)
+                .ToDictionary(pair => pair.Key, pair => pair.Value);
+        }
 
         return this.Ok(chain);
     }

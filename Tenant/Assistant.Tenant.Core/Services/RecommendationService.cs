@@ -9,13 +9,18 @@ using Microsoft.Extensions.Logging;
 public class RecommendationService : IRecommendationService
 {
     private readonly IWatchListService watchListService;
+    private readonly IPositionService positionService;
     private readonly IMarketDataService marketDataService;
     private readonly ILogger<RecommendationService> logger;
 
-    public RecommendationService(IWatchListService watchListService, IMarketDataService marketDataService,
+    public RecommendationService(
+        IWatchListService watchListService, 
+        IPositionService positionService,
+        IMarketDataService marketDataService,
         ILogger<RecommendationService> logger)
     {
         this.watchListService = watchListService;
+        this.positionService = positionService;
         this.marketDataService = marketDataService;
         this.logger = logger;
     }
@@ -25,7 +30,7 @@ public class RecommendationService : IRecommendationService
         this.logger.LogInformation("{Method}", nameof(this.SellPutsAsync));
 
         var items = await this.watchListService.FindAllAsync();
-
+        
         var tracker = trackerCreator(items.Count());
 
         var operations = Enumerable.Empty<SellOperation>();
@@ -42,6 +47,83 @@ public class RecommendationService : IRecommendationService
         return operations;
     }
 
+    public async Task<IEnumerable<SellOperation>> SellCallsAsync(RecommendationFilter filter, bool considerPositions, Func<int, ProgressTracker> trackerCreator)
+    {
+        this.logger.LogInformation("{Method}", nameof(this.SellCallsAsync));
+
+        var items = await this.watchListService.FindAllAsync();
+
+        if (considerPositions)
+        {
+            var positions = await this.positionService.FindAllAsync();
+
+            var stocks = positions
+                .Where(position => position is { Type: AssetType.Stock, Quantity: >= 100 })
+                .Select(position => position.Ticker)
+                .Distinct()
+                .ToHashSet();
+
+            items = items.Where(item => stocks.Contains(item.Ticker));
+        }
+
+        var tracker = trackerCreator(items.Count());
+
+        var operations = Enumerable.Empty<SellOperation>();
+
+        foreach (var item in items)
+        {
+            operations = operations.Union(await this.SellCallsAsync(item, filter));
+
+            tracker.Increase();
+        }
+
+        tracker.Finish();
+        
+        return operations;
+    }
+
+    private async Task<IEnumerable<SellOperation>> SellCallsAsync(WatchListItem item, RecommendationFilter filter)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SellCallsAsync), item.Ticker);
+        
+        var expirations = await this.marketDataService.FindExpirationsAsync(item.Ticker);
+        if (expirations == null)
+        {
+            return Array.Empty<SellOperation>();
+        }
+
+        var stockPrices = await this.marketDataService.FindStockPricesAsync(new HashSet<string>(new[] { item.Ticker }));
+
+        var sellOperations = new List<SellOperation>();
+        foreach (var expiration in expirations)
+        {
+            var optionPrices = await this.marketDataService.FindOptionPricesAsync(item.Ticker, expiration);
+            if (optionPrices == null) continue;
+
+            var stock = Stock.From(item.Ticker, expirations.Select(exp => Expiration.FromYYYYMMDD(exp)).AsQueryable());
+
+            var stockPrice = stockPrices.FirstOrDefault(s => s.Ticker == item.Ticker);
+            if (stockPrice != null)
+            {
+                stock.Price = MarketPrice.From(stockPrice.Last ?? decimal.Zero);
+            }
+
+            foreach (var price in optionPrices.Where(p => OptionUtils.GetSide(p.Ticker) == "C"))
+            {
+                var call = StockOption.Call(stock, OptionUtils.GetStrike(price.Ticker),
+                    Expiration.FromYYYYMMDD(expiration));
+
+                var op = call.Sell(price.Bid ?? decimal.Zero);
+                if (op.BreakEvenStockPrice >= item.SellPrice && AreConditionsMet(op, filter))
+                {
+                    sellOperations.Add(op);
+                }
+            }
+        }
+
+        return sellOperations;
+    }
+    
     private async Task<IEnumerable<SellOperation>> SellPutsAsync(WatchListItem item, RecommendationFilter filter)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SellPutsAsync), item.Ticker);
