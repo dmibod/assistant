@@ -37,7 +37,6 @@ public static class ServiceCollectionExtensions
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");
         });
 
-        services.ConfigureMessaging(configuration);
         services.AddIdentityProvider();
 
         services.AddScoped<IKanbanService, KanbanService>();
@@ -53,6 +52,8 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<RefreshStockTimerService>();
         services.AddHostedService<CleanDataTimerService>();
         services.AddHostedService<MarketDataTimerService>();
+
+        services.ConfigureMessaging(configuration);
 
         return services;
     }
@@ -70,7 +71,6 @@ public static class ServiceCollectionExtensions
         });
         services.Configure<NatsSettings>(natsSection);
         services.AddSingleton<IBusService, BusService>();
-
         services.AddSingleton<ITopicResolver, MapTopicResolver>(_ =>
         {
             var topics = new Dictionary<string, string>
@@ -83,7 +83,6 @@ public static class ServiceCollectionExtensions
 
             return new MapTopicResolver(topics);
         });
-
         services.ConfigureMessaging(new[]
         {
             typeof(StockCreateMessageHandler).Assembly
@@ -91,5 +90,4 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-
 }

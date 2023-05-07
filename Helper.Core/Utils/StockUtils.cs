@@ -6,7 +6,7 @@ public static partial class StockUtils
 {
     public static string Format(string rawStockTicker)
     {
-        var stockTicker = rawStockTicker.ToUpper();
+        var stockTicker = rawStockTicker.Trim().ToUpper();
 
         return IsValid(stockTicker) ? stockTicker : throw new FormatException($"Invalid stock ticker {rawStockTicker}");
     }

@@ -5,11 +5,11 @@ using System.Text.RegularExpressions;
 public static class OptionUtils
 {
     private const string OptionTickerPattern = @"^([A-Z]+)(\d{8})([C|P])(\d{8})$";
-    private const string ExpirationPattern = @"^(\d{4})(\d{2})(\d{2})$";
+    private const string ExpirationPattern = @"(\d{4})(\d{2})(\d{2})";
 
     public static string Format(string rawOptionTicker)
     {
-        var optionTicker = rawOptionTicker.ToUpper();
+        var optionTicker = rawOptionTicker.Trim().ToUpper();
 
         return IsValid(optionTicker) ? optionTicker : throw new FormatException($"Invalid option ticker {rawOptionTicker}");
     }

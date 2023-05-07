@@ -2,7 +2,6 @@
 
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Configuration;
-using Common.Core.Messaging.Models;
 using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
 using Helper.Core.Utils;
@@ -61,17 +60,21 @@ public class MarketDataService : IMarketDataService
     public async Task<IEnumerable<OptionAssetPrice>> FindOptionPricesAsync(string stockTicker, string expiration)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOptionPricesAsync), $"{stockTicker}-{expiration}");
+
+        stockTicker = StockUtils.Format(stockTicker);
         
         var cursor = await this.optionCollection.FindAsync(doc => doc.Ticker == stockTicker && doc.Expiration == expiration);
 
         return cursor.ToEnumerable().SelectMany(doc => doc.Contracts).ToList();
     }
 
-    public async Task<IEnumerable<string>> FindExpirationsAsync(string ticker)
+    public async Task<IEnumerable<string>> FindExpirationsAsync(string stockTicker)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationsAsync), ticker);
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationsAsync), stockTicker);
 
-        var cursor = await this.optionCollection.FindAsync(doc => doc.Ticker == ticker);
+        stockTicker = StockUtils.Format(stockTicker);
+        
+        var cursor = await this.optionCollection.FindAsync(doc => doc.Ticker == stockTicker);
 
         return cursor.ToEnumerable().Select(doc => doc.Expiration).ToList();
     }

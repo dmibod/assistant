@@ -29,7 +29,6 @@ public static class ServiceCollectionExtensions
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");
         });
 
-        services.ConfigureMessaging(configuration);
         services.AddIdentityProvider();
 
         services.AddScoped<IKanbanService, KanbanService>();
@@ -42,6 +41,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<ITenantRepository, TenantRepository>();
 
+        services.ConfigureMessaging(configuration);
+
         return services;
     }
 
@@ -50,7 +51,6 @@ public static class ServiceCollectionExtensions
     {
         var natsSection = configuration.GetSection(nameof(NatsSettings));
         var natsSettings = natsSection.Get<NatsSettings>();
-
         services.AddNatsClient(options =>
         {
             options.User = natsSettings!.User;
@@ -59,7 +59,6 @@ public static class ServiceCollectionExtensions
         });
         services.Configure<NatsSettings>(natsSection);
         services.AddSingleton<IBusService, BusService>();
-
         services.AddSingleton<ITopicResolver, MapTopicResolver>(_ =>
         {
             var topics = new Dictionary<string, string>
@@ -72,7 +71,6 @@ public static class ServiceCollectionExtensions
 
             return new MapTopicResolver(topics);
         });
-
         services.ConfigureMessaging(new[]
         {
             typeof(PositionRemoveMessageHandler).Assembly

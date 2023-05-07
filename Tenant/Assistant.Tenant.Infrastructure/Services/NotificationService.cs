@@ -3,7 +3,6 @@
 using Assistant.Tenant.Core.Messaging;
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Configuration;
-using Common.Core.Messaging.Models;
 using Common.Core.Messaging.TopicResolver;
 using Common.Core.Security;
 using Common.Core.Services;
