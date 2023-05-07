@@ -1,4 +1,4 @@
-﻿namespace Common.Infrastructure.Security;
+﻿namespace Common.Core.Security;
 
 using System.Security.Principal;
 

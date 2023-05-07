@@ -28,6 +28,15 @@ public class TenantRepository : ITenantRepository
         this.logger = logger;
     }
 
+    public async Task<IEnumerable<string>> FindAllTenantsAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.FindAllTenantsAsync));  
+        
+        return await this.collection.AsQueryable()
+            .Select(entity => entity.Name)
+            .ToListAsync();
+    }
+
     public async Task<Tenant> FindByNameAsync(string name)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindByNameAsync), name);
@@ -61,6 +70,15 @@ public class TenantRepository : ITenantRepository
         var tenant = await this.collection.Find(entity => entity.Name == name).FirstOrDefaultAsync();
 
         return tenant.Positions;
+    }
+
+    public async Task<IEnumerable<Position>> FindPositionsAsync(string tenant, Func<Position, bool> criteria)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindPositionsAsync), $"{tenant}");
+
+        var t = await this.FindByNameAsync(tenant);
+
+        return t == null ? null : t.Positions.Where(criteria);
     }
 
     public async Task<Position?> FindPositionAsync(string tenant, Func<Position, bool> criteria)
@@ -124,6 +142,20 @@ public class TenantRepository : ITenantRepository
                          Builders<Position>.Filter.Eq(x => x.Ticker, ticker));
         
         var update = Builders<TenantEntity>.Update.Set("Positions.$.Tag", tag);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public Task KanbanPositionAsync(string tenant, string account, string ticker, string cardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.KanbanPositionAsync), $"{tenant}-{account}-{ticker}-{cardId}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.ElemMatch(x => x.Positions, 
+                         Builders<Position>.Filter.Eq(x => x.Account, account) & 
+                         Builders<Position>.Filter.Eq(x => x.Ticker, ticker));
+        
+        var update = Builders<TenantEntity>.Update.Set("Positions.$.CardId", cardId);
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
@@ -216,7 +248,7 @@ public class TenantRepository : ITenantRepository
 
     public Task ReplaceTagAsync(string tenant, string oldValue, string newValue)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ResetTagAsync), tenant);
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ReplaceTagAsync), $"{tenant}-{oldValue}-{newValue}");
 
         var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
                      Builders<TenantEntity>.Filter.ElemMatch(x => x.Positions, 
@@ -240,10 +272,31 @@ public class TenantRepository : ITenantRepository
 
     public Task UpdateDefaultFilterAsync(string tenant, string defaultFilter)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ResetTagAsync), tenant);
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateDefaultFilterAsync), $"{tenant}-{defaultFilter}");
 
         var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
         var update = Builders<TenantEntity>.Update.Set(tenant => tenant.DefaultFilter, defaultFilter);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public async Task<string?> FindPositionsBoardIdAsync(string tenant)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindPositionsBoardIdAsync), tenant);
+        
+        return await this.collection
+            .AsQueryable()
+            .Where(item => item.Name == tenant)
+            .Select(item => item.PositionsBoardId)
+            .FirstOrDefaultAsync();
+    }
+
+    public Task UpdatePositionsBoardIdAsync(string tenant, string positionsBoardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdatePositionsBoardIdAsync), $"{tenant}-{positionsBoardId}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
+        var update = Builders<TenantEntity>.Update.Set(tenant => tenant.PositionsBoardId, positionsBoardId);
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }

@@ -2,7 +2,6 @@
 
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Repositories;
-using Common.Core.Utils;
 using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 
@@ -30,6 +29,15 @@ public class PositionService : IPositionService
         var tenant = await this.tenantService.EnsureExistsAsync();
 
         return await this.repository.FindPositionsAsync(tenant);
+    }
+
+    public async Task<IEnumerable<Position>> FindByCardIdAsync(string cardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindByCardIdAsync), cardId);
+        
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        return await this.repository.FindPositionsAsync(tenant, position => position.CardId == cardId);
     }
 
     public async Task<Position> CreateAsync(Position position)
@@ -109,15 +117,27 @@ public class PositionService : IPositionService
         await this.RefreshNotificationAsync();
     }
 
-    public async Task RemoveAsync(string account, string ticker)
+    public async Task UpdateCardIdAsync(string account, string ticker, string cardId)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), $"{account}-{ticker}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateCardIdAsync), $"{account}-{ticker}-{cardId}");
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+        
+        await this.repository.KanbanPositionAsync(tenant, account, ticker, cardId);
+    }
+
+    public async Task RemoveAsync(string account, string ticker, bool suppressNotifications)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), $"{account}-{ticker}-{suppressNotifications}");
 
         var tenant = await this.tenantService.EnsureExistsAsync();
         
         await this.repository.RemovePositionAsync(tenant, account, ticker);
-        
-        await this.RefreshNotificationAsync();
+
+        if (!suppressNotifications)
+        {
+            await this.RefreshNotificationAsync();
+        }
     }
 
     public async Task ResetTagAsync()
@@ -170,6 +190,24 @@ public class PositionService : IPositionService
         {
             await this.RefreshNotificationAsync();
         }
+    }
+
+    public async Task<string?> FindPositionsBoardId()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.FindPositionsBoardId));
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        return await this.repository.FindPositionsBoardIdAsync(tenant);
+    }
+
+    public async Task UpdatePositionsBoardId(string positionsBoardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdatePositionsBoardId), positionsBoardId);
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        await this.repository.UpdatePositionsBoardIdAsync(tenant, positionsBoardId);
     }
 
     private Task RefreshNotificationAsync()

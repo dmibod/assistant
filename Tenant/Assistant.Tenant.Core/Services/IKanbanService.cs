@@ -2,6 +2,8 @@
 
 public interface IKanbanService
 {
+    Task<IEnumerable<string>> FindBoardIdsByOwnerAsync(string owner);
+    
     Task<IEnumerable<Board>> FindBoardsAsync();
 
     Task<Board> CreateBoardAsync(Board board);

@@ -1,21 +1,24 @@
 ﻿namespace Assistant.Tenant.Core.Messaging;
 
 using System.Text.Json.Serialization;
+using Assistant.Tenant.Core.Services;
 using Common.Core.Messaging;
 using Common.Core.Messaging.Attributes;
 using Microsoft.Extensions.Logging;
 
-[Handler("notification", enabled: false)]
+[Handler("notification")]
 public class KanbanNotificationHandler : IMessageHandler<List<KanbanNotification>>
 {
+    private readonly IPositionService positionService;
     private readonly ILogger<KanbanNotificationHandler> logger;
 
-    public KanbanNotificationHandler(ILogger<KanbanNotificationHandler> logger)
+    public KanbanNotificationHandler(IPositionService positionService, ILogger<KanbanNotificationHandler> logger)
     {
+        this.positionService = positionService;
         this.logger = logger;
     }
 
-    public Task HandleAsync(List<KanbanNotification> notifications)
+    public async Task HandleAsync(List<KanbanNotification> notifications)
     {
         this.logger.LogInformation("Received kanban notifications {Count}", notifications.Count);
 
@@ -25,9 +28,30 @@ public class KanbanNotificationHandler : IMessageHandler<List<KanbanNotification
                 notification.NotificationType,
                 notification.EntityId, 
                 notification.BoardId);
+
+            switch (notification.NotificationType)
+            {
+                case KanbanNotificationType.RemoveCardNotification:
+                {
+                    await this.HandleRemoveCard(notification.BoardId, notification.EntityId);
+                } break;
+            }
         }
-        
-        return Task.CompletedTask;
+    }
+
+    private async Task HandleRemoveCard(string boardId, string cardId)
+    {
+        var positionBoardId = await this.positionService.FindPositionsBoardId();
+
+        if (!string.IsNullOrEmpty(positionBoardId) && positionBoardId == boardId)
+        {
+            var positions = await this.positionService.FindByCardIdAsync(cardId);
+
+            foreach (var position in positions)
+            {
+                await this.positionService.RemoveAsync(position.Account, position.Ticker, true);
+            }
+        }
     }
 }
 

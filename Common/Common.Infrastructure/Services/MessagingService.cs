@@ -3,10 +3,9 @@
 using System.Collections.Concurrent;
 using System.Reflection;
 using Common.Core.Messaging;
-using Common.Core.Messaging.Models;
+using Common.Core.Messaging.TenantResolver;
 using Common.Core.Messaging.TopicResolver;
 using Common.Core.Messaging.TypesProvider;
-using Common.Infrastructure.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NATS.Client;
@@ -14,16 +13,19 @@ using NATS.Client;
 public class MessagingService : BaseMessagingService
 {
     private readonly IServiceProvider serviceProvider;
+    private readonly ITenantResolver tenantResolver;
     private readonly ILogger<MessagingService> logger;
 
     public MessagingService(
         IServiceProvider serviceProvider,
         IHandlerTypesProvider handlerTypesProvider,
         ITopicResolver topicResolver,
+        ITenantResolver tenantResolver,
         IConnection connection,
         ILogger<MessagingService> logger) : base(handlerTypesProvider, topicResolver, connection)
     {
         this.serviceProvider = serviceProvider;
+        this.tenantResolver = tenantResolver;
         this.logger = logger;
     }
 
@@ -39,9 +41,7 @@ public class MessagingService : BaseMessagingService
 
     protected override Task HandleAsync(object message, Type serviceType)
     {
-        var tenantAware = message as ITenantAware;
-
-        return this.serviceProvider.ExecuteAsync(tenantAware?.Tenant ?? Identity.System, scope =>
+        return this.serviceProvider.ExecuteAsync(this.tenantResolver.Resolve(message), scope =>
         {
             var service = scope.ServiceProvider.GetRequiredService(serviceType);
 

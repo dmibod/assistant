@@ -48,6 +48,7 @@ public class PositionPublishingService : IPositionPublishingService
         }
         finally
         {
+            await this.positionService.UpdatePositionsBoardId(board.Id);
             await this.kanbanService.ResetBoardStateAsync(board.Id);
         }
     }
@@ -60,7 +61,19 @@ public class PositionPublishingService : IPositionPublishingService
 
         if (board != null)
         {
-            await this.kanbanService.RemoveBoardAsync(board.Id);
+            var boardId = await this.positionService.FindPositionsBoardId();
+
+            try
+            {
+                await this.positionService.UpdatePositionsBoardId(string.Empty);
+                await this.kanbanService.RemoveBoardAsync(board.Id);
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError(e, e.Message);
+                await this.positionService.UpdatePositionsBoardId(boardId);
+                throw;
+            }
         }
         
         var now = DateTime.UtcNow;
@@ -135,8 +148,9 @@ public class PositionPublishingService : IPositionPublishingService
                 $"{OptionUtils.GetSide(p.Ticker)}${OptionUtils.GetStrike(p.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(p.Ticker))}";
             var description = this.PositionToContent(p, stocks, expirations);
 
-            await this.kanbanService.CreateCardAsync(board.Id, options.Id,
-                new Card { Name = name, Description = description });
+            var card = await this.kanbanService.CreateCardAsync(board.Id, options.Id, new Card { Name = name, Description = description });
+
+            await this.positionService.UpdateCardIdAsync(p.Account, p.Ticker, card.Id);
 
             tracker.Increase();
         }
@@ -166,8 +180,13 @@ public class PositionPublishingService : IPositionPublishingService
 
             var description = this.PositionToContent(p.Value, stocks, expirations);
 
-            await this.kanbanService.CreateCardAsync(board.Id, combos.Id,
+            var card = await this.kanbanService.CreateCardAsync(board.Id, combos.Id,
                 new Card { Name = name, Description = description });
+
+            foreach (var l in p.Value)
+            {
+                await this.positionService.UpdateCardIdAsync(l.Account, l.Ticker, card.Id);
+            }
 
             tracker.Increase(p.Value.Count);
         }
@@ -194,8 +213,10 @@ public class PositionPublishingService : IPositionPublishingService
             var name = p.Ticker;
             var description = this.PositionToContent(p, stocks, expirations);
 
-            await this.kanbanService.CreateCardAsync(board.Id, stocksLane.Id,
+            var card = await this.kanbanService.CreateCardAsync(board.Id, stocksLane.Id,
                 new Card { Name = name, Description = description });
+            
+            await this.positionService.UpdateCardIdAsync(p.Account, p.Ticker, card.Id);
 
             tracker.Increase();
         }

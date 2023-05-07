@@ -4,6 +4,8 @@ using Assistant.Tenant.Core.Models;
 
 public interface ITenantRepository
 {
+    Task<IEnumerable<string>> FindAllTenantsAsync();
+    
     Task<Tenant> FindByNameAsync(string name);
     
     Task<bool> ExistsAsync(string name);
@@ -12,6 +14,8 @@ public interface ITenantRepository
 
     Task<IEnumerable<Position>> FindPositionsAsync(string name);
     
+    Task<IEnumerable<Position>> FindPositionsAsync(string tenant, Func<Position, bool> criteria);
+
     Task<Position?> FindPositionAsync(string tenant, Func<Position, bool> criteria);
     
     Task CreatePositionAsync(string tenant, Position position);
@@ -21,6 +25,8 @@ public interface ITenantRepository
     Task RemovePositionAsync(string tenant, string account, string ticker);
     
     Task TagPositionAsync(string tenant, string account, string ticker, string tag);
+    
+    Task KanbanPositionAsync(string tenant, string account, string ticker, string cardId);
     
     Task<IEnumerable<WatchListItem>> FindWatchListAsync(string tenantName);
 
@@ -41,4 +47,8 @@ public interface ITenantRepository
     Task<string?> FindDefaultFilterAsync(string tenant);
 
     Task UpdateDefaultFilterAsync(string tenant, string filter);
+    
+    Task<string?> FindPositionsBoardIdAsync(string tenant);
+
+    Task UpdatePositionsBoardIdAsync(string tenant, string positionsBoardId);
 }

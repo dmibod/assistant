@@ -5,6 +5,7 @@ using Assistant.Tenant.Core.Repositories;
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Repositories;
 using Assistant.Tenant.Infrastructure.Services;
+using Common.Core.Messaging.TenantResolver;
 using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
 using Common.Core.Utils;
@@ -43,6 +44,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITenantRepository, TenantRepository>();
 
         services.ConfigureMessaging(configuration);
+        services.ConfigureTenantResolver();
 
         return services;
     }
@@ -76,6 +78,19 @@ public static class ServiceCollectionExtensions
         {
             typeof(PositionRemoveMessageHandler).Assembly
         }, ServiceLifetime.Scoped);
+
+        return services;
+    }
+
+    public static IServiceCollection ConfigureTenantResolver(this IServiceCollection services)
+    {
+        services.AddSingleton<ITenantResolver>(sp =>
+        {
+            var tenantResolver = new TenantAwareTenantResolver();
+            var kanbanTenantResolver = new KanbanTenantResolver(sp);
+            
+            return new CompositeTenantResolver(tenantResolver, kanbanTenantResolver);
+        });
 
         return services;
     }

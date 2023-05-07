@@ -462,7 +462,7 @@ public class TenantController : ControllerBase
     {
         ticker = ticker.Trim().ToUpper();
         ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
-        return this.positionService.RemoveAsync(account.Trim().ToUpper(), ticker);
+        return this.positionService.RemoveAsync(account.Trim().ToUpper(), ticker, false);
     }
 
     /// <summary>

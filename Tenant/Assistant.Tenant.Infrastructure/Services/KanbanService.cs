@@ -22,6 +22,15 @@ public class KanbanService : IKanbanService
     
     private ApiClient ApiClient => new(this.httpClientFactory.CreateClient("KanbanApiClient"));
 
+    public async Task<IEnumerable<string>> FindBoardIdsByOwnerAsync(string owner)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindBoardIdsByOwnerAsync), owner);
+
+        var boards = await this.ApiClient.GetBoardsAsync(owner);
+
+        return boards.Where(board => board.Owner == owner).Select(board => board.Id);
+    }
+
     public async Task<IEnumerable<Board>> FindBoardsAsync()
     {
         this.logger.LogInformation("{Method}", nameof(this.FindBoardsAsync));

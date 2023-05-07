@@ -6,6 +6,8 @@ public class Tenant
 
     public string DefaultFilter { get; set; }
 
+    public string PositionsBoardId { get; set; }
+
     public WatchListItem[] WatchList { get; set; }
 
     public Position[] Positions { get; set; }
@@ -33,6 +35,8 @@ public class Position
     public string Tag { get; set; }
 
     public decimal AverageCost { get; set; }
+    
+    public string CardId { get; set; }
 }
 
 public enum AssetType
