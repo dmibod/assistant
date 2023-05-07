@@ -5,7 +5,7 @@ using Assistant.Market.Core.Repositories;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Repositories;
 using Assistant.Market.Infrastructure.Services;
-using Common.Core.Messaging;
+using Common.Core.Messaging.TenantResolver;
 using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
 using Common.Core.Utils;
@@ -87,6 +87,7 @@ public static class ServiceCollectionExtensions
         {
             typeof(StockCreateMessageHandler).Assembly
         }, ServiceLifetime.Scoped);
+        services.AddSingleton<ITenantResolver, TenantAwareTenantResolver>();
 
         return services;
     }

@@ -2,7 +2,6 @@
 
 using System.Reflection;
 using Common.Core.Messaging;
-using Common.Core.Messaging.TenantResolver;
 using Common.Core.Messaging.TypesProvider;
 using Common.Core.Security;
 using Common.Core.Utils;
@@ -67,7 +66,6 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IHandlerTypesProvider, AssemblyHandlerTypesProvider>(sp => typesProvider);
         services.AddHostedService<MessagingService>();
-        services.AddSingleton<ITenantResolver, TenantAwareTenantResolver>();
 
         return services;
     }
