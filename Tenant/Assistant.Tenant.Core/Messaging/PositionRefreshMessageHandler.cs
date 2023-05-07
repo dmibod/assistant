@@ -9,10 +9,10 @@ using Microsoft.Extensions.Logging;
 [Handler("{PositionRefreshTopic}")]
 public class PositionRefreshMessageHandler : IMessageHandler<PositionRefreshMessage>
 {
-    private readonly IPublishingService publishingService;
+    private readonly IPositionPublishingService publishingService;
     private readonly ILogger<PositionRefreshMessageHandler> logger;
 
-    public PositionRefreshMessageHandler(IPublishingService publishingService, ILogger<PositionRefreshMessageHandler> logger)
+    public PositionRefreshMessageHandler(IPositionPublishingService publishingService, ILogger<PositionRefreshMessageHandler> logger)
     {
         this.publishingService = publishingService;
         this.logger = logger;
@@ -22,7 +22,7 @@ public class PositionRefreshMessageHandler : IMessageHandler<PositionRefreshMess
     {
         this.logger.LogInformation("Received positions refresh message for {Tenant}", message.Tenant);
         
-        return this.publishingService.PublishPositionsAsync();
+        return this.publishingService.PublishAsync();
     }
 }
 

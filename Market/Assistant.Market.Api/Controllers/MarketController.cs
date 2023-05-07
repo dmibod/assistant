@@ -2,6 +2,7 @@
 
 using System.Security.Claims;
 using Assistant.Market.Core.Messaging;
+using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Configuration;
 using Common.Core.Messaging.TopicResolver;
@@ -85,7 +86,7 @@ public class MarketController : ControllerBase
     [HttpGet("Stocks/{ticker}")]
     public Task<Stock?> GetStockAsync(string ticker)
     {
-        return this.stockService.FindByTickerAsync(ticker);
+        return this.stockService.FindByTickerAsync(StockUtils.Format(ticker));
     }
 
     /// <summary>
@@ -109,7 +110,7 @@ public class MarketController : ControllerBase
     [HttpGet("Stocks/{ticker}/{expiration}/Options")]
     public Task<OptionExpiration?> GetOptionExpirationAsync(string ticker, string expiration)
     {
-        return this.optionService.FindExpirationAsync(ticker, expiration);
+        return this.optionService.FindExpirationAsync(StockUtils.Format(ticker), expiration);
     }
 
     /// <summary>
