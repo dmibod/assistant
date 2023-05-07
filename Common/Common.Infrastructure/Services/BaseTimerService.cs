@@ -1,6 +1,6 @@
 ﻿namespace Common.Infrastructure.Services;
 
-public abstract class BaseTimerService : BaseHostedService, IDisposable
+public abstract class BaseTimerService : BaseHostedService
 {
     private readonly TimeSpan interval;
     private readonly TimeSpan initialDelay;

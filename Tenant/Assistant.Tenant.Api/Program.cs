@@ -54,6 +54,11 @@ builder.Services.AddSwaggerGen(options =>
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     options.IncludeXmlComments(xmlPath);
 });
+
+builder.Services.AddAuthorization(opt =>
+{
+    opt.AddPolicy("administration", b => b.RequireRole("admin"));
+});
 builder.Services.AddAuthentication("Bearer").AddJwtBearer();
 builder.Services.ConfigureInfrastructure(builder.Configuration);
 

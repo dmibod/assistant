@@ -2,7 +2,9 @@
 
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Configuration;
+using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
+using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
@@ -15,15 +17,15 @@ public class MarketDataService : IMarketDataService
     
     private readonly IMongoCollection<OptionPriceEntity> optionCollection;
 
-    private readonly string addStockRequestTopic;
+    private readonly string stockCreateTopic;
 
     private readonly IBusService busService;
     
     private readonly ILogger<MarketDataService> logger;
 
-    public MarketDataService(IBusService busService, IOptions<NatsSettings> natsSettings, IOptions<DatabaseSettings> databaseSettings, ILogger<MarketDataService> logger)
+    public MarketDataService(IBusService busService, ITopicResolver topicResolver, IOptions<DatabaseSettings> databaseSettings, ILogger<MarketDataService> logger)
     {
-        this.addStockRequestTopic = natsSettings.Value.AddStockRequestTopic;
+        this.stockCreateTopic = topicResolver.ResolveConfig(nameof(NatsSettings.StockCreateTopic));
         
         var mongoClient = new MongoClient(
             databaseSettings.Value.ConnectionString);
@@ -43,7 +45,7 @@ public class MarketDataService : IMarketDataService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.EnsureStockAsync), ticker);
         
-        return this.busService.PublishAsync(this.addStockRequestTopic, ticker);
+        return this.busService.PublishAsync(this.stockCreateTopic, new StockCreateMessage { Ticker = StockUtils.Format(ticker) });
     }
 
     public async Task<IEnumerable<AssetPrice>> FindStockPricesAsync(ISet<string> tickers)
@@ -58,17 +60,21 @@ public class MarketDataService : IMarketDataService
     public async Task<IEnumerable<OptionAssetPrice>> FindOptionPricesAsync(string stockTicker, string expiration)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOptionPricesAsync), $"{stockTicker}-{expiration}");
+
+        stockTicker = StockUtils.Format(stockTicker);
         
         var cursor = await this.optionCollection.FindAsync(doc => doc.Ticker == stockTicker && doc.Expiration == expiration);
 
         return cursor.ToEnumerable().SelectMany(doc => doc.Contracts).ToList();
     }
 
-    public async Task<IEnumerable<string>> FindExpirationsAsync(string ticker)
+    public async Task<IEnumerable<string>> FindExpirationsAsync(string stockTicker)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationsAsync), ticker);
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationsAsync), stockTicker);
 
-        var cursor = await this.optionCollection.FindAsync(doc => doc.Ticker == ticker);
+        stockTicker = StockUtils.Format(stockTicker);
+        
+        var cursor = await this.optionCollection.FindAsync(doc => doc.Ticker == stockTicker);
 
         return cursor.ToEnumerable().Select(doc => doc.Expiration).ToList();
     }
@@ -90,4 +96,9 @@ internal class OptionPriceEntity : OptionPrice
     public string Id { get; set; }
     
     public DateTime LastRefresh { get; set; }
+}
+
+internal class StockCreateMessage
+{
+    public string Ticker { get; set; }
 }

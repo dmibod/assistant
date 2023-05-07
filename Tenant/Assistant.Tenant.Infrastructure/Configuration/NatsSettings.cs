@@ -2,11 +2,11 @@
 
 public class NatsSettings : Common.Infrastructure.Configuration.NatsSettings
 {
-    public string AddStockRequestTopic { get; set; } = null!;
+    public string StockCreateTopic { get; set; } = null!;
     
-    public string AddTenantPositionTopic { get; set; } = null!;
+    public string PositionCreateTopic { get; set; } = null!;
     
-    public string RefreshTenantPositionTopic { get; set; } = null!;
-
-    public string PublishSuggestionsTopic { get; set; } = null!;
+    public string PositionRefreshTopic { get; set; } = null!;
+    
+    public string PositionRemoveTopic { get; set; } = null!;
 }

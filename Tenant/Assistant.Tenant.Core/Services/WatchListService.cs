@@ -2,6 +2,8 @@
 
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Repositories;
+using Helper.Core.Domain;
+using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 
 public class WatchListService : IWatchListService
@@ -33,6 +35,8 @@ public class WatchListService : IWatchListService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindByTickerAsync), ticker);
 
+        ticker = StockUtils.Format(ticker);
+        
         var tenant = await this.tenantService.EnsureExistsAsync();
 
         var watchList = await this.repository.FindWatchListAsync(tenant);
@@ -44,6 +48,8 @@ public class WatchListService : IWatchListService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateOrUpdateAsync), listItem.Ticker);
 
+        listItem.Ticker = StockUtils.Format(listItem.Ticker);
+        
         var tenant = await this.tenantService.EnsureExistsAsync();
 
         var watchList = await this.repository.FindWatchListAsync(tenant);
@@ -68,6 +74,8 @@ public class WatchListService : IWatchListService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), ticker);
 
+        ticker = StockUtils.Format(ticker);
+        
         var tenant = await this.tenantService.EnsureExistsAsync();
 
         await this.repository.RemoveWatchListItemAsync(tenant, ticker);
@@ -77,6 +85,8 @@ public class WatchListService : IWatchListService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SetBuyPriceAsync),
             $"{ticker}-{price}");
+        
+        ticker = StockUtils.Format(ticker);
 
         var tenant = await this.tenantService.EnsureExistsAsync();
 
@@ -87,6 +97,8 @@ public class WatchListService : IWatchListService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SetSellPriceAsync),
             $"{ticker}-{price}");
+        
+        ticker = StockUtils.Format(ticker);
 
         var tenant = await this.tenantService.EnsureExistsAsync();
 
@@ -97,6 +109,8 @@ public class WatchListService : IWatchListService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SetPricesAsync),
             $"{ticker}-{buyPrice}-{sellPrice}");
+        
+        ticker = StockUtils.Format(ticker);
 
         var tenant = await this.tenantService.EnsureExistsAsync();
 

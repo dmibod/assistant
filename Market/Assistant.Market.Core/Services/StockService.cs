@@ -2,6 +2,7 @@
 
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Repositories;
+using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 
 public class StockService : IStockService
@@ -19,7 +20,7 @@ public class StockService : IStockService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.GetOrCreateAsync), ticker);
 
-        ticker = ticker.ToUpper();
+        ticker = StockUtils.Format(ticker);
         
         if (!await this.repository.ExistsAsync(ticker))
         {

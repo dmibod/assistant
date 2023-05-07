@@ -2,11 +2,17 @@
 
 using System.Security.Claims;
 using System.Text.RegularExpressions;
+using Assistant.Tenant.Core.Messaging;
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Services;
+using Assistant.Tenant.Infrastructure.Configuration;
+using Common.Core.Messaging.TopicResolver;
 using Common.Core.Security;
+using Common.Core.Services;
 using Common.Core.Utils;
 using Common.Infrastructure.Security;
+using Helper.Core.Utils;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,15 +27,19 @@ public class TenantController : ControllerBase
     private readonly ITenantService tenantService;
     private readonly IIdentityProvider identityProvider;
     private readonly IMarketDataService marketDataService;
+    private readonly IBusService busService;
+    private readonly string testMessageTopic;
 
     public TenantController(
         IPositionService positionService,
         IPositionPublishingService positionPublishingService,
         IWatchListService watchListService,
-        IPublishingService publishingService, 
+        IPublishingService publishingService,
         ITenantService tenantService,
-        IIdentityProvider identityProvider, 
-        IMarketDataService marketDataService)
+        IIdentityProvider identityProvider,
+        IMarketDataService marketDataService,
+        ITopicResolver topicResolver,
+        IBusService busService)
     {
         this.positionService = positionService;
         this.positionPublishingService = positionPublishingService;
@@ -38,6 +48,8 @@ public class TenantController : ControllerBase
         this.tenantService = tenantService;
         this.identityProvider = identityProvider;
         this.marketDataService = marketDataService;
+        this.busService = busService;
+        this.testMessageTopic = topicResolver.ResolveConfig(nameof(NatsSettings.PositionRemoveTopic));
     }
 
     /// <summary>
@@ -87,7 +99,7 @@ public class TenantController : ControllerBase
     [HttpGet("WatchList/{ticker}")]
     public Task<WatchListItem?> GetWatchListItemAsync(string ticker)
     {
-        return this.watchListService.FindByTickerAsync(ticker.ToUpper());
+        return this.watchListService.FindByTickerAsync(StockUtils.Format(ticker));
     }
 
     /// <summary>
@@ -101,7 +113,7 @@ public class TenantController : ControllerBase
     {
         var item = new WatchListItem
         {
-            Ticker = ticker.ToUpper(),
+            Ticker = StockUtils.Format(ticker),
             BuyPrice = buyPrice,
             SellPrice = sellPrice
         };
@@ -120,11 +132,8 @@ public class TenantController : ControllerBase
         decimal sellPricePercent)
     {
         var validatedTickers = tickers
-            .ToUpper()
             .Split(",")
-            .Select(ticker => ticker.Trim())
-            .Where(ticker => ticker.Length > 0)
-            .Where(ticker => Regex.IsMatch(ticker, "[A-Z]+"))
+            .Select(StockUtils.Format)
             .Distinct()
             .ToHashSet();
 
@@ -177,7 +186,7 @@ public class TenantController : ControllerBase
     [HttpPut("WatchList/{ticker}/BuyPrice")]
     public Task SetWatchListItemBuyPriceAsync(string ticker, decimal price)
     {
-        return this.watchListService.SetBuyPriceAsync(ticker.ToUpper(), price);
+        return this.watchListService.SetBuyPriceAsync(StockUtils.Format(ticker), price);
     }
 
     /// <summary>
@@ -186,7 +195,7 @@ public class TenantController : ControllerBase
     [HttpPut("WatchList/{ticker}/SellPrice")]
     public Task SetWatchListItemSellPriceAsync(string ticker, decimal price)
     {
-        return this.watchListService.SetSellPriceAsync(ticker.ToUpper(), price);
+        return this.watchListService.SetSellPriceAsync(StockUtils.Format(ticker), price);
     }
 
     /// <summary>
@@ -195,7 +204,7 @@ public class TenantController : ControllerBase
     [HttpDelete("WatchList/{ticker}")]
     public Task RemoveWatchListItemAsync(string ticker)
     {
-        return this.watchListService.RemoveAsync(ticker.ToUpper());
+        return this.watchListService.RemoveAsync(StockUtils.Format(ticker));
     }
 
     /// <summary>
@@ -223,7 +232,7 @@ public class TenantController : ControllerBase
     [HttpGet("Positions/{ticker}")]
     public async Task<ActionResult> GetPositionsByTickerAsync(string ticker)
     {
-        ticker = ticker.ToUpper();
+        ticker = StockUtils.Format(ticker);
 
         var positions = await this.positionService.FindAllAsync();
 
@@ -259,7 +268,7 @@ public class TenantController : ControllerBase
         var searchTicker = !string.IsNullOrWhiteSpace(ticker);
         if (searchTicker)
         {
-            ticker = ticker.ToUpper();
+            ticker = StockUtils.Format(ticker);
         }
 
         var searchTag = !string.IsNullOrWhiteSpace(tag);
@@ -330,8 +339,8 @@ public class TenantController : ControllerBase
     {
         var position = new Position
         {
-            Account = account.ToUpper(),
-            Ticker = ticker.ToUpper(),
+            Account = account.Trim().ToUpper(),
+            Ticker = StockUtils.Format(ticker),
             Type = AssetType.Stock,
             AverageCost = averageCost,
             Quantity = size
@@ -357,8 +366,8 @@ public class TenantController : ControllerBase
     {
         var position = new Position
         {
-            Account = account.ToUpper(),
-            Ticker = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmdd, strike, true),
+            Account = account.Trim().ToUpper(),
+            Ticker = OptionUtils.OptionTicker(StockUtils.Format(ticker), yyyymmdd, strike, true),
             Type = AssetType.Option,
             AverageCost = averageCost,
             Quantity = size,
@@ -385,8 +394,8 @@ public class TenantController : ControllerBase
     {
         var position = new Position
         {
-            Account = account.ToUpper(),
-            Ticker = OptionUtils.OptionTicker(ticker.ToUpper(), yyyymmdd, strike, false),
+            Account = account.Trim().ToUpper(),
+            Ticker = OptionUtils.OptionTicker(StockUtils.Format(ticker), yyyymmdd, strike, false),
             Type = AssetType.Option,
             AverageCost = averageCost,
             Quantity = size,
@@ -402,7 +411,9 @@ public class TenantController : ControllerBase
     [HttpPut("Positions/{account}/{ticker}")]
     public Task TagPositionAsync(string account, string ticker, int quantity, decimal averageCost)
     {
-        return this.positionService.UpdateAsync(account.ToUpper(), ticker.ToUpper(), quantity, averageCost);
+        ticker = ticker.Trim().ToUpper();
+        ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
+        return this.positionService.UpdateAsync(account.Trim().ToUpper(), ticker, quantity, averageCost);
     }
 
     /// <summary>
@@ -411,7 +422,9 @@ public class TenantController : ControllerBase
     [HttpPut("Positions/{account}/{ticker}/Tag")]
     public Task TagPositionAsync(string account, string ticker, string? tag)
     {
-        return this.positionService.UpdateTagAsync(account.ToUpper(), ticker.ToUpper(), tag ?? string.Empty);
+        ticker = ticker.Trim().ToUpper();
+        ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
+        return this.positionService.UpdateTagAsync(account.Trim().ToUpper(), ticker, tag ?? string.Empty);
     }
 
     /// <summary>
@@ -447,7 +460,9 @@ public class TenantController : ControllerBase
     [HttpDelete("Positions/{account}/{ticker}")]
     public Task RemovePositionAsync(string account, string ticker)
     {
-        return this.positionService.RemoveAsync(account.ToUpper(), ticker.ToUpper());
+        ticker = ticker.Trim().ToUpper();
+        ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
+        return this.positionService.RemoveAsync(account.Trim().ToUpper(), ticker);
     }
 
     /// <summary>
@@ -564,5 +579,18 @@ public class TenantController : ControllerBase
         }
 
         await this.publishingService.PublishSellPutsAsync(filter);
+    }
+
+    [HttpPost("Test"), Authorize("administration")]
+    public Task TestAsync(string account, string ticker)
+    {
+        ticker = ticker.Trim().ToUpper();
+        ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
+        return this.busService.PublishAsync(this.testMessageTopic, new PositionRemoveMessage
+        {
+            Tenant = this.identityProvider.Identity.Name!,
+            Account = account.Trim().ToUpper(),
+            Ticker = ticker
+        });
     }
 }

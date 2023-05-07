@@ -1,10 +1,14 @@
 ﻿namespace Assistant.Market.Infrastructure.Configuration;
 
+using Assistant.Market.Core.Messaging;
 using Assistant.Market.Core.Repositories;
 using Assistant.Market.Core.Services;
 using Assistant.Market.Infrastructure.Repositories;
 using Assistant.Market.Infrastructure.Services;
+using Common.Core.Messaging;
+using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
+using Common.Core.Utils;
 using Common.Infrastructure.Configuration;
 using Common.Infrastructure.Services;
 using KanbanApi.Client.Configuration;
@@ -17,29 +21,19 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection ConfigureInfrastructure(this IServiceCollection services, ConfigurationManager configuration)
     {
-        services.AddNatsClient(options =>
-        {
-            var settings = configuration.GetSection("NatsSettings").Get<NatsSettings>();
-            options.User = settings.User;
-            options.Password = settings.Password;
-            options.Url = settings.Url;
-        });
-        services.Configure<NatsSettings>(configuration.GetSection("NatsSettings"));
-        services.AddSingleton<IBusService, BusService>();
-        
-        services.Configure<DatabaseSettings>(configuration.GetSection("DatabaseSettings"));
+        services.Configure<DatabaseSettings>(configuration.GetSection(nameof(DatabaseSettings)));
 
-        var polygonSettings = configuration.GetSection("PolygonApiSettings").Get<PolygonApiSettings>();
+        var polygonSettings = configuration.GetSection(nameof(PolygonApiSettings)).Get<PolygonApiSettings>();
         services.AddHttpClient("PolygonApiClient", client =>
         {
-            client.BaseAddress = new Uri(polygonSettings.ApiUrl);
+            client.BaseAddress = new Uri(polygonSettings!.ApiUrl);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {polygonSettings.ApiKey}");
         });
         
-        var kanbanSettings = configuration.GetSection("KanbanApiSettings").Get<KanbanApiSettings>();
+        var kanbanSettings = configuration.GetSection(nameof(KanbanApiSettings)).Get<KanbanApiSettings>();
         services.AddHttpClient("KanbanApiClient", client =>
         {
-            client.BaseAddress = new Uri(kanbanSettings.ApiUrl);
+            client.BaseAddress = new Uri(kanbanSettings!.ApiUrl);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {kanbanSettings.ApiKey}");
         });
 
@@ -56,12 +50,43 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOptionChangeRepository, OptionChangeRepository>();
         
         services.AddHostedService<RefreshStockTimerService>();
-        services.AddHostedService<RefreshStockWorkerService>();
         services.AddHostedService<CleanDataTimerService>();
-        services.AddHostedService<CleanDataWorkerService>();
         services.AddHostedService<MarketDataTimerService>();
-        services.AddHostedService<MarketDataWorkerService>();
-        services.AddHostedService<AddStockWorkerService>();
+
+        services.ConfigureMessaging(configuration);
+
+        return services;
+    }
+    
+    public static IServiceCollection ConfigureMessaging(this IServiceCollection services,
+        ConfigurationManager configuration)
+    {
+        var natsSection = configuration.GetSection(nameof(NatsSettings));
+        var natsSettings = natsSection.Get<NatsSettings>();
+        services.AddNatsClient(options =>
+        {
+            options.User = natsSettings!.User;
+            options.Password = natsSettings.Password;
+            options.Url = natsSettings.Url;
+        });
+        services.Configure<NatsSettings>(natsSection);
+        services.AddSingleton<IBusService, BusService>();
+        services.AddSingleton<ITopicResolver, MapTopicResolver>(_ =>
+        {
+            var topics = new Dictionary<string, string>
+            {
+                [TopicUtils.AsTopic(nameof(NatsSettings.StockCreateTopic))] = natsSettings!.StockCreateTopic,
+                [TopicUtils.AsTopic(nameof(NatsSettings.StockRefreshTopic))] = natsSettings.StockRefreshTopic,
+                [TopicUtils.AsTopic(nameof(NatsSettings.DataCleanTopic))] = natsSettings.DataCleanTopic,
+                [TopicUtils.AsTopic(nameof(NatsSettings.DataPublishTopic))] = natsSettings.DataPublishTopic
+            };
+
+            return new MapTopicResolver(topics);
+        });
+        services.ConfigureMessaging(new[]
+        {
+            typeof(StockCreateMessageHandler).Assembly
+        }, ServiceLifetime.Scoped);
 
         return services;
     }
