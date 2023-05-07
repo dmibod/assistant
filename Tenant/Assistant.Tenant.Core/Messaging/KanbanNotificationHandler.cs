@@ -24,34 +24,39 @@ public class KanbanNotificationHandler : IMessageHandler<List<KanbanNotification
 
         foreach (var notification in notifications)
         {
-            this.logger.LogInformation("Received kanban notification '{Type}' for '{Entity}' of '{Board}'",
-                notification.NotificationType,
-                notification.EntityId, 
-                notification.BoardId);
-
             switch (notification.NotificationType)
             {
                 case KanbanNotificationType.RemoveCardNotification:
                 {
-                    await this.HandleRemoveCard(notification.BoardId, notification.EntityId);
+                    await this.HandleRemoveCard(notification);
                 } break;
             }
         }
     }
 
-    private async Task HandleRemoveCard(string boardId, string cardId)
+    private async Task HandleRemoveCard(KanbanNotification notification)
     {
         var positionBoardId = await this.positionService.FindPositionsBoardId();
 
-        if (!string.IsNullOrEmpty(positionBoardId) && positionBoardId == boardId)
+        if (!string.IsNullOrEmpty(positionBoardId) && positionBoardId == notification.BoardId)
         {
-            var positions = await this.positionService.FindByCardIdAsync(cardId);
+            this.LogNotification(notification);
+
+            var positions = await this.positionService.FindByCardIdAsync(notification.EntityId);
 
             foreach (var position in positions)
             {
                 await this.positionService.RemoveAsync(position.Account, position.Ticker, true);
             }
         }
+    }
+
+    private void LogNotification(KanbanNotification notification)
+    {
+        this.logger.LogInformation("Received kanban notification '{Type}' for '{Entity}' of '{Board}'",
+            notification.NotificationType,
+            notification.EntityId, 
+            notification.BoardId);
     }
 }
 
