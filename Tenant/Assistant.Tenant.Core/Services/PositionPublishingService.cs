@@ -57,12 +57,12 @@ public class PositionPublishingService : IPositionPublishingService
     {
         var boards = await this.kanbanService.FindBoardsAsync();
         
-        var board = boards.FirstOrDefault(board => board.Name.StartsWith(Positions));
+        var boardId = await this.positionService.FindPositionsBoardId();
+
+        var board = boards.FirstOrDefault(board => string.IsNullOrEmpty(boardId) ? board.Name.StartsWith(Positions) : board.Id == boardId);
 
         if (board != null)
         {
-            var boardId = await this.positionService.FindPositionsBoardId();
-
             try
             {
                 await this.positionService.UpdatePositionsBoardId(string.Empty);
