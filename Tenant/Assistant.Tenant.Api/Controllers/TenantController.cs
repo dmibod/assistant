@@ -80,7 +80,7 @@ public class TenantController : ControllerBase
     /// A list of stocks you watch, suggestions are produced based on buy/sell prices
     /// </summary>
     [HttpGet("WatchList")]
-    public async Task<ActionResult> GetWatchListAsync()
+    public async Task<ActionResult> WatchListGetAsync()
     {
         var watchList = await this.watchListService.FindAllAsync();
 
@@ -97,7 +97,7 @@ public class TenantController : ControllerBase
     /// Gets single watch list item by stock ticker
     /// </summary>
     [HttpGet("WatchList/{ticker}")]
-    public Task<WatchListItem?> GetWatchListItemAsync(string ticker)
+    public Task<WatchListItem?> WatchListGetItemAsync(string ticker)
     {
         return this.watchListService.FindByTickerAsync(StockUtils.Format(ticker));
     }
@@ -109,7 +109,7 @@ public class TenantController : ControllerBase
     /// <param name="buyPrice">The price at which you are comfortable to own the stock</param>
     /// <param name="sellPrice">The price at which you are willing to get rid of the stock</param>
     [HttpPost("WatchList/{ticker}")]
-    public Task<WatchListItem> AddWatchListItemAsync(string ticker, decimal buyPrice, decimal sellPrice)
+    public Task<WatchListItem> WatchListAddItemAsync(string ticker, decimal buyPrice, decimal sellPrice)
     {
         var item = new WatchListItem
         {
@@ -128,7 +128,7 @@ public class TenantController : ControllerBase
     /// <param name="buyPricePercent">The % amount below current price, for ex. stock price 100$ in case buyPricePercent is 10%, buy price is 90$</param>
     /// <param name="sellPricePercent">The % amount above current price, for ex. stock price 100$ in case sellPricePercent is 10%, sell price is 110$</param>
     [HttpPost("WatchList/AddMultiple")]
-    public async Task<ActionResult> AddWatchListItemsAsync(string tickers, decimal buyPricePercent,
+    public async Task<ActionResult> WatchListAddItemsAsync(string tickers, decimal buyPricePercent,
         decimal sellPricePercent)
     {
         var validatedTickers = tickers
@@ -184,7 +184,7 @@ public class TenantController : ControllerBase
     /// Here you can change buy price for the stock in your watch list
     /// </summary>
     [HttpPut("WatchList/{ticker}/BuyPrice")]
-    public Task SetWatchListItemBuyPriceAsync(string ticker, decimal price)
+    public Task WatchListSetItemBuyPriceAsync(string ticker, decimal price)
     {
         return this.watchListService.SetBuyPriceAsync(StockUtils.Format(ticker), price);
     }
@@ -193,7 +193,7 @@ public class TenantController : ControllerBase
     /// Here you can change sell price for the stock in your watch list
     /// </summary>
     [HttpPut("WatchList/{ticker}/SellPrice")]
-    public Task SetWatchListItemSellPriceAsync(string ticker, decimal price)
+    public Task WatchListSetItemSellPriceAsync(string ticker, decimal price)
     {
         return this.watchListService.SetSellPriceAsync(StockUtils.Format(ticker), price);
     }
@@ -202,7 +202,7 @@ public class TenantController : ControllerBase
     /// Here you can remove stock from watch list
     /// </summary>
     [HttpDelete("WatchList/{ticker}")]
-    public Task RemoveWatchListItemAsync(string ticker)
+    public Task WatchListRemoveItemAsync(string ticker)
     {
         return this.watchListService.RemoveAsync(StockUtils.Format(ticker));
     }
@@ -211,7 +211,7 @@ public class TenantController : ControllerBase
     /// The list of your positions, ordered by 'Account' then 'Ticker' 
     /// </summary>
     [HttpGet("Positions")]
-    public async Task<ActionResult> GetPositionsAsync()
+    public async Task<ActionResult> PositionsGetAsync()
     {
         var positions = await this.positionService.FindAllAsync();
 
@@ -227,10 +227,29 @@ public class TenantController : ControllerBase
     }
 
     /// <summary>
+    /// The list of your accounts 
+    /// </summary>
+    [HttpGet("Positions/Accounts")]
+    public async Task<ActionResult> PositionsGetAccountsAsync()
+    {
+        var positions = await this.positionService.FindAllAsync();
+
+        var list = positions.GroupBy(p => p.Account).Select(g => $"{g.Key} ({g.Count()})").OrderBy(a => a).ToList();
+
+        var result = new
+        {
+            list.Count,
+            Items = list.ToArray()
+        };
+
+        return this.Ok(result);
+    }
+
+    /// <summary>
     /// The list of your positions filtered by stock ticker, ordered by 'Account' then 'Ticker' 
     /// </summary>
     [HttpGet("Positions/{ticker}")]
-    public async Task<ActionResult> GetPositionsByTickerAsync(string ticker)
+    public async Task<ActionResult> PositionsGetByTickerAsync(string ticker)
     {
         ticker = StockUtils.Format(ticker);
 
@@ -256,7 +275,7 @@ public class TenantController : ControllerBase
     /// <param name="contains">True - applies 'contains' for the criteria, false - 'does not contain', empty - 'exact match'.</param>
     /// <returns></returns>
     [HttpGet("Positions/Search")]
-    public async Task<ActionResult> GetPositionsByCriteriaAsync(string? account, string? ticker, string? tag,
+    public async Task<ActionResult> PositionsGetByCriteriaAsync(string? account, string? ticker, AssetType? type, string? tag,
         bool? contains)
     {
         var searchAccount = !string.IsNullOrWhiteSpace(account);
@@ -270,6 +289,8 @@ public class TenantController : ControllerBase
         {
             ticker = StockUtils.Format(ticker);
         }
+
+        var searchType = type.HasValue;
 
         var searchTag = !string.IsNullOrWhiteSpace(tag);
         if (searchTag)
@@ -290,14 +311,19 @@ public class TenantController : ControllerBase
 
         var filtered = positions.Where(p =>
         {
-            if (searchAccount && comparison(p.Account, account))
+            if (searchAccount && !comparison(p.Account, account))
             {
-                return true;
+                return false;
             }
 
-            if (searchTag && comparison(p.Tag, tag))
+            if (searchType && p.Type != type.Value)
             {
-                return true;
+                return false;
+            }
+
+            if (searchTag && !comparison(p.Tag, tag))
+            {
+                return false;
             }
 
             if (searchTicker)
@@ -306,13 +332,13 @@ public class TenantController : ControllerBase
                     ? p.Ticker
                     : OptionUtils.GetStock(p.Ticker);
 
-                if (comparison(positionTicker, ticker))
+                if (!comparison(positionTicker, ticker))
                 {
-                    return true;
+                    return false;
                 }
             }
 
-            return false;
+            return true;
         }).ToList();
 
         var result = new
@@ -334,7 +360,7 @@ public class TenantController : ControllerBase
     /// <param name="tag">Use tags to group positions into 'combos'</param>
     /// <returns></returns>
     [HttpPost("Positions/{account}/{ticker}")]
-    public Task<Position> AddStockPositionAsync(string account, string ticker, decimal averageCost, int size,
+    public Task<Position> PositionAddStockAsync(string account, string ticker, decimal averageCost, int size,
         string tag = "")
     {
         var position = new Position
@@ -361,7 +387,7 @@ public class TenantController : ControllerBase
     /// <param name="tag">Use tags to group positions into 'combos'</param>
     /// <returns></returns>
     [HttpPost("Positions/{account}/{ticker}/Call/{yyyymmdd}")]
-    public Task<Position> AddCallOptionPositionAsync(string account, string ticker, string yyyymmdd, decimal strike,
+    public Task<Position> PositionAddCallOptionAsync(string account, string ticker, string yyyymmdd, decimal strike,
         decimal averageCost, int size, string tag = "")
     {
         var position = new Position
@@ -389,7 +415,7 @@ public class TenantController : ControllerBase
     /// <param name="tag">Use tags to group positions into 'combos'</param>
     /// <returns></returns>
     [HttpPost("Positions/{account}/{ticker}/Put/{yyyymmdd}")]
-    public Task<Position> AddPutOptionPositionAsync(string account, string ticker, string yyyymmdd, decimal strike,
+    public Task<Position> PositionAddPutOptionAsync(string account, string ticker, string yyyymmdd, decimal strike,
         decimal averageCost, int size, string tag = "")
     {
         var position = new Position
@@ -404,61 +430,12 @@ public class TenantController : ControllerBase
 
         return this.positionService.CreateAsync(position);
     }
-
-    /// <summary>
-    /// Allows to modify account position quantity and average cost
-    /// </summary>
-    [HttpPut("Positions/{account}/{ticker}")]
-    public Task TagPositionAsync(string account, string ticker, int quantity, decimal averageCost)
-    {
-        ticker = ticker.Trim().ToUpper();
-        ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
-        return this.positionService.UpdateAsync(account.Trim().ToUpper(), ticker, quantity, averageCost);
-    }
-
-    /// <summary>
-    /// Allows to tag/untag account position
-    /// </summary>
-    [HttpPut("Positions/{account}/{ticker}/Tag")]
-    public Task TagPositionAsync(string account, string ticker, string? tag)
-    {
-        ticker = ticker.Trim().ToUpper();
-        ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
-        return this.positionService.UpdateTagAsync(account.Trim().ToUpper(), ticker, tag ?? string.Empty);
-    }
-
-    /// <summary>
-    /// Allows to rename tag
-    /// </summary>
-    [HttpPut("Positions/Tag/{tag}")]
-    public Task ReplaceTagAsync(string tag, string? newTag)
-    {
-        return this.positionService.ReplaceTagAsync(tag, newTag ?? string.Empty);
-    }
-
-    /// <summary>
-    /// Untags all positions 
-    /// </summary>
-    [HttpDelete("Positions/Tag")]
-    public Task ResetTagsAsync()
-    {
-        return this.positionService.ResetTagAsync();
-    }
-
-    /// <summary>
-    /// Searches for the untagged option positions and makes combos for those having the same underlying and expiration
-    /// </summary>
-    [HttpPost("Positions/Tag/Options")]
-    public Task AutoTagOptionsAsync()
-    {
-        return this.positionService.AutoTagOptionsAsync();
-    }
-
+    
     /// <summary>
     /// Here you can remove account position
     /// </summary>
     [HttpDelete("Positions/{account}/{ticker}")]
-    public Task RemovePositionAsync(string account, string ticker)
+    public Task PositionRemoveAsync(string account, string ticker)
     {
         ticker = ticker.Trim().ToUpper();
         ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
@@ -469,9 +446,58 @@ public class TenantController : ControllerBase
     /// Publishes your positions
     /// </summary>
     [HttpPost("Positions/Publish")]
-    public Task PublishPositionsAsync()
+    public Task PositionsPublishAsync()
     {
         return this.positionPublishingService.PublishAsync();
+    }
+
+    /// <summary>
+    /// Allows to modify account position quantity and average cost
+    /// </summary>
+    [HttpPut("Positions/{account}/{ticker}")]
+    public Task PositionTagAsync(string account, string ticker, int quantity, decimal averageCost)
+    {
+        ticker = ticker.Trim().ToUpper();
+        ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
+        return this.positionService.UpdateAsync(account.Trim().ToUpper(), ticker, quantity, averageCost);
+    }
+
+    /// <summary>
+    /// Allows to tag/untag account position
+    /// </summary>
+    [HttpPut("Positions/{account}/{ticker}/Tag")]
+    public Task PositionTagAsync(string account, string ticker, string? tag)
+    {
+        ticker = ticker.Trim().ToUpper();
+        ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
+        return this.positionService.UpdateTagAsync(account.Trim().ToUpper(), ticker, tag ?? string.Empty);
+    }
+
+    /// <summary>
+    /// Allows to rename tag
+    /// </summary>
+    [HttpPut("Positions/Tag/{tag}")]
+    public Task TagReplaceAsync(string tag, string? newTag)
+    {
+        return this.positionService.ReplaceTagAsync(tag, newTag ?? string.Empty);
+    }
+
+    /// <summary>
+    /// Untags all positions 
+    /// </summary>
+    [HttpDelete("Positions/Tag")]
+    public Task TagsResetAsync()
+    {
+        return this.positionService.ResetTagAsync();
+    }
+
+    /// <summary>
+    /// Searches for the untagged option positions and makes combos for those having the same underlying and expiration
+    /// </summary>
+    [HttpPost("Positions/Tag/Options")]
+    public Task TagOptionsAsync()
+    {
+        return this.positionService.AutoTagOptionsAsync();
     }
 
     /// <summary>
@@ -479,7 +505,7 @@ public class TenantController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [HttpGet("Recommendations/Filter")]
-    public Task<RecommendationFilter?> GetRecommendationFilterAsync()
+    public Task<RecommendationFilter?> RecommendationGetFilterAsync()
     {
         return this.tenantService.GetDefaultFilterAsync();
     }
@@ -492,7 +518,7 @@ public class TenantController : ControllerBase
     /// <param name="maxDte">Max days till expiration, days</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
     [HttpPost("Recommendations/Filter")]
-    public async Task UpdateRecommendationFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte,
+    public async Task RecommendationUpdateFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte,
         bool? otm)
     {
         var filter = new RecommendationFilter
@@ -515,7 +541,7 @@ public class TenantController : ControllerBase
     /// <param name="otm">true - out of the money options, false - in the money options</param>
     /// <param name="considerPositions">true - to check if there is stock position available for 'covered' calls</param>
     [HttpPost("Recommendations/SellCalls")]
-    public async Task PublishSellCallsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm, bool considerPositions)
+    public async Task RecommendationSellCallsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm, bool considerPositions)
     {
         var defaultFilter = await this.tenantService.GetDefaultFilterAsync();
 
@@ -552,7 +578,7 @@ public class TenantController : ControllerBase
     /// <param name="maxDte">Max days till expiration, days</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
     [HttpPost("Recommendations/SellPuts")]
-    public async Task PublishSellPutsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm)
+    public async Task RecommendationSellPutsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm)
     {
         var defaultFilter = await this.tenantService.GetDefaultFilterAsync();
 
