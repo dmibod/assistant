@@ -99,6 +99,16 @@ public class OptionChangeRepository : IOptionChangeRepository
     {
         return this.collection.Find(entity => entity.Ticker == ticker && entity.Expiration == expiration).AnyAsync();
     }
+    
+    
+    public async Task RemoveAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), ticker);
+
+        var filter = Builders<OptionChangeEntity>.Filter.Where(entity => entity.Ticker == ticker);
+
+        await this.collection.DeleteManyAsync(filter);
+    }
 }
 
 internal class OptionChangeEntity : Option

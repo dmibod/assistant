@@ -3,6 +3,8 @@
 public class NatsSettings : Common.Infrastructure.Configuration.NatsSettings
 {
     public string StockCreateTopic { get; set; } = null!;
+    
+    public string StockRemoveTopic { get; set; } = null!;
 
     public string StockRefreshTopic { get; set; } = null!;
     

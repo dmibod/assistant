@@ -17,4 +17,6 @@ public interface IOptionRepository
     Task UpdateAsync(Option option);
     
     Task RemoveAsync(IDictionary<string, ISet<string>> expirations);
+    
+    Task RemoveAsync(string ticker);
 }

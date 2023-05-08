@@ -23,6 +23,7 @@ public class MarketController : ControllerBase
     private readonly IIdentityProvider identityProvider;
     private readonly string dataPublishTopic;
     private readonly string stockCreateTopic;
+    private readonly string stockRemoveTopic;
     private readonly string stockRefreshTopic;
 
     public MarketController(
@@ -38,6 +39,7 @@ public class MarketController : ControllerBase
         this.busService = busService;
         this.dataPublishTopic = topicResolver.ResolveConfig(nameof(NatsSettings.DataPublishTopic));
         this.stockCreateTopic = topicResolver.ResolveConfig(nameof(NatsSettings.StockCreateTopic));
+        this.stockRemoveTopic = topicResolver.ResolveConfig(nameof(NatsSettings.StockRemoveTopic));
         this.stockRefreshTopic = topicResolver.ResolveConfig(nameof(NatsSettings.StockRefreshTopic));
     }
 
@@ -159,9 +161,21 @@ public class MarketController : ControllerBase
     /// Adds stock to the system
     /// </summary>
     [HttpPost("Stocks/{ticker}"), Authorize("publishing")]
-    public Task AddStockAsync(string ticker)
+    public Task StockAddAsync(string ticker)
     {
         return this.busService.PublishAsync(this.stockCreateTopic, new StockCreateMessage
+        {
+            Ticker = StockUtils.Format(ticker)
+        });
+    }
+
+    /// <summary>
+    /// Remove stock from the system
+    /// </summary>
+    [HttpDelete("Stocks/{ticker}"), Authorize("publishing")]
+    public Task StockRemoveAsync(string ticker)
+    {
+        return this.busService.PublishAsync(this.stockRemoveTopic, new StockRemoveMessage
         {
             Ticker = StockUtils.Format(ticker)
         });

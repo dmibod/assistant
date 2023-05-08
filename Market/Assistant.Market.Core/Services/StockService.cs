@@ -78,4 +78,14 @@ public class StockService : IStockService
         
         return this.repository.FindByTickerAsync(ticker);
     }
+
+    public async Task RemoveAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), ticker);
+
+        if (await this.repository.ExistsAsync(ticker))
+        {
+            await this.repository.RemoveAsync(ticker);
+        }
+    }
 }

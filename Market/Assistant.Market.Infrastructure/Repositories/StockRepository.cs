@@ -107,6 +107,16 @@ public class StockRepository : IStockRepository
 
         return list;
     }
+
+    public Task RemoveAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), ticker);
+
+        var filter = Builders<StockEntity>.Filter
+            .Eq(item => item.Ticker, ticker);
+
+        return this.collection.DeleteOneAsync(filter);
+    }
 }
 
 internal class StockEntity : Stock

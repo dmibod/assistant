@@ -17,4 +17,6 @@ public interface IStockRepository
     Task<IEnumerable<Stock>> FindAllAsync();
     
     Task<IEnumerable<string>> FindTickersAsync();
+    
+    Task RemoveAsync(string ticker);
 }

@@ -9,4 +9,6 @@ public interface IOptionChangeRepository
     Task CreateOrUpdateAsync(Option option);
 
     Task RemoveAsync(IDictionary<string, ISet<string>> expirations);
+    
+    Task RemoveAsync(string ticker);
 }

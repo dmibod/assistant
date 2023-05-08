@@ -104,6 +104,15 @@ public class OptionRepository : IOptionRepository
         }
     }
 
+    public async Task RemoveAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), ticker);
+
+        var filter = Builders<OptionEntity>.Filter.Where(entity => entity.Ticker == ticker);
+
+        await this.collection.DeleteManyAsync(filter);
+    }
+
     private async Task RemoveAsync(string ticker, ISet<string> expirations)
     {
         var array = expirations.ToArray();

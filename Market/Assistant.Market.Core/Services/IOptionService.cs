@@ -15,4 +15,6 @@ public interface IOptionService
     Task<IEnumerable<string>> FindExpirationsAsync(string ticker);
     
     Task RemoveAsync(IDictionary<string, ISet<string>> expirations);
+    
+    Task RemoveAsync(string ticker);
 }

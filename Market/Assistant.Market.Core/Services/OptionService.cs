@@ -2,6 +2,7 @@
 
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Repositories;
+using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 
 public class OptionService : IOptionService
@@ -22,7 +23,7 @@ public class OptionService : IOptionService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindAsync), ticker);
 
-        ticker = ticker.ToUpper();
+        ticker = StockUtils.Format(ticker);
 
         var options = await this.repository.FindByTickerAsync(ticker);
 
@@ -33,7 +34,7 @@ public class OptionService : IOptionService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationAsync), $"{ticker}-{expiration}");
 
-        ticker = ticker.ToUpper();
+        ticker = StockUtils.Format(ticker);
         
         var option = await this.repository.FindExpirationAsync(ticker, expiration);
 
@@ -51,7 +52,7 @@ public class OptionService : IOptionService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindChangeAsync), ticker);
 
-        ticker = ticker.ToUpper();
+        ticker = StockUtils.Format(ticker);
 
         var options = await this.changeRepository.FindByTickerAsync(ticker);
 
@@ -62,9 +63,7 @@ public class OptionService : IOptionService
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindExpirationsAsync), ticker);
 
-        ticker = ticker.ToUpper();
-        
-        return this.repository.FindExpirationsAsync(ticker);
+        return this.repository.FindExpirationsAsync(StockUtils.Format(ticker));
     }
 
     public async Task UpdateAsync(OptionChain options)
@@ -160,6 +159,31 @@ public class OptionService : IOptionService
         try
         {
             await this.changeRepository.RemoveAsync(expirations);
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError(e, e.Message);
+        }
+    }
+
+    public async Task RemoveAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), ticker);
+
+        ticker = StockUtils.Format(ticker);
+
+        try
+        {
+            await this.repository.RemoveAsync(ticker);
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError(e, e.Message);
+        }
+
+        try
+        {
+            await this.changeRepository.RemoveAsync(ticker);
         }
         catch (Exception e)
         {
