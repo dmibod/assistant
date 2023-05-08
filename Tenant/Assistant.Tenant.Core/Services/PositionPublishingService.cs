@@ -176,7 +176,7 @@ public class PositionPublishingService : IPositionPublishingService
         {
             if (lane.Description != description)
             {
-                await this.kanbanService.UpdateLaneAsync(board.Id, account.Id, description);
+                await this.kanbanService.UpdateLaneAsync(board.Id, lane.Id, description);
             }
 
             return lane;
