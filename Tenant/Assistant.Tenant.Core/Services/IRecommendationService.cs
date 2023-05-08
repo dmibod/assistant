@@ -6,7 +6,23 @@ using Helper.Core.Domain;
 
 public interface IRecommendationService
 {
-    Task<IEnumerable<SellOperation>> SellPutsAsync(RecommendationFilter filter, Func<int, ProgressTracker> trackerCreator);
+    Task<string?> FindSellPutsBoardId();
+
+    Task UpdateSellPutsBoardId(string boardId);
+
+    Task<SellPutsFilter?> GetSellPutsFilterAsync();
+
+    Task UpdateSellPutsFilterAsync(SellPutsFilter filter);
+
+    Task<IEnumerable<SellOperation>> SellPutsAsync(SellPutsFilter filter, Func<int, ProgressTracker> trackerCreator);
     
-    Task<IEnumerable<SellOperation>> SellCallsAsync(RecommendationFilter filter, bool considerPositions, Func<int, ProgressTracker> trackerCreator);
+    Task<string?> FindSellCallsBoardId();
+
+    Task UpdateSellCallsBoardId(string boardId);
+
+    Task<SellCallsFilter?> GetSellCallsFilterAsync();
+
+    Task UpdateSellCallsFilterAsync(SellCallsFilter filter);
+
+    Task<IEnumerable<SellOperation>> SellCallsAsync(SellCallsFilter filter, Func<int, ProgressTracker> trackerCreator);
 }

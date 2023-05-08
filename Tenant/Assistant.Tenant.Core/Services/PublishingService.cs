@@ -31,11 +31,11 @@ public class PublishingService : IPublishingService
         this.logger = logger;
     }
 
-    public async Task PublishSellPutsAsync(RecommendationFilter filter)
+    public async Task PublishSellPutsAsync(SellPutsFilter filter)
     {
         this.logger.LogInformation("{Method}", nameof(this.PublishSellPutsAsync));
 
-        var board = await this.GetBoardAsync(SellPuts);
+        var board = await this.GetSellPutsBoardAsync();
 
         try
         {
@@ -47,19 +47,43 @@ public class PublishingService : IPublishingService
         }
         finally
         {
+            await this.recommendationService.UpdateSellPutsBoardId(board.Id);
             await this.kanbanService.ResetBoardStateAsync(board.Id);
         }
     }
 
-    public async Task PublishSellCallsAsync(RecommendationFilter filter, bool considerPositions)
+    private async Task<Board> GetSellPutsBoardAsync()
+    {
+        var now = DateTime.UtcNow;
+        var name = $"{Recommendations} ({SellPuts}) {now.ToShortDateString()} {now.ToShortTimeString()}";
+        var description = "Calculation...";
+        
+        var boardId = await this.recommendationService.FindSellPutsBoardId();
+        if (!string.IsNullOrEmpty(boardId))
+        {
+            await this.recommendationService.UpdateSellPutsBoardId(string.Empty);
+            var board = await this.kanbanService.FindBoardAsync(boardId);
+            if (board != null)
+            {
+                board.Name = name;
+                board.Description = description;
+                await this.kanbanService.UpdateBoardAsync(board);
+                return board;
+            }
+        }
+        
+        return await this.kanbanService.CreateBoardAsync(new Board { Name = name, Description = description });
+    }
+
+    public async Task PublishSellCallsAsync(SellCallsFilter filter)
     {
         this.logger.LogInformation("{Method}", nameof(this.PublishSellCallsAsync));
 
-        var board = await this.GetBoardAsync(SellCalls);
+        var board = await this.GetSellCallsBoardAsync();
 
         try
         {
-            await this.PublishSellCallsAsync(board, filter, considerPositions);
+            await this.PublishSellCallsAsync(board, filter);
         }
         catch (Exception e)
         {
@@ -67,30 +91,35 @@ public class PublishingService : IPublishingService
         }
         finally
         {
+            await this.recommendationService.UpdateSellCallsBoardId(board.Id);
             await this.kanbanService.ResetBoardStateAsync(board.Id);
         }
     }
 
-    private async Task<Board> GetBoardAsync(string prefix)
+    private async Task<Board> GetSellCallsBoardAsync()
     {
-        var boards = await this.kanbanService.FindBoardsAsync();
+        var now = DateTime.UtcNow;
+        var name = $"{Recommendations} ({SellCalls}) {now.ToShortDateString()} {now.ToShortTimeString()}";
+        var description = "Calculation...";
         
-        var board = boards.FirstOrDefault(board => board.Name.StartsWith($"{Recommendations} ({prefix})"));
-
-        if (board != null)
+        var boardId = await this.recommendationService.FindSellCallsBoardId();
+        if (!string.IsNullOrEmpty(boardId))
         {
-            await this.kanbanService.RemoveBoardAsync(board.Id);
+            await this.recommendationService.UpdateSellCallsBoardId(string.Empty);
+            var board = await this.kanbanService.FindBoardAsync(boardId);
+            if (board != null)
+            {
+                board.Name = name;
+                board.Description = description;
+                await this.kanbanService.UpdateBoardAsync(board);
+                return board;
+            }
         }
         
-        var now = DateTime.UtcNow;
-        return await this.kanbanService.CreateBoardAsync(new Board
-        {
-            Name = $"{Recommendations} ({prefix}) {now.ToShortDateString()} {now.ToShortTimeString()}",
-            Description = "Calculation..."
-        });
+        return await this.kanbanService.CreateBoardAsync(new Board { Name = name, Description = description });
     }
 
-    private async Task PublishSellPutsAsync(Board board, RecommendationFilter filter)
+    private async Task PublishSellPutsAsync(Board board, SellPutsFilter filter)
     {
         var operations = await this.recommendationService.SellPutsAsync(filter,
             total =>
@@ -113,7 +142,9 @@ public class PublishingService : IPublishingService
                 this.kanbanService.SetBoardProgressStateAsync(board.Id, progress).GetAwaiter().GetResult();
             });
 
-        var putsLane = await this.kanbanService.CreateBoardLaneAsync(board.Id,
+        await this.RemoveBoardLanesAsync(board);
+        
+        var filterLane = await this.kanbanService.CreateBoardLaneAsync(board.Id,
             new Lane { Name = "FILTER", Description = filter.AsDescription() });
 
         foreach (var group in operations.GroupBy(op => op.Option.Stock.Id).OrderBy(op => op.Key))
@@ -128,7 +159,7 @@ public class PublishingService : IPublishingService
 
             var laneTitle = $"${currentPrice} buy ${buyPrice} sell ${sellPrice}";
 
-            var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, putsLane.Id,
+            var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, filterLane.Id,
                 new Lane { Name = group.Key, Description = laneTitle });
 
             foreach (var opInfo in group.OrderByDescending(op => op.AnnualRoi).Select(OpInfo))
@@ -160,9 +191,9 @@ public class PublishingService : IPublishingService
         await this.kanbanService.UpdateBoardAsync(board);
     }
 
-    private async Task PublishSellCallsAsync(Board board, RecommendationFilter filter, bool considerPositions)
+    private async Task PublishSellCallsAsync(Board board, SellCallsFilter filter)
     {
-        var operations = await this.recommendationService.SellCallsAsync(filter, considerPositions,
+        var operations = await this.recommendationService.SellCallsAsync(filter,
             total =>
             {
                 return new ProgressTracker(total, 1,
@@ -183,7 +214,9 @@ public class PublishingService : IPublishingService
                 this.kanbanService.SetBoardProgressStateAsync(board.Id, progress).GetAwaiter().GetResult();
             });
 
-        var putsLane = await this.kanbanService.CreateBoardLaneAsync(board.Id,
+        await this.RemoveBoardLanesAsync(board);
+        
+        var filterLane = await this.kanbanService.CreateBoardLaneAsync(board.Id,
             new Lane { Name = "FILTER", Description = filter.AsDescription() });
 
         foreach (var group in operations.GroupBy(op => op.Option.Stock.Id).OrderBy(op => op.Key))
@@ -198,7 +231,7 @@ public class PublishingService : IPublishingService
 
             var laneTitle = $"${currentPrice} buy ${buyPrice} sell ${sellPrice}";
 
-            var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, putsLane.Id,
+            var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, filterLane.Id,
                 new Lane { Name = group.Key, Description = laneTitle });
 
             foreach (var opInfo in group.OrderByDescending(op => op.AnnualRoi).Select(OpInfo))
@@ -254,5 +287,14 @@ public class PublishingService : IPublishingService
                     RenderUtils.PropToContent(x.Item2, valueStyle))).Aggregate((curr, x) => $"{curr},{x}");
 
         return new Tuple<string, string>(name, "[" + body + "]");
+    }
+    
+    private async Task RemoveBoardLanesAsync(Board board)
+    {
+        var lanes = await this.kanbanService.FindBoardLanesAsync(board.Id);
+        foreach (var laneId in lanes.Select(lane => lane.Id))
+        {
+            await this.kanbanService.RemoveBoardLaneAsync(board.Id, laneId);
+        }
     }
 }

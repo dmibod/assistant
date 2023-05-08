@@ -1,18 +1,11 @@
 ﻿namespace Assistant.Tenant.Api.Controllers;
 
 using System.Security.Claims;
-using System.Text.RegularExpressions;
-using Assistant.Tenant.Core.Messaging;
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Services;
-using Assistant.Tenant.Infrastructure.Configuration;
-using Common.Core.Messaging.TopicResolver;
 using Common.Core.Security;
-using Common.Core.Services;
-using Common.Core.Utils;
 using Common.Infrastructure.Security;
 using Helper.Core.Utils;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,32 +17,29 @@ public class TenantController : ControllerBase
     private readonly IPositionPublishingService positionPublishingService;
     private readonly IWatchListService watchListService;
     private readonly IPublishingService publishingService;
+    private readonly IRecommendationService recommendationService;
     private readonly ITenantService tenantService;
     private readonly IIdentityProvider identityProvider;
     private readonly IMarketDataService marketDataService;
-    private readonly IBusService busService;
-    private readonly string testMessageTopic;
 
     public TenantController(
         IPositionService positionService,
         IPositionPublishingService positionPublishingService,
         IWatchListService watchListService,
         IPublishingService publishingService,
+        IRecommendationService recommendationService,
         ITenantService tenantService,
         IIdentityProvider identityProvider,
-        IMarketDataService marketDataService,
-        ITopicResolver topicResolver,
-        IBusService busService)
+        IMarketDataService marketDataService)
     {
         this.positionService = positionService;
         this.positionPublishingService = positionPublishingService;
         this.watchListService = watchListService;
         this.publishingService = publishingService;
+        this.recommendationService = recommendationService;
         this.tenantService = tenantService;
         this.identityProvider = identityProvider;
         this.marketDataService = marketDataService;
-        this.busService = busService;
-        this.testMessageTopic = topicResolver.ResolveConfig(nameof(NatsSettings.PositionRemoveTopic));
     }
 
     /// <summary>
@@ -499,37 +489,39 @@ public class TenantController : ControllerBase
     {
         return this.positionService.AutoTagOptionsAsync();
     }
-
+    
     /// <summary>
-    /// Default filter for the recommendations
+    /// Default filter for the sell calls recommendations
     /// </summary>
     /// <returns></returns>
-    [HttpGet("Recommendations/Filter")]
-    public Task<RecommendationFilter?> RecommendationGetFilterAsync()
+    [HttpGet("Recommendations/SellCalls/Filter")]
+    public Task<SellCallsFilter?> RecommendationGetSellCallsFilterAsync()
     {
-        return this.tenantService.GetDefaultFilterAsync();
+        return this.recommendationService.GetSellCallsFilterAsync();
     }
 
     /// <summary>
-    /// Allows to specify default filter for the recommendations
+    /// Allows to specify default filter for the sell calls recommendations
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
     /// <param name="minPremium">Min premium (option contract price), $</param>
     /// <param name="maxDte">Max days till expiration, days</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
-    [HttpPost("Recommendations/Filter")]
-    public async Task RecommendationUpdateFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte,
-        bool? otm)
+    /// <param name="covered">true - to check if there is stock position available for 'covered' calls</param>
+    [HttpPost("Recommendations/SellCalls/Filter")]
+    public async Task RecommendationUpdateSellCallsFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte,
+        bool? otm, bool covered)
     {
-        var filter = new RecommendationFilter
+        var filter = new SellCallsFilter
         {
             MinAnnualPercent = minAnnualPercent,
             MinPremium = minPremium,
             MaxDte = maxDte,
-            Otm = otm
+            Otm = otm,
+            Covered = covered
         };
 
-        await this.tenantService.UpdateDefaultFilterAsync(filter);
+        await this.recommendationService.UpdateSellCallsFilterAsync(filter);
     }
 
     /// <summary>
@@ -539,13 +531,13 @@ public class TenantController : ControllerBase
     /// <param name="minPremium">Min premium (option contract price), $</param>
     /// <param name="maxDte">Max days till expiration, days</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
-    /// <param name="considerPositions">true - to check if there is stock position available for 'covered' calls</param>
+    /// <param name="covered">true - to check if there is stock position available for 'covered' calls</param>
     [HttpPost("Recommendations/SellCalls")]
-    public async Task RecommendationSellCallsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm, bool considerPositions)
+    public async Task RecommendationSellCallsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm, bool? covered)
     {
-        var defaultFilter = await this.tenantService.GetDefaultFilterAsync();
+        var defaultFilter = await this.recommendationService.GetSellCallsFilterAsync();
 
-        var filter = defaultFilter ?? new RecommendationFilter();
+        var filter = defaultFilter ?? new SellCallsFilter();
 
         if (minAnnualPercent.HasValue)
         {
@@ -567,7 +559,44 @@ public class TenantController : ControllerBase
             filter.Otm = otm;
         }
 
-        await this.publishingService.PublishSellCallsAsync(filter, considerPositions);
+        if (covered.HasValue)
+        {
+            filter.Covered = covered.Value;
+        }
+
+        await this.publishingService.PublishSellCallsAsync(filter);
+    }
+
+    /// <summary>
+    /// Default filter for the sell puts recommendations
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("Recommendations/SellPuts/Filter")]
+    public Task<SellPutsFilter?> RecommendationGetSellPutsFilterAsync()
+    {
+        return this.recommendationService.GetSellPutsFilterAsync();
+    }
+
+    /// <summary>
+    /// Allows to specify default filter for the sell puts recommendations
+    /// </summary>
+    /// <param name="minAnnualPercent">Min annual yield, %</param>
+    /// <param name="minPremium">Min premium (option contract price), $</param>
+    /// <param name="maxDte">Max days till expiration, days</param>
+    /// <param name="otm">true - out of the money options, false - in the money options</param>
+    [HttpPost("Recommendations/SellPuts/Filter")]
+    public async Task RecommendationUpdateSellPutsFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte,
+        bool? otm)
+    {
+        var filter = new SellPutsFilter
+        {
+            MinAnnualPercent = minAnnualPercent,
+            MinPremium = minPremium,
+            MaxDte = maxDte,
+            Otm = otm
+        };
+
+        await this.recommendationService.UpdateSellPutsFilterAsync(filter);
     }
 
     /// <summary>
@@ -580,9 +609,9 @@ public class TenantController : ControllerBase
     [HttpPost("Recommendations/SellPuts")]
     public async Task RecommendationSellPutsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm)
     {
-        var defaultFilter = await this.tenantService.GetDefaultFilterAsync();
+        var defaultFilter = await this.recommendationService.GetSellPutsFilterAsync();
 
-        var filter = defaultFilter ?? new RecommendationFilter();
+        var filter = defaultFilter ?? new SellPutsFilter();
 
         if (minAnnualPercent.HasValue)
         {
@@ -605,18 +634,5 @@ public class TenantController : ControllerBase
         }
 
         await this.publishingService.PublishSellPutsAsync(filter);
-    }
-
-    [HttpPost("Test"), Authorize("administration")]
-    public Task TestAsync(string account, string ticker)
-    {
-        ticker = ticker.Trim().ToUpper();
-        ticker = OptionUtils.IsValid(ticker) ? OptionUtils.Format(ticker) : StockUtils.Format(ticker);
-        return this.busService.PublishAsync(this.testMessageTopic, new PositionRemoveMessage
-        {
-            Tenant = this.identityProvider.Identity.Name!,
-            Account = account.Trim().ToUpper(),
-            Ticker = ticker
-        });
     }
 }

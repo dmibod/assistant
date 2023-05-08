@@ -5,6 +5,12 @@ public class Tenant
     public string Name { get; set; }
 
     public string DefaultFilter { get; set; }
+    
+    public string SellPutsBoardId { get; set; }
+    
+    public string SellCallsFilter { get; set; }
+    
+    public string SellCallsBoardId { get; set; }
 
     public string PositionsBoardId { get; set; }
 

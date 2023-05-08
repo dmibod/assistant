@@ -259,9 +259,9 @@ public class TenantRepository : ITenantRepository
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
 
-    public async Task<string?> FindDefaultFilterAsync(string tenant)
+    public async Task<string?> FindSellPutsFilterAsync(string tenant)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindDefaultFilterAsync), tenant);
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindSellPutsFilterAsync), tenant);
         
         return await this.collection
             .AsQueryable()
@@ -270,12 +270,33 @@ public class TenantRepository : ITenantRepository
             .FirstOrDefaultAsync();
     }
 
-    public Task UpdateDefaultFilterAsync(string tenant, string defaultFilter)
+    public Task UpdateSellPutsFilterAsync(string tenant, string defaultFilter)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateDefaultFilterAsync), $"{tenant}-{defaultFilter}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSellPutsFilterAsync), $"{tenant}-{defaultFilter}");
 
         var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
         var update = Builders<TenantEntity>.Update.Set(tenant => tenant.DefaultFilter, defaultFilter);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public async Task<string?> FindSellCallsFilterAsync(string tenant)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindSellCallsFilterAsync), tenant);
+        
+        return await this.collection
+            .AsQueryable()
+            .Where(item => item.Name == tenant)
+            .Select(item => item.SellCallsFilter)
+            .FirstOrDefaultAsync();
+    }
+
+    public Task UpdateSellCallsFilterAsync(string tenant, string defaultFilter)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSellCallsFilterAsync), $"{tenant}-{defaultFilter}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
+        var update = Builders<TenantEntity>.Update.Set(tenant => tenant.SellCallsFilter, defaultFilter);
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
@@ -291,12 +312,54 @@ public class TenantRepository : ITenantRepository
             .FirstOrDefaultAsync();
     }
 
-    public Task UpdatePositionsBoardIdAsync(string tenant, string positionsBoardId)
+    public Task UpdatePositionsBoardIdAsync(string tenant, string boardId)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdatePositionsBoardIdAsync), $"{tenant}-{positionsBoardId}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdatePositionsBoardIdAsync), $"{tenant}-{boardId}");
 
         var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
-        var update = Builders<TenantEntity>.Update.Set(tenant => tenant.PositionsBoardId, positionsBoardId);
+        var update = Builders<TenantEntity>.Update.Set(tenant => tenant.PositionsBoardId, boardId);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public async Task<string?> FindSellPutsBoardIdAsync(string tenant)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindSellPutsBoardIdAsync), tenant);
+        
+        return await this.collection
+            .AsQueryable()
+            .Where(item => item.Name == tenant)
+            .Select(item => item.SellPutsBoardId)
+            .FirstOrDefaultAsync();
+    }
+
+    public Task UpdateSellPutsBoardIdAsync(string tenant, string boardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSellPutsBoardIdAsync), $"{tenant}-{boardId}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
+        var update = Builders<TenantEntity>.Update.Set(tenant => tenant.SellPutsBoardId, boardId);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public async Task<string?> FindSellCallsBoardIdAsync(string tenant)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindSellCallsBoardIdAsync), tenant);
+        
+        return await this.collection
+            .AsQueryable()
+            .Where(item => item.Name == tenant)
+            .Select(item => item.SellCallsBoardId)
+            .FirstOrDefaultAsync();
+    }
+
+    public Task UpdateSellCallsBoardIdAsync(string tenant, string boardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSellCallsBoardIdAsync), $"{tenant}-{boardId}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
+        var update = Builders<TenantEntity>.Update.Set(tenant => tenant.SellCallsBoardId, boardId);
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }

@@ -7,8 +7,4 @@ public interface ITenantService
     Task<Tenant> GetOrCreateAsync();
 
     Task<string> EnsureExistsAsync();
-
-    Task<RecommendationFilter?> GetDefaultFilterAsync();
-
-    Task UpdateDefaultFilterAsync(RecommendationFilter filter);
 }

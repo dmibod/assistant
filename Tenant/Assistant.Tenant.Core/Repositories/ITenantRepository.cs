@@ -44,11 +44,23 @@ public interface ITenantRepository
     
     Task ReplaceTagAsync(string tenant, string oldValue, string newValue);
     
-    Task<string?> FindDefaultFilterAsync(string tenant);
+    Task<string?> FindSellPutsFilterAsync(string tenant);
 
-    Task UpdateDefaultFilterAsync(string tenant, string filter);
-    
+    Task UpdateSellPutsFilterAsync(string tenant, string filter);
+
+    Task<string?> FindSellCallsFilterAsync(string tenant);
+
+    Task UpdateSellCallsFilterAsync(string tenant, string filter);
+
     Task<string?> FindPositionsBoardIdAsync(string tenant);
 
-    Task UpdatePositionsBoardIdAsync(string tenant, string positionsBoardId);
+    Task UpdatePositionsBoardIdAsync(string tenant, string boardId);
+    
+    Task<string?> FindSellPutsBoardIdAsync(string tenant);
+    
+    Task UpdateSellPutsBoardIdAsync(string tenant, string boardId);
+    
+    Task<string?> FindSellCallsBoardIdAsync(string tenant);
+    
+    Task UpdateSellCallsBoardIdAsync(string tenant, string boardId);
 }
