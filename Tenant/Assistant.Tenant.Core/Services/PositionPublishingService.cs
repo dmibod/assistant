@@ -56,6 +56,9 @@ public class PositionPublishingService : IPositionPublishingService
 
     private async Task<Board> GetBoardAsync()
     {
+        var now = DateTime.UtcNow;
+        var name = $"{Positions} {now.ToShortDateString()} {now.ToShortTimeString()}";
+        
         var boardId = await this.positionService.FindPositionsBoardId();
         if (!string.IsNullOrEmpty(boardId))
         {
@@ -63,15 +66,13 @@ public class PositionPublishingService : IPositionPublishingService
             var board = await this.kanbanService.FindBoardAsync(boardId);
             if (board != null)
             {
+                board.Name = name;
+                await this.kanbanService.UpdateBoardAsync(board);
                 return board;
             }
         }
 
-        var now = DateTime.UtcNow;
-        return await this.kanbanService.CreateBoardAsync(new Board
-        {
-            Name = $"{Positions} {now.ToShortDateString()} {now.ToShortTimeString()}"
-        });
+        return await this.kanbanService.CreateBoardAsync(new Board { Name = name });
     }
 
     private async Task PublishAsync(Board board)
