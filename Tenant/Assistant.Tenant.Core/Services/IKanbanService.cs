@@ -35,6 +35,8 @@ public interface IKanbanService
     Task<Card> CreateCardAsync(string boardId, string cardLaneId, Card card);
         
     Task UpdateCardAsync(string boardId, string cardId, string description);
+
+    Task RemoveCardAsync(string boardId, string cardLaneId, string cardId);
 }
 
 public abstract class Entity

@@ -265,6 +265,15 @@ public class ApiClient : IDisposable
         return card;
     }
 
+    public Task RemoveCardAsync(Board board, Card card, string parentId)
+    {
+        var command = CommandTypes.RemoveCardCommand
+            .CardCommand(board, card)
+            .WithPayload("parent_id", parentId);
+
+        return this.CommandAsync(command);
+    }
+
     #endregion
     #region Common Api
     

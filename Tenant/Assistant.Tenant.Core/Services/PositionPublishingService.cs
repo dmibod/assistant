@@ -152,7 +152,9 @@ public class PositionPublishingService : IPositionPublishingService
 
         var options = await this.GetOrCreateLaneAsync(board, account, "OPTIONS", $"{singleOptionPositions.Count}", accountLanes);
 
-        var cards = await this.kanbanService.FindCardsAsync(board.Id, options.Id);
+        var allCards = await this.kanbanService.FindCardsAsync(board.Id, options.Id);
+
+        var actualCards = new List<Card>();
 
         foreach (var p in singleOptionPositions.OrderBy(p => p.Ticker))
         {
@@ -160,14 +162,104 @@ public class PositionPublishingService : IPositionPublishingService
                 $"{OptionUtils.GetSide(p.Ticker)}${OptionUtils.GetStrike(p.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(p.Ticker))}";
             var description = this.PositionToContent(p, stocks, expirations);
 
-            var card = await this.GetOrCreateCardAsync(board, options, name, description, cards);
+            var card = await this.GetOrCreateCardAsync(board, options, name, description, allCards);
+            
+            actualCards.Add(card);
 
             await this.positionService.UpdateCardIdAsync(p.Account, p.Ticker, card.Id);
 
             tracker.Increase();
         }
 
+        await this.RemoveObsoleteCardsAsync(board, options, allCards, actualCards);
+        
         return singleOptionPositions.Count;
+    }
+
+    private async Task<int> PublishCombosAsync(Board board, Lane account, IEnumerable<Lane> accountLanes,
+        IDictionary<string, List<Position>> optionGroups, IDictionary<string, AssetPrice> stocks,
+        IDictionary<string, IEnumerable<AssetPrice>> expirations, ProgressTracker tracker)
+    {
+        var comboOptionPositions = optionGroups.Where(g => !string.IsNullOrEmpty(g.Key) && g.Value.Count > 1).ToList();
+
+        if (comboOptionPositions.Count == 0)
+        {
+            return 0;
+        }
+
+        var combos = await this.GetOrCreateLaneAsync(board, account, "COMBOS", $"{comboOptionPositions.Count}", accountLanes);
+
+        var allCards = await this.kanbanService.FindCardsAsync(board.Id, combos.Id);
+
+        var actualCards = new List<Card>();
+
+        foreach (var p in comboOptionPositions.OrderBy(p => p.Key))
+        {
+            var leg = p.Value.First();
+            var name =
+                $"{OptionUtils.GetStock(leg.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(leg.Ticker))}";
+
+            var description = this.PositionToContent(p.Value, stocks, expirations);
+
+            var card = await this.GetOrCreateCardAsync(board, combos, name, description, allCards);
+
+            actualCards.Add(card);
+
+            foreach (var l in p.Value)
+            {
+                await this.positionService.UpdateCardIdAsync(l.Account, l.Ticker, card.Id);
+            }
+
+            tracker.Increase(p.Value.Count);
+        }
+
+        await this.RemoveObsoleteCardsAsync(board, combos, allCards, actualCards);
+        
+        return comboOptionPositions.Count;
+    }
+
+    private async Task<int> PublishStocksAsync(Board board, Lane account, IEnumerable<Lane> accountLanes, IEnumerable<Position> positions,
+        IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations,
+        ProgressTracker tracker)
+    {
+        var stockPositions = positions.Where(p => p.Type == AssetType.Stock).ToList();
+
+        if (stockPositions.Count == 0)
+        {
+            return 0;
+        }
+
+        var stocksLane = await this.GetOrCreateLaneAsync(board, account, "STOCKS", $"{stockPositions.Count}", accountLanes);
+
+        var allCards = await this.kanbanService.FindCardsAsync(board.Id, stocksLane.Id);
+
+        var actualCards = new List<Card>();
+
+        foreach (var p in stockPositions.OrderBy(p => p.Ticker))
+        {
+            var name = p.Ticker;
+            var description = this.PositionToContent(p, stocks, expirations);
+
+            var card = await this.GetOrCreateCardAsync(board, stocksLane, name, description, allCards);
+
+            actualCards.Add(card);
+
+            await this.positionService.UpdateCardIdAsync(p.Account, p.Ticker, card.Id);
+
+            tracker.Increase();
+        }
+
+        await this.RemoveObsoleteCardsAsync(board, stocksLane, allCards, actualCards);
+
+        return stockPositions.Count;
+    }
+
+    private async Task RemoveObsoleteCardsAsync(Board board, Lane lane, IEnumerable<Card> allCards, IEnumerable<Card> actualCards)
+    {
+        foreach (var cardId in allCards.Select(card => card.Id).Except(actualCards.Select(card => card.Id)))
+        {
+            await this.kanbanService.RemoveCardAsync(board.Id, lane.Id, cardId);
+        }
     }
 
     private async Task<Lane> GetOrCreateLaneAsync(Board board, Lane account, string name, string description, IEnumerable<Lane> lanes)
@@ -203,72 +295,6 @@ public class PositionPublishingService : IPositionPublishingService
 
         return await this.kanbanService.CreateCardAsync(board.Id, lane.Id,
             new Card { Name = name, Description = description });
-    }
-
-    private async Task<int> PublishCombosAsync(Board board, Lane account, IEnumerable<Lane> accountLanes,
-        IDictionary<string, List<Position>> optionGroups, IDictionary<string, AssetPrice> stocks,
-        IDictionary<string, IEnumerable<AssetPrice>> expirations, ProgressTracker tracker)
-    {
-        var comboOptionPositions = optionGroups.Where(g => !string.IsNullOrEmpty(g.Key) && g.Value.Count > 1).ToList();
-
-        if (comboOptionPositions.Count == 0)
-        {
-            return 0;
-        }
-
-        var combos = await this.GetOrCreateLaneAsync(board, account, "COMBOS", $"{comboOptionPositions.Count}", accountLanes);
-
-        var cards = await this.kanbanService.FindCardsAsync(board.Id, combos.Id);
-
-        foreach (var p in comboOptionPositions.OrderBy(p => p.Key))
-        {
-            var leg = p.Value.First();
-            var name =
-                $"{OptionUtils.GetStock(leg.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(leg.Ticker))}";
-
-            var description = this.PositionToContent(p.Value, stocks, expirations);
-
-            var card = await this.GetOrCreateCardAsync(board, combos, name, description, cards);
-
-            foreach (var l in p.Value)
-            {
-                await this.positionService.UpdateCardIdAsync(l.Account, l.Ticker, card.Id);
-            }
-
-            tracker.Increase(p.Value.Count);
-        }
-
-        return comboOptionPositions.Count;
-    }
-
-    private async Task<int> PublishStocksAsync(Board board, Lane account, IEnumerable<Lane> accountLanes, IEnumerable<Position> positions,
-        IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations,
-        ProgressTracker tracker)
-    {
-        var stockPositions = positions.Where(p => p.Type == AssetType.Stock).ToList();
-
-        if (stockPositions.Count == 0)
-        {
-            return 0;
-        }
-
-        var stocksLane = await this.GetOrCreateLaneAsync(board, account, "STOCKS", $"{stockPositions.Count}", accountLanes);
-
-        var cards = await this.kanbanService.FindCardsAsync(board.Id, stocksLane.Id);
-
-        foreach (var p in stockPositions.OrderBy(p => p.Ticker))
-        {
-            var name = p.Ticker;
-            var description = this.PositionToContent(p, stocks, expirations);
-
-            var card = await this.GetOrCreateCardAsync(board, stocksLane, name, description, cards);
-
-            await this.positionService.UpdateCardIdAsync(p.Account, p.Ticker, card.Id);
-
-            tracker.Increase();
-        }
-
-        return stockPositions.Count;
     }
 
     private static int RevealComboSize(IEnumerable<Position> legs)
