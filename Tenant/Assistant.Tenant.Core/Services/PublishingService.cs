@@ -351,7 +351,7 @@ public class PublishingService : IPublishingService
             var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, filterLane.Id,
                 new Lane { Name = group.Key, Description = laneTitle });
 
-            foreach (var opInfo in group.OrderByDescending(op => Math.Abs(op.Last.Value / op.OI.Value)).Select(OpInfo))
+            foreach (var opInfo in group.OrderByDescending(op => Math.Abs(op.Last.Value / (op.OI.Value == decimal.Zero ? decimal.One : op.OI.Value))).Select(OpInfo))
             {
                 try
                 {

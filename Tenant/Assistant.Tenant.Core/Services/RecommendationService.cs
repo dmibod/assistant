@@ -418,7 +418,7 @@ public class RecommendationService : IRecommendationService
                return false;
            }
 
-           if (option.OI.Value > decimal.Zero && Math.Abs(CalculationUtils.Percent(change.OI.Value / option.OI.Value)) < filter.MinPercentageChange.Value)
+           if (Math.Abs(CalculationUtils.Percent(change.OI.Value / (option.OI.Value == decimal.Zero ? decimal.One : option.OI.Value))) < filter.MinPercentageChange.Value)
            {
                return false;
            }
