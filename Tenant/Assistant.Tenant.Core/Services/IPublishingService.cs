@@ -7,4 +7,6 @@ public interface IPublishingService
     Task PublishSellPutsAsync(SellPutsFilter filter);
     
     Task PublishSellCallsAsync(SellCallsFilter filter);
+    
+    Task PublishOpenInterestAsync(OpenInterestFilter filter);
 }

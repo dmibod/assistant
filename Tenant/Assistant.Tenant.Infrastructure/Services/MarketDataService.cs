@@ -1,5 +1,6 @@
 ﻿namespace Assistant.Tenant.Infrastructure.Services;
 
+using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Configuration;
 using Common.Core.Messaging.TopicResolver;
@@ -16,6 +17,8 @@ public class MarketDataService : IMarketDataService
     private readonly IMongoCollection<AssetPriceEntity> stockCollection;
     
     private readonly IMongoCollection<OptionPriceEntity> optionCollection;
+    
+    private readonly IMongoCollection<OptionPriceEntity> optionChangeCollection;
 
     private readonly string stockCreateTopic;
 
@@ -36,6 +39,8 @@ public class MarketDataService : IMarketDataService
         this.stockCollection = mongoDatabase.GetCollection<AssetPriceEntity>("stock");
         
         this.optionCollection = mongoDatabase.GetCollection<OptionPriceEntity>("option");
+        
+        this.optionChangeCollection = mongoDatabase.GetCollection<OptionPriceEntity>("option-change");
 
         this.busService = busService;
         this.logger = logger;
@@ -64,6 +69,17 @@ public class MarketDataService : IMarketDataService
         stockTicker = StockUtils.Format(stockTicker);
         
         var cursor = await this.optionCollection.FindAsync(doc => doc.Ticker == stockTicker && doc.Expiration == expiration);
+
+        return cursor.ToEnumerable().SelectMany(doc => doc.Contracts).ToList();
+    }
+
+    public async Task<IEnumerable<OptionAssetPrice>> FindOptionPricesChangeAsync(string stockTicker, string expiration)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOptionPricesChangeAsync), $"{stockTicker}-{expiration}");
+
+        stockTicker = StockUtils.Format(stockTicker);
+        
+        var cursor = await this.optionChangeCollection.FindAsync(doc => doc.Ticker == stockTicker && doc.Expiration == expiration);
 
         return cursor.ToEnumerable().SelectMany(doc => doc.Contracts).ToList();
     }

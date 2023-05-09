@@ -2,17 +2,12 @@
 
 public static class RenderUtils
 {
-    public static IDictionary<string, string> GreenStyle =>
-        new Dictionary<string, string>
-        {
-            ["color"] = "green"
-        };
+    public static Tuple<string, string> Green = new("color", "green");
+    public static Tuple<string, string> Red = new("color", "red");
+    
+    public static IDictionary<string, string> GreenStyle => CreateStyle(Green);
 
-    public static IDictionary<string, string> RedStyle =>
-        new Dictionary<string, string>
-        {
-            ["color"] = "red"
-        };
+    public static IDictionary<string, string> RedStyle => CreateStyle(Red);
 
     public static string PairToContent(string name, string value)
     {

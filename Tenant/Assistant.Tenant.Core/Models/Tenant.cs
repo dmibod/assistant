@@ -13,6 +13,10 @@ public class Tenant
     public string SellCallsBoardId { get; set; }
 
     public string PositionsBoardId { get; set; }
+    
+    public string OpenInterestFilter { get; set; }
+    
+    public string OpenInterestBoardId { get; set; }
 
     public WatchListItem[] WatchList { get; set; }
 

@@ -11,6 +11,7 @@ public class PublishingService : IPublishingService
     private const string Recommendations = "Recommendations";
     private const string SellPuts = "sell puts";
     private const string SellCalls = "sell calls";
+    private const string OpenInterest = "open interest";
     private readonly IRecommendationService recommendationService;
     private readonly IWatchListService watchListService;
     private readonly IMarketDataService marketDataService;
@@ -57,7 +58,7 @@ public class PublishingService : IPublishingService
         var now = DateTime.UtcNow;
         var name = $"{Recommendations} ({SellPuts}) {now.ToShortDateString()} {now.ToShortTimeString()}";
         var description = "Calculation...";
-        
+
         var boardId = await this.recommendationService.FindSellPutsBoardId();
         if (!string.IsNullOrEmpty(boardId))
         {
@@ -71,7 +72,7 @@ public class PublishingService : IPublishingService
                 return board;
             }
         }
-        
+
         return await this.kanbanService.CreateBoardAsync(new Board { Name = name, Description = description });
     }
 
@@ -96,12 +97,56 @@ public class PublishingService : IPublishingService
         }
     }
 
+    public async Task PublishOpenInterestAsync(OpenInterestFilter filter)
+    {
+        this.logger.LogInformation("{Method}", nameof(this.PublishOpenInterestAsync));
+
+        var board = await this.GetOpenInterestBoardAsync();
+
+        try
+        {
+            await this.PublishOpenInterestAsync(board, filter);
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError(e, e.Message);
+        }
+        finally
+        {
+            await this.recommendationService.UpdateOpenInterestBoardId(board.Id);
+            await this.kanbanService.ResetBoardStateAsync(board.Id);
+        }
+    }
+
+    private async Task<Board> GetOpenInterestBoardAsync()
+    {
+        var now = DateTime.UtcNow;
+        var name = $"{Recommendations} ({OpenInterest}) {now.ToShortDateString()} {now.ToShortTimeString()}";
+        var description = "Calculation...";
+
+        var boardId = await this.recommendationService.FindOpenInterestBoardId();
+        if (!string.IsNullOrEmpty(boardId))
+        {
+            await this.recommendationService.UpdateOpenInterestBoardId(string.Empty);
+            var board = await this.kanbanService.FindBoardAsync(boardId);
+            if (board != null)
+            {
+                board.Name = name;
+                board.Description = description;
+                await this.kanbanService.UpdateBoardAsync(board);
+                return board;
+            }
+        }
+
+        return await this.kanbanService.CreateBoardAsync(new Board { Name = name, Description = description });
+    }
+
     private async Task<Board> GetSellCallsBoardAsync()
     {
         var now = DateTime.UtcNow;
         var name = $"{Recommendations} ({SellCalls}) {now.ToShortDateString()} {now.ToShortTimeString()}";
         var description = "Calculation...";
-        
+
         var boardId = await this.recommendationService.FindSellCallsBoardId();
         if (!string.IsNullOrEmpty(boardId))
         {
@@ -115,7 +160,7 @@ public class PublishingService : IPublishingService
                 return board;
             }
         }
-        
+
         return await this.kanbanService.CreateBoardAsync(new Board { Name = name, Description = description });
     }
 
@@ -143,7 +188,7 @@ public class PublishingService : IPublishingService
             });
 
         await this.RemoveBoardLanesAsync(board);
-        
+
         var filterLane = await this.kanbanService.CreateBoardLaneAsync(board.Id,
             new Lane { Name = "FILTER", Description = filter.AsDescription() });
 
@@ -215,7 +260,7 @@ public class PublishingService : IPublishingService
             });
 
         await this.RemoveBoardLanesAsync(board);
-        
+
         var filterLane = await this.kanbanService.CreateBoardLaneAsync(board.Id,
             new Lane { Name = "FILTER", Description = filter.AsDescription() });
 
@@ -263,6 +308,105 @@ public class PublishingService : IPublishingService
         await this.kanbanService.UpdateBoardAsync(board);
     }
 
+    private async Task PublishOpenInterestAsync(Board board, OpenInterestFilter filter)
+    {
+        var options = await this.recommendationService.OpenInterestAsync(filter,
+            total =>
+            {
+                return new ProgressTracker(total, 1,
+                    progress =>
+                    {
+                        this.kanbanService.SetBoardProgressStateAsync(board.Id, progress).GetAwaiter().GetResult();
+                    });
+            });
+
+        await this.kanbanService.ResetBoardStateAsync(board.Id);
+
+        board.Description = "Publishing...";
+        await this.kanbanService.UpdateBoardAsync(board);
+
+        var tracker = new ProgressTracker(options.Count(), 1,
+            progress =>
+            {
+                this.kanbanService.SetBoardProgressStateAsync(board.Id, progress).GetAwaiter().GetResult();
+            });
+
+        await this.RemoveBoardLanesAsync(board);
+
+        var filterLane = await this.kanbanService.CreateBoardLaneAsync(board.Id,
+            new Lane { Name = "FILTER", Description = filter.AsDescription() });
+
+        foreach (var group in options.GroupBy(op => OptionUtils.GetStock(op.Ticker)).OrderBy(op => op.Key))
+        {
+            var stockPrices =
+                await this.marketDataService.FindStockPricesAsync(new HashSet<string>(new[] { group.Key }));
+            var stockPrice = stockPrices.FirstOrDefault();
+            var currentPrice = stockPrice?.Last ?? decimal.Zero;
+            var watchListItem = await this.watchListService.FindByTickerAsync(group.Key);
+            var buyPrice = watchListItem?.BuyPrice ?? decimal.Zero;
+            var sellPrice = watchListItem?.SellPrice ?? decimal.Zero;
+
+            var laneTitle = $"${currentPrice} buy ${buyPrice} sell ${sellPrice}";
+
+            var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, filterLane.Id,
+                new Lane { Name = group.Key, Description = laneTitle });
+
+            foreach (var opInfo in group.OrderByDescending(op => op.OI).Select(OpInfo))
+            {
+                try
+                {
+                    await this.kanbanService.CreateCardAsync(board.Id, stocksLane.Id,
+                        new Card { Name = opInfo.Item1, Description = opInfo.Item2 });
+                }
+                catch (Exception e)
+                {
+                    this.logger.LogError(e, e.Message);
+                }
+
+                tracker.Increase();
+            }
+        }
+
+        var opMap = options
+            .GroupBy(op => OptionUtils.GetStock(op.Ticker))
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        board.Description = opMap.Keys
+            .OrderBy(ticker => ticker)
+            .Aggregate(string.Empty,
+                (curr, ticker) =>
+                    curr + (string.IsNullOrEmpty(curr) ? "" : ", ") + $"{ticker} ({opMap[ticker].Count})");
+
+        await this.kanbanService.UpdateBoardAsync(board);
+    }
+
+    private static Tuple<string, string> OpInfo(OptionAssetPrice op)
+    {
+        var exp = Expiration.FromYYYYMMDD(OptionUtils.GetExpiration(op.Ticker));
+        var name = $"{OptionUtils.GetSide(op.Ticker)}${OptionUtils.GetStrike(op.Ticker)} {(int)exp.Month}/{exp.Day}/{exp.Year}";
+
+        var labelStyle = RenderUtils.CreateStyle(new Tuple<string, string>("whiteSpace", "nowrap"));
+        var valueStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"),
+            op.Last < decimal.Zero ? RenderUtils.Red : RenderUtils.Green);
+
+        var list = new List<Tuple<string, string>>();
+
+        list.Add(new Tuple<string, string>("oi", $"{op.OI.Value}"));
+        list.Add(new Tuple<string, string>("oi%", $"{Math.Abs(Math.Round(CalculationUtils.Percent(op.Last.Value / op.OI.Value), 2))}%"));
+        list.Add(new Tuple<string, string>("vol", $"{op.Vol.Value}"));
+        list.Add(new Tuple<string, string>("bid", $"${op.Bid}"));
+        list.Add(new Tuple<string, string>("ask", $"${op.Ask}"));
+        list.Add(new Tuple<string, string>("dte", $"{Expiration.FromYYYYMMDD(OptionUtils.GetExpiration(op.Ticker)).DaysTillExpiration}"));
+        
+
+        var body = list
+            .Select(x =>
+                RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1, labelStyle),
+                    RenderUtils.PropToContent(x.Item2, valueStyle))).Aggregate((curr, x) => $"{curr},{x}");
+
+        return new Tuple<string, string>(name, "[" + body + "]");
+    }
+
     private static Tuple<string, string> OpInfo(SellOperation op)
     {
         var name =
@@ -288,7 +432,7 @@ public class PublishingService : IPublishingService
 
         return new Tuple<string, string>(name, "[" + body + "]");
     }
-    
+
     private async Task RemoveBoardLanesAsync(Board board)
     {
         var lanes = await this.kanbanService.FindBoardLanesAsync(board.Id);

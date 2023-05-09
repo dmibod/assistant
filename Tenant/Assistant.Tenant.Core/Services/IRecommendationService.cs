@@ -25,4 +25,14 @@ public interface IRecommendationService
     Task UpdateSellCallsFilterAsync(SellCallsFilter filter);
 
     Task<IEnumerable<SellOperation>> SellCallsAsync(SellCallsFilter filter, Func<int, ProgressTracker> trackerCreator);
+    
+    Task<string?> FindOpenInterestBoardId();
+
+    Task UpdateOpenInterestBoardId(string boardId);
+
+    Task<OpenInterestFilter?> GetOpenInterestFilterAsync();
+
+    Task UpdateOpenInterestFilterAsync(OpenInterestFilter filter);
+
+    Task<IEnumerable<OptionAssetPrice>> OpenInterestAsync(OpenInterestFilter filter, Func<int, ProgressTracker> trackerCreator);
 }

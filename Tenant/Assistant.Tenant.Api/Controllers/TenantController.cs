@@ -635,4 +635,89 @@ public class TenantController : ControllerBase
 
         await this.publishingService.PublishSellPutsAsync(filter);
     }
+    
+    /// <summary>
+    /// Default filter for the open interest recommendations
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("Recommendations/OpenInterest/Filter")]
+    public Task<OpenInterestFilter?> RecommendationGetOpenInterestFilterAsync()
+    {
+        return this.recommendationService.GetOpenInterestFilterAsync();
+    }
+
+    /// <summary>
+    /// Allows to specify default filter for the open interest recommendations
+    /// </summary>
+    /// <param name="minAnnualPercent">Min annual yield, %</param>
+    /// <param name="minPremium">Min premium (option contract price), $</param>
+    /// <param name="maxDte">Max days till expiration, days</param>
+    /// <param name="otm">true - out of the money options, false - in the money options</param>
+    /// <param name="minContractsChange">min contracts change</param>
+    /// <param name="minPercentageChange">min percentage change</param>
+    [HttpPost("Recommendations/OpenInterest/Filter")]
+    public async Task RecommendationUpdateOpenInterestFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte,
+        bool? otm, decimal? minContractsChange, decimal? minPercentageChange)
+    {
+        var filter = new OpenInterestFilter
+        {
+            MinAnnualPercent = minAnnualPercent,
+            MinPremium = minPremium,
+            MaxDte = maxDte,
+            Otm = otm,
+            MinContractsChange = minContractsChange,
+            MinPercentageChange = minPercentageChange
+        };
+
+        await this.recommendationService.UpdateOpenInterestFilterAsync(filter);
+    }
+
+    /// <summary>
+    /// Generates 'Open Interest' recommendations (options you need to pay attention to) based on your watch list, open interest change and filtering criteria 
+    /// </summary>
+    /// <param name="minAnnualPercent">Min annual yield, %</param>
+    /// <param name="minPremium">Min premium (option contract price), $</param>
+    /// <param name="maxDte">Max days till expiration, days</param>
+    /// <param name="otm">true - out of the money options, false - in the money options</param>
+    /// <param name="minContractsChange">min contracts change</param>
+    /// <param name="minPercentageChange">min percentage change</param>
+    [HttpPost("Recommendations/OpenInterest")]
+    public async Task RecommendationOpenInterestAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm, decimal? minContractsChange, decimal? minPercentageChange)
+    {
+        var defaultFilter = await this.recommendationService.GetOpenInterestFilterAsync();
+
+        var filter = defaultFilter ?? new OpenInterestFilter();
+
+        if (minAnnualPercent.HasValue)
+        {
+            filter.MinAnnualPercent = minAnnualPercent;
+        }
+
+        if (minPremium.HasValue)
+        {
+            filter.MinPremium = minPremium;
+        }
+
+        if (maxDte.HasValue)
+        {
+            filter.MaxDte = maxDte;
+        }
+
+        if (otm.HasValue)
+        {
+            filter.Otm = otm;
+        }
+
+        if (minContractsChange.HasValue)
+        {
+            filter.MinContractsChange = minContractsChange;
+        }
+        
+        if (minPercentageChange.HasValue)
+        {
+            filter.MinPercentageChange = minPercentageChange;
+        }
+
+        await this.publishingService.PublishOpenInterestAsync(filter);
+    }
 }

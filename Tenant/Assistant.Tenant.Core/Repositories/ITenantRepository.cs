@@ -63,4 +63,12 @@ public interface ITenantRepository
     Task<string?> FindSellCallsBoardIdAsync(string tenant);
     
     Task UpdateSellCallsBoardIdAsync(string tenant, string boardId);
+    
+    Task<string?> FindOpenInterestFilterAsync(string tenant);
+
+    Task UpdateOpenInterestFilterAsync(string tenant, string filter);
+    
+    Task<string?> FindOpenInterestBoardIdAsync(string tenant);
+    
+    Task UpdateOpenInterestBoardIdAsync(string tenant, string boardId);
 }

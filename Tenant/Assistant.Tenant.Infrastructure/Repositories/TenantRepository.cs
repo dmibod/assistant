@@ -363,6 +363,48 @@ public class TenantRepository : ITenantRepository
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }
+
+    public async Task<string?> FindOpenInterestFilterAsync(string tenant)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestFilterAsync), tenant);
+        
+        return await this.collection
+            .AsQueryable()
+            .Where(item => item.Name == tenant)
+            .Select(item => item.OpenInterestFilter)
+            .FirstOrDefaultAsync();
+    }
+
+    public Task UpdateOpenInterestFilterAsync(string tenant, string oiFilter)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateOpenInterestFilterAsync), $"{tenant}-{oiFilter}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
+        var update = Builders<TenantEntity>.Update.Set(tenant => tenant.OpenInterestFilter, oiFilter);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public async Task<string?> FindOpenInterestBoardIdAsync(string tenant)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestBoardIdAsync), tenant);
+        
+        return await this.collection
+            .AsQueryable()
+            .Where(item => item.Name == tenant)
+            .Select(item => item.OpenInterestBoardId)
+            .FirstOrDefaultAsync();
+    }
+
+    public Task UpdateOpenInterestBoardIdAsync(string tenant, string boardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateOpenInterestBoardIdAsync), $"{tenant}-{boardId}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
+        var update = Builders<TenantEntity>.Update.Set(tenant => tenant.OpenInterestBoardId, boardId);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
 }
 
 internal class TenantEntity : Tenant
