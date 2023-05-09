@@ -63,7 +63,7 @@ public abstract class BaseMessagingService : BaseHostedService
     {
         try
         {
-            var json = Encoding.UTF8.GetString(message.Data);
+            var json = message.Data == null ? string.Empty : Encoding.UTF8.GetString(message.Data);
 
             var payload = string.IsNullOrEmpty(json)
                 ? null
