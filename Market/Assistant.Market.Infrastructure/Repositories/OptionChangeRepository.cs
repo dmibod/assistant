@@ -100,7 +100,6 @@ public class OptionChangeRepository : IOptionChangeRepository
         return this.collection.Find(entity => entity.Ticker == ticker && entity.Expiration == expiration).AnyAsync();
     }
     
-    
     public async Task RemoveAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), ticker);
@@ -117,18 +116,24 @@ public class OptionChangeRepository : IOptionChangeRepository
         return this.collection.AsQueryable().Where(entity => entity.Ticker == ticker).SumAsync(entity => entity.Contracts.Length);
     }
 
-    public Task<decimal> FindOpenInterestMinAsync(string ticker)
+    public async Task<decimal> FindOpenInterestMinAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestMinAsync), ticker);
 
-        return this.collection.AsQueryable().Where(entity => entity.Ticker == ticker).MaxAsync(entity => entity.Contracts.Min(contract => contract.OI));
+        var cursor = await this.collection
+            .FindAsync(entity => entity.Ticker == ticker);
+            
+        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Min(contract => contract.OI);
     }
 
-    public Task<decimal> FindOpenInterestMaxAsync(string ticker)
+    public async Task<decimal> FindOpenInterestMaxAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestMaxAsync), ticker);
 
-        return this.collection.AsQueryable().Where(entity => entity.Ticker == ticker).MaxAsync(entity => entity.Contracts.Max(contract => contract.OI));
+        var cursor = await this.collection
+            .FindAsync(entity => entity.Ticker == ticker);
+            
+        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Max(contract => contract.OI);
     }
 }
 

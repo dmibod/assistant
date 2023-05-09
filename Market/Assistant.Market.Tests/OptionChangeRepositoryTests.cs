@@ -92,4 +92,30 @@ public class OptionChangeRepositoryTests
         Assert.AreEqual(202, expirations[0].Contracts[0].OI);
         Assert.AreEqual(303, expirations[0].Contracts[1].OI);
     }
+
+    [TestMethod]
+    public async Task FindChangesCountAsync_ReturnsExpectedResult()
+    {
+        // Arrange
+        var repository = Repository;
+
+        // Act
+        var value = await repository.FindChangesCountAsync("KMI");
+        
+        // Assert
+        Assert.AreEqual(26, value);
+    }
+
+    [TestMethod]
+    public async Task FindOpenInterestMaxAsync_ReturnsExpectedResult()
+    {
+        // Arrange
+        var repository = Repository;
+
+        // Act
+        var value = await repository.FindOpenInterestMaxAsync("KMI");
+        
+        // Assert
+        Assert.AreEqual(6201, value);
+    }
 }

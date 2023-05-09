@@ -45,22 +45,6 @@ public class PublishingService : IPublishingService
     {
         this.logger.LogInformation("{Method}", nameof(this.PublishOpenInterestAsync));
 
-        var tickers = await this.stockService.FindTickersAsync();
-
-        var dictionary = new Dictionary<string, int>();
-        
-        foreach (var ticker in tickers.OrderBy(t => t))
-        {
-            var count = await this.optionService.FindChangesCountAsync(ticker);
-
-            if (count > 0)
-            {
-                dictionary.Add(ticker, count);
-            }
-        }
-        
-        var description = dictionary.Keys.Aggregate((curr, i) => $"{curr}, {i}");
-
         var boards = await this.kanbanService.FindBoardsAsync();
         var board = boards.FirstOrDefault(board => board.Name.StartsWith(OpenInterest));
 
@@ -70,25 +54,38 @@ public class PublishingService : IPublishingService
         if (board != null)
         {
             board.Name = name;
-            board.Description = description;
-
+            board.Description = "Calculation...";
             await this.kanbanService.UpdateBoardAsync(board);
         }
         else
         {
-            board = await this.kanbanService.CreateBoardAsync(new Board { Name = name, Description = description });
+            board = await this.kanbanService.CreateBoardAsync(new Board { Name = name, Description = "Calculation..." });
         }
 
-        await this.PublishOpenInterestAsync(board, dictionary);
+        await this.PublishOpenInterestAsync(board);
     }
 
-    private async Task PublishOpenInterestAsync(Board board, IDictionary<string, int> dictionary)
+    private async Task PublishOpenInterestAsync(Board board)
     {
         try
         {
             await this.kanbanService.SetBoardLoadingStateAsync(board.Id);
 
             await this.RemoveBoardLanesAsync(board);
+
+            var tickers = await this.stockService.FindTickersAsync();
+
+            var dictionary = new Dictionary<string, int>();
+        
+            foreach (var ticker in tickers.OrderBy(t => t))
+            {
+                var count = await this.optionService.FindChangesCountAsync(ticker);
+
+                if (count > 0)
+                {
+                    dictionary.Add(ticker, count);
+                }
+            }
 
             var lane = await this.kanbanService.CreateCardLaneAsync(board.Id, board.Id, new Lane
             {
@@ -101,22 +98,23 @@ public class PublishingService : IPublishingService
                 var min = await this.optionService.FindOpenInterestChangeMinAsync(pair.Key);
                 var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key);
 
-                var style = Math.Abs(min) > max ? RenderUtils.RedStyle : RenderUtils.GreenStyle;
-
-                var propChanges = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("changes"),
-                    RenderUtils.PropToContent(pair.Value.ToString()));
+                var propMin = RenderUtils.PairToContent(
+                    RenderUtils.PropToContent("min"),
+                    RenderUtils.PropToContent(Math.Abs(min).ToString(CultureInfo.InvariantCulture), min < decimal.Zero ? RenderUtils.RedStyle : RenderUtils.GreenStyle));
                 
                 var propMax = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("max"),
-                    RenderUtils.PropToContent(Math.Max(Math.Abs(min), max).ToString(CultureInfo.InvariantCulture), style));
+                    RenderUtils.PropToContent(Math.Abs(max).ToString(CultureInfo.InvariantCulture), max < decimal.Zero ? RenderUtils.RedStyle : RenderUtils.GreenStyle));
 
                 await this.kanbanService.CreateCardAsync(board.Id, lane.Id, new Card
                 {
-                    Name = pair.Key, 
-                    Description = $"[{propChanges},{propMax}]"
+                    Name = $"{pair.Key} ({pair.Value})", 
+                    Description = $"[{propMax}, {propMax}]"
                 });
             }
+            
+            board.Description = dictionary.Keys.Aggregate((curr, i) => $"{curr}, {i}");
+            await this.kanbanService.UpdateBoardAsync(board);
         }
         catch (Exception e)
         {
