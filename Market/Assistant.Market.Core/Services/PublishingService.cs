@@ -109,7 +109,7 @@ public class PublishingService : IPublishingService
                 await this.kanbanService.CreateCardAsync(board.Id, lane.Id, new Card
                 {
                     Name = $"{pair.Key} ({pair.Value})", 
-                    Description = $"[{propMax}, {propMax}]"
+                    Description = $"[{propMin}, {propMax}]"
                 });
             }
             

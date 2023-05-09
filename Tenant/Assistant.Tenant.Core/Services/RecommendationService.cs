@@ -386,7 +386,9 @@ public class RecommendationService : IRecommendationService
                 if (changes.TryGetValue(price.Ticker, out var change) && AreConditionsMet(price, change, filter))
                 {
                     price.Last = change.OI;
+                    
                     options.Add(price);
+                    
                     if (count + options.Count > MaxRecsCount)
                     {
                         this.logger.LogWarning("Max recs count of {Maximum} has been reached", MaxRecsCount);
@@ -411,7 +413,12 @@ public class RecommendationService : IRecommendationService
        
        if (filter.MinPercentageChange.HasValue)
        {
-           if (!option.OI.HasValue || !change.OI.HasValue || Math.Abs(CalculationUtils.Percent(change.OI.Value / option.OI.Value)) < filter.MinPercentageChange.Value)
+           if (!option.OI.HasValue || !change.OI.HasValue)
+           {
+               return false;
+           }
+
+           if (option.OI.Value > decimal.Zero && Math.Abs(CalculationUtils.Percent(change.OI.Value / option.OI.Value)) < filter.MinPercentageChange.Value)
            {
                return false;
            }
