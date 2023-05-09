@@ -104,19 +104,19 @@ public class PublishingService : IPublishingService
                 
                 var propMin = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("oi\u0394\u2193#"),
-                    RenderUtils.PropToContent(Math.Abs(min).ToString(CultureInfo.InvariantCulture), RenderUtils.CreateStyle(padding, min < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+                    RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(min), RenderUtils.CreateStyle(padding, min < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
 
                 var propPercMin = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("oi\u0394\u2193%"),
-                    RenderUtils.PropToContent(Math.Abs(percMin).ToString(CultureInfo.InvariantCulture)+"%", RenderUtils.CreateStyle(padding, percMin < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+                    RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMin, 0), RenderUtils.CreateStyle(padding, percMin < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
 
                 var propMax = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("oi\u0394\u2191#"),
-                    RenderUtils.PropToContent(Math.Abs(max).ToString(CultureInfo.InvariantCulture), RenderUtils.CreateStyle(padding, max < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+                    RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(max), RenderUtils.CreateStyle(padding, max < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
 
                 var propPercMax = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("oi\u0394\u2191%"),
-                    RenderUtils.PropToContent(Math.Abs(percMax).ToString(CultureInfo.InvariantCulture)+"%", RenderUtils.CreateStyle(padding, percMax < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+                    RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMax, 0), RenderUtils.CreateStyle(padding, percMax < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
 
                 await this.kanbanService.CreateCardAsync(board.Id, lane.Id, new Card
                 {

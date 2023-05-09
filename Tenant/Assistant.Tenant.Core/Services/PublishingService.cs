@@ -391,10 +391,10 @@ public class PublishingService : IPublishingService
 
         var list = new List<Tuple<string, string>>();
 
-        list.Add(new Tuple<string, string>("oi", RenderUtils.PropToContent($"{op.OpenInterest}", valueStyle)));
-        list.Add(new Tuple<string, string>("oi\u0394#", RenderUtils.PropToContent($"{Math.Abs(Math.Round(op.OpenInterestChange, 0))}", oiValueStyle)));
-        list.Add(new Tuple<string, string>("oi\u0394%", RenderUtils.PropToContent(FormatUtils.FormatPercent(Math.Abs(op.OpenInterestChangePercent)), oiValueStyle)));
-        list.Add(new Tuple<string, string>("vol", RenderUtils.PropToContent($"{op.Vol}", valueStyle)));
+        list.Add(new Tuple<string, string>("oi", RenderUtils.PropToContent(FormatUtils.FormatNumber(op.OpenInterest), valueStyle)));
+        list.Add(new Tuple<string, string>("oi\u0394#", RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(op.OpenInterestChange), oiValueStyle)));
+        list.Add(new Tuple<string, string>("oi\u0394%", RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(op.OpenInterestChangePercent), oiValueStyle)));
+        list.Add(new Tuple<string, string>("vol", RenderUtils.PropToContent(FormatUtils.FormatNumber(op.Vol), valueStyle)));
         list.Add(new Tuple<string, string>("bid", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Bid*100), valueStyle)));
         list.Add(new Tuple<string, string>("ask", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Ask*100), valueStyle)));
         list.Add(new Tuple<string, string>("last", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Last*100), valueStyle)));        

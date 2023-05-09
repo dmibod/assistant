@@ -1,5 +1,7 @@
 namespace Assistant.Tenant.Tests;
 
+using Common.Core.Utils;
+
 [TestClass]
 public class PublishingServiceTests
 {
@@ -13,6 +15,7 @@ public class PublishingServiceTests
         // Act
         Console.WriteLine(s1);
         Console.WriteLine(s2);
+        Console.WriteLine(FormatUtils.FormatPercent(1000));
 
         // Assert
         Assert.IsTrue(true);
