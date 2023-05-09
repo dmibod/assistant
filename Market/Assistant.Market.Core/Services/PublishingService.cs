@@ -10,6 +10,7 @@ using Exception = System.Exception;
 public class PublishingService : IPublishingService
 {
     private const string MarketData = "Market Data";
+    private const string OpenInterest = "Open Interest";
     private const int ChunkSize = 10;
 
     private readonly IStockService stockService;
@@ -37,6 +38,104 @@ public class PublishingService : IPublishingService
         foreach (var chunk in map.Values.OrderBy(stock => stock.Ticker).Chunk(ChunkSize))
         {
             await this.PublishAsync(counter++, chunk);
+        }
+    }
+
+    public async Task PublishOpenInterestAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.PublishOpenInterestAsync));
+
+        var tickers = await this.stockService.FindTickersAsync();
+
+        var dictionary = new Dictionary<string, int>();
+        
+        foreach (var ticker in tickers.OrderBy(t => t))
+        {
+            var count = await this.optionService.FindChangesCountAsync(ticker);
+
+            if (count > 0)
+            {
+                dictionary.Add(ticker, count);
+            }
+        }
+        
+        var description = dictionary.Keys.Aggregate((curr, i) => $"{curr}, {i}");
+
+        var boards = await this.kanbanService.FindBoardsAsync();
+        var board = boards.FirstOrDefault(board => board.Name.StartsWith(OpenInterest));
+
+        var now = DateTime.UtcNow;
+        var name = $"{OpenInterest} {now.ToShortDateString()} {now.ToShortTimeString()}";
+
+        if (board != null)
+        {
+            board.Name = name;
+            board.Description = description;
+
+            await this.kanbanService.UpdateBoardAsync(board);
+        }
+        else
+        {
+            board = await this.kanbanService.CreateBoardAsync(new Board { Name = name, Description = description });
+        }
+
+        await this.PublishOpenInterestAsync(board, dictionary);
+    }
+
+    private async Task PublishOpenInterestAsync(Board board, IDictionary<string, int> dictionary)
+    {
+        try
+        {
+            await this.kanbanService.SetBoardLoadingStateAsync(board.Id);
+
+            await this.RemoveBoardLanesAsync(board);
+
+            var lane = await this.kanbanService.CreateCardLaneAsync(board.Id, board.Id, new Lane
+            {
+                Name = OpenInterest, 
+                Description = "companies ordered by the number of OI changes (max > min)"
+            });
+
+            foreach (var pair in dictionary.OrderByDescending(p => p.Value))
+            {
+                var min = await this.optionService.FindOpenInterestChangeMinAsync(pair.Key);
+                var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key);
+
+                var style = Math.Abs(min) > max ? RenderUtils.RedStyle : RenderUtils.GreenStyle;
+
+                var propChanges = RenderUtils.PairToContent(
+                    RenderUtils.PropToContent("changes"),
+                    RenderUtils.PropToContent(pair.Value.ToString()));
+                
+                var propMax = RenderUtils.PairToContent(
+                    RenderUtils.PropToContent("max"),
+                    RenderUtils.PropToContent(Math.Max(Math.Abs(min), max).ToString(CultureInfo.InvariantCulture), style));
+
+                await this.kanbanService.CreateCardAsync(board.Id, lane.Id, new Card
+                {
+                    Name = pair.Key, 
+                    Description = $"[{propChanges},{propMax}]"
+                });
+            }
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError(e, "Failed to publish open interest data for {Board} with {Content}", board.Name,
+                board.Description);
+        }
+        finally
+        {
+            await this.kanbanService.ResetBoardStateAsync(board.Id);
+        }
+    }
+    
+    private async Task RemoveBoardLanesAsync(Board board)
+    {
+        var lanes = await this.kanbanService.FindLanesAsync(board.Id);
+        
+        foreach (var laneId in lanes.Select(lane => lane.Id))
+        {
+            await this.kanbanService.RemoveLaneAsync(board.Id, laneId);
         }
     }
 
@@ -122,7 +221,7 @@ public class PublishingService : IPublishingService
         // remove ticker lanes, which are not included in chunk
         foreach (var pair in stockLanes.Where(pair => !tickers.Contains(pair.Key)))
         {
-            await this.kanbanService.RemoveBoardLaneAsync(board.Id, pair.Value.Id);
+            await this.kanbanService.RemoveLaneAsync(board.Id, pair.Value.Id);
         }
 
         return stockLanes;
@@ -152,7 +251,7 @@ public class PublishingService : IPublishingService
             // remove expiration lanes, which are not included in chain
             foreach (var pair in expirationLanes.Where(pair => !optionChainExpirations.Contains(pair.Key)))
             {
-                await this.kanbanService.RemoveBoardLaneAsync(board.Id, pair.Value.Id);
+                await this.kanbanService.RemoveLaneAsync(board.Id, pair.Value.Id);
             }
         }
     }

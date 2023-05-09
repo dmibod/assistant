@@ -11,4 +11,10 @@ public interface IOptionChangeRepository
     Task RemoveAsync(IDictionary<string, ISet<string>> expirations);
     
     Task RemoveAsync(string ticker);
+    
+    Task<int> FindChangesCountAsync(string ticker);
+    
+    Task<decimal> FindOpenInterestMinAsync(string ticker);
+    
+    Task<decimal> FindOpenInterestMaxAsync(string ticker);
 }

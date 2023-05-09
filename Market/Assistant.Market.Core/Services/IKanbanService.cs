@@ -20,7 +20,9 @@ public interface IKanbanService
 
     Task UpdateBoardLaneAsync(string boardId, Lane lane);
 
-    Task RemoveBoardLaneAsync(string boardId, string laneId);
+    Task RemoveLaneAsync(string boardId, string laneId);
+    
+    Task<IEnumerable<Lane>> FindLanesAsync(string boardId);
     
     Task<IEnumerable<Lane>> FindLanesAsync(string boardId, string parentLaneId);
     

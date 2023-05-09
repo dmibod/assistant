@@ -131,11 +131,6 @@ public class ApiClient : IDisposable
     #endregion
     #region Lane Api
 
-    public Task<IEnumerable<CardLane>?> GetCardLanesAsync(Board board)
-    {
-        return this.GetLanesAsync<CardLane>(board.Id);
-    }
-
     public Task<IEnumerable<Lane>?> GetLanesAsync(Board board)
     {
         return this.GetLanesAsync<Lane>(board.Id);
@@ -144,6 +139,11 @@ public class ApiClient : IDisposable
     public Task<IEnumerable<Lane>?> GetLanesAsync(Board board, Lane lane)
     {
         return this.GetLanesAsync<Lane>(board, lane.Id);
+    }
+
+    public Task<IEnumerable<CardLane>?> GetCardLanesAsync(Board board)
+    {
+        return this.GetLanesAsync<CardLane>(board.Id);
     }
 
     public Task<IEnumerable<CardLane>?> GetCardLanesAsync(Board board, Lane lane)

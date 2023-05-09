@@ -17,11 +17,13 @@ public class DataPublishMessageHandler : IMessageHandler<DataPublishMessage>
         this.logger = logger;
     }
 
-    public Task HandleAsync(DataPublishMessage message)
+    public async Task HandleAsync(DataPublishMessage message)
     {
         this.logger.LogInformation("Received publish data message");
         
-        return this.publishingService.PublishAsync();
+        await this.publishingService.PublishAsync();
+
+        await this.publishingService.PublishOpenInterestAsync();
     }
 }
 

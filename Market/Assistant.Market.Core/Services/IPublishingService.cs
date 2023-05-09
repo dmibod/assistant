@@ -3,4 +3,6 @@
 public interface IPublishingService
 {
     Task PublishAsync();
+
+    Task PublishOpenInterestAsync();
 }

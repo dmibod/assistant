@@ -14,7 +14,7 @@ public class MarketDataTimerService : BaseTimerService
 
     public MarketDataTimerService(IBusService busService, ITopicResolver topicResolver,
         ILogger<MarketDataTimerService> logger)
-        : base(TimeSpan.FromHours(1), TimeSpan.FromHours(1))
+        : base(TimeSpan.FromHours(2), TimeSpan.FromHours(1))
     {
         this.busService = busService;
         this.dataPublishTopic = topicResolver.ResolveConfig(nameof(NatsSettings.DataPublishTopic));

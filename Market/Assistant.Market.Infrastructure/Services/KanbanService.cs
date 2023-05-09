@@ -148,9 +148,9 @@ public class KanbanService : IKanbanService
             lane.Description);
     }
 
-    public Task RemoveBoardLaneAsync(string boardId, string laneId)
+    public Task RemoveLaneAsync(string boardId, string laneId)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveBoardLaneAsync),
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveLaneAsync),
             $"{boardId}-{laneId}");
 
         return this.ApiClient.RemoveLaneAsync(new KanbanApi.Client.Board
@@ -160,6 +160,23 @@ public class KanbanService : IKanbanService
         {
             Id = laneId
         }, boardId);
+    }
+
+    public async Task<IEnumerable<Lane>> FindLanesAsync(string boardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindLanesAsync), $"{boardId}");
+
+        var lanes = await this.ApiClient.GetCardLanesAsync(new KanbanApi.Client.Board
+        {
+            Id = boardId
+        });
+
+        return lanes.Select(lane => new Lane
+        {
+            Id = lane.Id,
+            Name = lane.Name,
+            Description = lane.Description
+        });
     }
 
     public async Task<IEnumerable<Lane>> FindLanesAsync(string boardId, string parentLaneId)

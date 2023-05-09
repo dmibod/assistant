@@ -190,4 +190,25 @@ public class OptionService : IOptionService
             this.logger.LogError(e, e.Message);
         }
     }
+
+    public Task<int> FindChangesCountAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindChangesCountAsync), ticker);
+
+        return this.changeRepository.FindChangesCountAsync(StockUtils.Format(ticker));
+    }
+
+    public Task<decimal> FindOpenInterestChangeMinAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestChangeMinAsync), ticker);
+
+        return this.changeRepository.FindOpenInterestMinAsync(StockUtils.Format(ticker));
+    }
+
+    public Task<decimal> FindOpenInterestChangeMaxAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestChangeMaxAsync), ticker);
+
+        return this.changeRepository.FindOpenInterestMaxAsync(StockUtils.Format(ticker));
+    }
 }

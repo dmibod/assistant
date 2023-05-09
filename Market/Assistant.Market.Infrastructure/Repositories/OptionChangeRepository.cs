@@ -109,6 +109,27 @@ public class OptionChangeRepository : IOptionChangeRepository
 
         await this.collection.DeleteManyAsync(filter);
     }
+    
+    public Task<int> FindChangesCountAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindChangesCountAsync), ticker);
+
+        return this.collection.AsQueryable().Where(entity => entity.Ticker == ticker).SumAsync(entity => entity.Contracts.Length);
+    }
+
+    public Task<decimal> FindOpenInterestMinAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestMinAsync), ticker);
+
+        return this.collection.AsQueryable().Where(entity => entity.Ticker == ticker).MaxAsync(entity => entity.Contracts.Min(contract => contract.OI));
+    }
+
+    public Task<decimal> FindOpenInterestMaxAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestMaxAsync), ticker);
+
+        return this.collection.AsQueryable().Where(entity => entity.Ticker == ticker).MaxAsync(entity => entity.Contracts.Max(contract => contract.OI));
+    }
 }
 
 internal class OptionChangeEntity : Option
