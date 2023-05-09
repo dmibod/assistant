@@ -97,7 +97,7 @@ public class PositionPublishingService : IPositionPublishingService
 
         foreach (var entity in positions.GroupBy(p => p.Account, p => p))
         {
-            var account = await this.GetOrCreateAccountLaneAsync(board, "ACCOUNT", Hide(entity.Key), lanes);
+            var account = await this.GetOrCreateAccountLaneAsync(board, "ACCOUNT", FormatUtils.FormatAccount(entity.Key), lanes);
 
             var accountPositions = entity.ToList();
 
@@ -159,7 +159,7 @@ public class PositionPublishingService : IPositionPublishingService
         foreach (var p in singleOptionPositions.OrderBy(p => p.Ticker))
         {
             var name =
-                $"{OptionUtils.GetSide(p.Ticker)}${OptionUtils.GetStrike(p.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(p.Ticker))}";
+                $"{OptionUtils.GetSide(p.Ticker)}${OptionUtils.GetStrike(p.Ticker)} {FormatUtils.FormatExpiration(OptionUtils.ParseExpiration(p.Ticker))}";
             var description = this.PositionToContent(p, stocks, expirations);
 
             var card = await this.GetOrCreateCardAsync(board, options, name, description, allCards);
@@ -197,7 +197,7 @@ public class PositionPublishingService : IPositionPublishingService
         {
             var leg = p.Value.First();
             var name =
-                $"{OptionUtils.GetStock(leg.Ticker)} {FormatExpiration(OptionUtils.ParseExpiration(leg.Ticker))}";
+                $"{OptionUtils.GetStock(leg.Ticker)} {FormatUtils.FormatExpiration(OptionUtils.ParseExpiration(leg.Ticker))}";
 
             var description = this.PositionToContent(p.Value, stocks, expirations);
 
@@ -316,7 +316,7 @@ public class PositionPublishingService : IPositionPublishingService
     {
         var label = $"{OptionUtils.GetSide(leg.Ticker)}${OptionUtils.GetStrike(leg.Ticker)}";
         var key = RenderUtils.PropToContent(label);
-        var value = RenderUtils.PropToContent(FormatSize(leg.Quantity));
+        var value = RenderUtils.PropToContent(FormatUtils.FormatSize(leg.Quantity));
 
         return RenderUtils.PairToContent(key, value) + "," +
                this.PriceToContent(leg, stocks, expirations, false, string.Empty, FontStyle);
@@ -333,7 +333,7 @@ public class PositionPublishingService : IPositionPublishingService
                + legs.Select(leg => LegToContent(leg, stocks, expirations)).Aggregate((curr, el) => $"{curr}, {el}") +
                ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("underlying"),
-                   RenderUtils.PropToContent(FormatPrice(stocks[OptionUtils.GetStock(legs.First().Ticker)].Last))) + ","
+                   RenderUtils.PropToContent(FormatUtils.FormatPrice(stocks[OptionUtils.GetStock(legs.First().Ticker)].Last))) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("quantity"),
                    RenderUtils.PropToContent($"{size}")) + ","
                + this.PriceToContent(legs, expirations) +
@@ -348,9 +348,9 @@ public class PositionPublishingService : IPositionPublishingService
         return "["
                + RenderUtils.PairToContent(RenderUtils.PropToContent("ticker"), RenderUtils.PropToContent(ticker)) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("stock"),
-                   RenderUtils.PropToContent(FormatPrice(stocks[ticker].Last))) + ","
+                   RenderUtils.PropToContent(FormatUtils.FormatPrice(stocks[ticker].Last))) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("quantity"),
-                   RenderUtils.PropToContent(FormatSize(pos.Quantity))) + ","
+                   RenderUtils.PropToContent(FormatUtils.FormatSize(pos.Quantity))) + ","
                + this.PriceToContent(pos, stocks, expirations) +
                "]";
     }
@@ -367,19 +367,19 @@ public class PositionPublishingService : IPositionPublishingService
         var breakEven = (collateral - pos.AverageCost) / 100.0m;
         var style = breakEven == underlying ? null :
             breakEven < underlying ? RenderUtils.GreenStyle : RenderUtils.RedStyle;
-        var breakEvenValue = $"{FormatPrice(breakEven)} ({FormatPrice(Math.Abs(underlying - breakEven))})";
+        var breakEvenValue = $"{FormatUtils.FormatPrice(breakEven)} ({FormatUtils.FormatPrice(Math.Abs(underlying - breakEven))})";
         var dte = Expiration.From(OptionUtils.ParseExpiration(pos.Ticker)).DaysTillExpiration;
         var itm = underlying < strike;
 
         return "["
                + RenderUtils.PairToContent(RenderUtils.PropToContent("ticker"), RenderUtils.PropToContent(ticker)) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("quantity"),
-                   RenderUtils.PropToContent(FormatSize(pos.Quantity))) + ","
+                   RenderUtils.PropToContent(FormatUtils.FormatSize(pos.Quantity))) + ","
                + this.PriceToContent(pos, stocks, expirations) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("underlying"),
-                   RenderUtils.PropToContent(FormatPrice(underlying))) + ","
+                   RenderUtils.PropToContent(FormatUtils.FormatPrice(underlying))) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("collateral"),
-                   RenderUtils.PropToContent(FormatPrice(collateral))) + ","
+                   RenderUtils.PropToContent(FormatUtils.FormatPrice(collateral))) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("break.even"),
                    RenderUtils.PropToContent(breakEvenValue, style)) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("dte"), RenderUtils.PropToContent($"{dte}")) + ","
@@ -401,9 +401,9 @@ public class PositionPublishingService : IPositionPublishingService
         return "["
                + RenderUtils.PairToContent(RenderUtils.PropToContent("ticker"), RenderUtils.PropToContent(ticker)) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("underlying"),
-                   RenderUtils.PropToContent(FormatPrice(stocks[ticker].Last))) + ","
+                   RenderUtils.PropToContent(FormatUtils.FormatPrice(stocks[ticker].Last))) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("quantity"),
-                   RenderUtils.PropToContent(FormatSize(pos.Quantity))) + ","
+                   RenderUtils.PropToContent(FormatUtils.FormatSize(pos.Quantity))) + ","
                + this.PriceToContent(pos, stocks, expirations) +
                "]";
     }
@@ -574,25 +574,5 @@ public class PositionPublishingService : IPositionPublishingService
         }
 
         return style;
-    }
-
-    private static string FormatPrice(decimal? price)
-    {
-        return $"${Math.Round(price ?? decimal.Zero, 2)}";
-    }
-
-    private static string FormatSize(decimal size)
-    {
-        return size < 0 ? $"short({Math.Abs(size)})" : $"long({size})";
-    }
-
-    private static string FormatExpiration(DateTime expiraion)
-    {
-        return $"{expiraion.Year}/{expiraion.Month}/{expiraion.Day}";
-    }
-
-    private static string Hide(string value)
-    {
-        return value.Substring(0, 2) + new string(Enumerable.Repeat('*', value.Length - 2).ToArray());
     }
 }

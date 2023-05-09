@@ -5,7 +5,9 @@ public abstract class RecommendationFilter
     public int? MinAnnualPercent { get; set; }
     
     public decimal? MinPremium { get; set; }
-    
+
+    public int? MinDte { get; set; }
+
     public int? MaxDte { get; set; }
 
     public bool? Otm { get; set; }
@@ -23,7 +25,12 @@ public abstract class RecommendationFilter
         {
             filters.Add($"premium >= {this.MinPremium}$");
         }
-        
+
+        if (this.MinDte.HasValue)
+        {
+            filters.Add($"dte >= {this.MinDte}");
+        }
+
         if (this.MaxDte.HasValue)
         {
             filters.Add($"dte <= {this.MaxDte}");

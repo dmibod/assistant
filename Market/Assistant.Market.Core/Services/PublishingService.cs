@@ -97,23 +97,38 @@ public class PublishingService : IPublishingService
             {
                 var min = await this.optionService.FindOpenInterestChangeMinAsync(pair.Key);
                 var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key);
+                var percMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key);
+                var percMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
 
-                var propMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("min"),
-                    RenderUtils.PropToContent(Math.Abs(min).ToString(CultureInfo.InvariantCulture), min < decimal.Zero ? RenderUtils.RedStyle : RenderUtils.GreenStyle));
+                var padding = new Tuple<string, string>("paddingLeft", "1rem");
                 
+                var propMin = RenderUtils.PairToContent(
+                    RenderUtils.PropToContent("oi\u0394\u2193#"),
+                    RenderUtils.PropToContent(Math.Abs(min).ToString(CultureInfo.InvariantCulture), RenderUtils.CreateStyle(padding, min < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+
+                var propPercMin = RenderUtils.PairToContent(
+                    RenderUtils.PropToContent("oi\u0394\u2193%"),
+                    RenderUtils.PropToContent(Math.Abs(percMin).ToString(CultureInfo.InvariantCulture)+"%", RenderUtils.CreateStyle(padding, percMin < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+
                 var propMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("max"),
-                    RenderUtils.PropToContent(Math.Abs(max).ToString(CultureInfo.InvariantCulture), max < decimal.Zero ? RenderUtils.RedStyle : RenderUtils.GreenStyle));
+                    RenderUtils.PropToContent("oi\u0394\u2191#"),
+                    RenderUtils.PropToContent(Math.Abs(max).ToString(CultureInfo.InvariantCulture), RenderUtils.CreateStyle(padding, max < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+
+                var propPercMax = RenderUtils.PairToContent(
+                    RenderUtils.PropToContent("oi\u0394\u2191%"),
+                    RenderUtils.PropToContent(Math.Abs(percMax).ToString(CultureInfo.InvariantCulture)+"%", RenderUtils.CreateStyle(padding, percMax < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
 
                 await this.kanbanService.CreateCardAsync(board.Id, lane.Id, new Card
                 {
                     Name = $"{pair.Key} ({pair.Value})", 
-                    Description = $"[{propMin}, {propMax}]"
+                    Description = $"[{propMin}, {propPercMin}, {propMax}, {propPercMax}]"
                 });
             }
             
-            board.Description = dictionary.Keys.Aggregate((curr, i) => $"{curr}, {i}");
+            board.Description = dictionary.Keys.Count > 100 
+                ? dictionary.Keys.Take(100).Aggregate((curr, i) => $"{curr}, {i}") + "..."
+                : dictionary.Keys.Aggregate((curr, i) => $"{curr}, {i}");
+            
             await this.kanbanService.UpdateBoardAsync(board);
         }
         catch (Exception e)

@@ -135,6 +135,26 @@ public class OptionChangeRepository : IOptionChangeRepository
             
         return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Max(contract => contract.OI);
     }
+    
+    public async Task<decimal> FindOpenInterestPercentMinAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestPercentMinAsync), ticker);
+
+        var cursor = await this.collection
+            .FindAsync(entity => entity.Ticker == ticker);
+            
+        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Min(contract => contract.Vol);
+    }
+
+    public async Task<decimal> FindOpenInterestPercentMaxAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestPercentMaxAsync), ticker);
+
+        var cursor = await this.collection
+            .FindAsync(entity => entity.Ticker == ticker);
+            
+        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Max(contract => contract.Vol);
+    }
 }
 
 internal class OptionChangeEntity : Option

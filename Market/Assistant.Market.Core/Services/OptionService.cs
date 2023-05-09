@@ -131,14 +131,17 @@ public class OptionService : IOptionService
             return null;
         }
 
+        var oiDiff = next.OI - prev.OI;
+        
         return new OptionContract
         {
             Ticker = next.Ticker,
             Ask = next.Ask - prev.Ask,
             Bid = next.Bid - prev.Bid,
             Last = next.Last - prev.Last,
-            Vol = next.Vol - prev.Vol,
-            OI = next.OI - prev.OI,
+            // we store OI delta % here
+            Vol = CalculationUtils.Percent(prev.OI == decimal.Zero ? decimal.One : oiDiff / prev.OI, 2),
+            OI = oiDiff,
             TimeStamp = next.TimeStamp
         };
     }
@@ -210,5 +213,19 @@ public class OptionService : IOptionService
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestChangeMaxAsync), ticker);
 
         return this.changeRepository.FindOpenInterestMaxAsync(StockUtils.Format(ticker));
+    }
+    
+    public Task<decimal> FindOpenInterestChangePercentMinAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestChangePercentMinAsync), ticker);
+
+        return this.changeRepository.FindOpenInterestPercentMinAsync(StockUtils.Format(ticker));
+    }
+
+    public Task<decimal> FindOpenInterestChangePercentMaxAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestChangePercentMaxAsync), ticker);
+
+        return this.changeRepository.FindOpenInterestPercentMaxAsync(StockUtils.Format(ticker));
     }
 }

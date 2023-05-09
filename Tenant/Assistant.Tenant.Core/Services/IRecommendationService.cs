@@ -34,5 +34,5 @@ public interface IRecommendationService
 
     Task UpdateOpenInterestFilterAsync(OpenInterestFilter filter);
 
-    Task<IEnumerable<OptionAssetPrice>> OpenInterestAsync(OpenInterestFilter filter, Func<int, ProgressTracker> trackerCreator);
+    Task<IEnumerable<OpenInterestRecommendation>> OpenInterestAsync(OpenInterestFilter filter, Func<int, ProgressTracker> trackerCreator);
 }

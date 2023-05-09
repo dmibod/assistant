@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 public class RecommendationService : IRecommendationService
 {
     private const int MaxRecsCount = 50;
-    
+
     private readonly ITenantService tenantService;
     private readonly ITenantRepository repository;
     private readonly IWatchListService watchListService;
@@ -22,7 +22,7 @@ public class RecommendationService : IRecommendationService
     public RecommendationService(
         ITenantService tenantService,
         ITenantRepository repository,
-        IWatchListService watchListService, 
+        IWatchListService watchListService,
         IPositionService positionService,
         IMarketDataService marketDataService,
         ILogger<RecommendationService> logger)
@@ -34,6 +34,8 @@ public class RecommendationService : IRecommendationService
         this.marketDataService = marketDataService;
         this.logger = logger;
     }
+
+    #region Sell Puts
 
     public async Task<string?> FindSellPutsBoardId()
     {
@@ -74,19 +76,22 @@ public class RecommendationService : IRecommendationService
 
     public async Task UpdateSellPutsFilterAsync(SellPutsFilter filter)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSellPutsFilterAsync), filter.AsDescription());
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSellPutsFilterAsync),
+            filter.AsDescription());
 
         var tenant = await this.tenantService.EnsureExistsAsync();
 
         await this.repository.UpdateSellPutsFilterAsync(tenant, JsonSerializer.Serialize(filter));
     }
 
-    public async Task<IEnumerable<SellOperation>> SellPutsAsync(SellPutsFilter filter, Func<int, ProgressTracker> trackerCreator)
+    public async Task<IEnumerable<SellOperation>> SellPutsAsync(SellPutsFilter filter,
+        Func<int, ProgressTracker> trackerCreator)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SellPutsAsync), filter.AsDescription());
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SellPutsAsync),
+            filter.AsDescription());
 
         var items = await this.watchListService.FindAllAsync();
-        
+
         var tracker = trackerCreator(items.Count());
 
         var operations = Enumerable.Empty<SellOperation>();
@@ -99,212 +104,12 @@ public class RecommendationService : IRecommendationService
         }
 
         tracker.Finish();
-        
+
         return operations;
     }
 
-    public async Task<string?> FindSellCallsBoardId()
-    {
-        this.logger.LogInformation("{Method}", nameof(this.FindSellCallsBoardId));
-
-        var tenant = await this.tenantService.EnsureExistsAsync();
-
-        return await this.repository.FindSellCallsBoardIdAsync(tenant);
-    }
-
-    public async Task UpdateSellCallsBoardId(string boardId)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSellCallsBoardId), boardId);
-
-        var tenant = await this.tenantService.EnsureExistsAsync();
-
-        await this.repository.UpdateSellCallsBoardIdAsync(tenant, boardId);
-    }
-
-    public async Task<SellCallsFilter?> GetSellCallsFilterAsync()
-    {
-        this.logger.LogInformation("{Method}", nameof(this.GetSellCallsFilterAsync));
-
-        var tenant = await this.tenantService.EnsureExistsAsync();
-
-        var filter = await this.repository.FindSellCallsFilterAsync(tenant);
-
-        try
-        {
-            return string.IsNullOrEmpty(filter) ? null : JsonSerializer.Deserialize<SellCallsFilter>(filter);
-        }
-        catch (Exception e)
-        {
-            this.logger.LogError(e, e.Message);
-            return null;
-        }
-    }
-
-    public async Task UpdateSellCallsFilterAsync(SellCallsFilter filter)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSellCallsFilterAsync), filter.AsDescription());
-
-        var tenant = await this.tenantService.EnsureExistsAsync();
-
-        await this.repository.UpdateSellCallsFilterAsync(tenant, JsonSerializer.Serialize(filter));
-    }
-
-    public async Task<IEnumerable<SellOperation>> SellCallsAsync(SellCallsFilter filter, Func<int, ProgressTracker> trackerCreator)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SellCallsAsync), filter.AsDescription());
-
-        var items = await this.watchListService.FindAllAsync();
-
-        if (filter.Covered)
-        {
-            var positions = await this.positionService.FindAllAsync();
-
-            var stocks = positions
-                .Where(position => position is { Type: AssetType.Stock, Quantity: >= 100 })
-                .Select(position => position.Ticker)
-                .Distinct()
-                .ToHashSet();
-
-            items = items.Where(item => stocks.Contains(item.Ticker));
-        }
-
-        var tracker = trackerCreator(items.Count());
-
-        var operations = Enumerable.Empty<SellOperation>();
-
-        foreach (var item in items)
-        {
-            operations = operations.Union(await this.SellCallsAsync(item, filter, operations.Count()));
-
-            tracker.Increase();
-        }
-
-        tracker.Finish();
-        
-        return operations;
-    }
-
-    public async Task<string?> FindOpenInterestBoardId()
-    {
-        this.logger.LogInformation("{Method}", nameof(this.FindOpenInterestBoardId));
-
-        var tenant = await this.tenantService.EnsureExistsAsync();
-
-        return await this.repository.FindOpenInterestBoardIdAsync(tenant);
-    }
-
-    public async Task UpdateOpenInterestBoardId(string boardId)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateOpenInterestBoardId), boardId);
-
-        var tenant = await this.tenantService.EnsureExistsAsync();
-
-        await this.repository.UpdateOpenInterestBoardIdAsync(tenant, boardId);
-    }
-
-    public async Task<OpenInterestFilter?> GetOpenInterestFilterAsync()
-    {
-        this.logger.LogInformation("{Method}", nameof(this.GetOpenInterestFilterAsync));
-
-        var tenant = await this.tenantService.EnsureExistsAsync();
-
-        var filter = await this.repository.FindOpenInterestFilterAsync(tenant);
-
-        try
-        {
-            return string.IsNullOrEmpty(filter) ? null : JsonSerializer.Deserialize<OpenInterestFilter>(filter);
-        }
-        catch (Exception e)
-        {
-            this.logger.LogError(e, e.Message);
-            return null;
-        }
-    }
-
-    public async Task UpdateOpenInterestFilterAsync(OpenInterestFilter filter)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateOpenInterestFilterAsync), filter.AsDescription());
-
-        var tenant = await this.tenantService.EnsureExistsAsync();
-
-        await this.repository.UpdateOpenInterestFilterAsync(tenant, JsonSerializer.Serialize(filter));
-    }
-
-    public async Task<IEnumerable<OptionAssetPrice>> OpenInterestAsync(OpenInterestFilter filter, Func<int, ProgressTracker> trackerCreator)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.OpenInterestAsync), filter.AsDescription());
-        
-        var items = await this.watchListService.FindAllAsync();
-
-        var tracker = trackerCreator(items.Count());
-
-        var options = Enumerable.Empty<OptionAssetPrice>();
-
-        foreach (var item in items)
-        {
-            options = options.Union(await this.OpenInterestAsync(item, filter, options.Count()));
-
-            tracker.Increase();
-        }
-
-        tracker.Finish();
-        
-        return options;
-
-    }
-
-    private async Task<IEnumerable<SellOperation>> SellCallsAsync(WatchListItem item, SellCallsFilter callsFilter, int opsCount)
-    {
-        if (opsCount > MaxRecsCount)
-        {
-            this.logger.LogWarning("Max recs count of {Maximum} has been reached", MaxRecsCount);
-            return Enumerable.Empty<SellOperation>();
-        }
-
-        var expirations = await this.marketDataService.FindExpirationsAsync(item.Ticker);
-        if (expirations == null)
-        {
-            return Array.Empty<SellOperation>();
-        }
-
-        var stockPrices = await this.marketDataService.FindStockPricesAsync(new HashSet<string>(new[] { item.Ticker }));
-
-        var sellOperations = new List<SellOperation>();
-        foreach (var expiration in expirations)
-        {
-            var optionPrices = await this.marketDataService.FindOptionPricesAsync(item.Ticker, expiration);
-            if (optionPrices == null) continue;
-
-            var stock = Stock.From(item.Ticker, expirations.Select(exp => Expiration.FromYYYYMMDD(exp)).AsQueryable());
-
-            var stockPrice = stockPrices.FirstOrDefault(s => s.Ticker == item.Ticker);
-            if (stockPrice != null)
-            {
-                stock.Price = MarketPrice.From(stockPrice.Last ?? decimal.Zero);
-            }
-
-            foreach (var price in optionPrices.Where(p => OptionUtils.GetSide(p.Ticker) == "C"))
-            {
-                var call = StockOption.Call(stock, OptionUtils.GetStrike(price.Ticker),
-                    Expiration.FromYYYYMMDD(expiration));
-
-                var op = call.Sell(price.Bid ?? decimal.Zero);
-                if (op.BreakEvenStockPrice >= item.SellPrice && AreConditionsMet(op, callsFilter))
-                {
-                    sellOperations.Add(op);
-                    if (opsCount + sellOperations.Count > MaxRecsCount)
-                    {
-                        this.logger.LogWarning("Max recs count of {Maximum} has been reached", MaxRecsCount);
-                        return sellOperations;
-                    }
-                }
-            }
-        }
-
-        return sellOperations;
-    }
-    
-    private async Task<IEnumerable<SellOperation>> SellPutsAsync(WatchListItem item, SellPutsFilter putsFilter, int opsCount)
+    private async Task<IEnumerable<SellOperation>> SellPutsAsync(WatchListItem item, SellPutsFilter putsFilter,
+        int opsCount)
     {
         if (opsCount > MaxRecsCount)
         {
@@ -355,21 +160,238 @@ public class RecommendationService : IRecommendationService
         return sellOperations;
     }
 
-   private async Task<IEnumerable<OptionAssetPrice>> OpenInterestAsync(WatchListItem item, OpenInterestFilter filter, int count)
+    #endregion
+
+    #region Sell Calls
+
+    public async Task<string?> FindSellCallsBoardId()
     {
-        if (count > MaxRecsCount)
+        this.logger.LogInformation("{Method}", nameof(this.FindSellCallsBoardId));
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        return await this.repository.FindSellCallsBoardIdAsync(tenant);
+    }
+
+    public async Task UpdateSellCallsBoardId(string boardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSellCallsBoardId), boardId);
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        await this.repository.UpdateSellCallsBoardIdAsync(tenant, boardId);
+    }
+
+    public async Task<SellCallsFilter?> GetSellCallsFilterAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.GetSellCallsFilterAsync));
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        var filter = await this.repository.FindSellCallsFilterAsync(tenant);
+
+        try
+        {
+            return string.IsNullOrEmpty(filter) ? null : JsonSerializer.Deserialize<SellCallsFilter>(filter);
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError(e, e.Message);
+            return null;
+        }
+    }
+
+    public async Task UpdateSellCallsFilterAsync(SellCallsFilter filter)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSellCallsFilterAsync),
+            filter.AsDescription());
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        await this.repository.UpdateSellCallsFilterAsync(tenant, JsonSerializer.Serialize(filter));
+    }
+
+    public async Task<IEnumerable<SellOperation>> SellCallsAsync(SellCallsFilter filter,
+        Func<int, ProgressTracker> trackerCreator)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SellCallsAsync),
+            filter.AsDescription());
+
+        var items = await this.watchListService.FindAllAsync();
+
+        if (filter.Covered)
+        {
+            var positions = await this.positionService.FindAllAsync();
+
+            var stocks = positions
+                .Where(position => position is { Type: AssetType.Stock, Quantity: >= 100 })
+                .Select(position => position.Ticker)
+                .Distinct()
+                .ToHashSet();
+
+            items = items.Where(item => stocks.Contains(item.Ticker));
+        }
+
+        var tracker = trackerCreator(items.Count());
+
+        var operations = Enumerable.Empty<SellOperation>();
+
+        foreach (var item in items)
+        {
+            operations = operations.Union(await this.SellCallsAsync(item, filter, operations.Count()));
+
+            tracker.Increase();
+        }
+
+        tracker.Finish();
+
+        return operations;
+    }
+
+    private async Task<IEnumerable<SellOperation>> SellCallsAsync(WatchListItem item, SellCallsFilter callsFilter,
+        int opsCount)
+    {
+        if (opsCount > MaxRecsCount)
         {
             this.logger.LogWarning("Max recs count of {Maximum} has been reached", MaxRecsCount);
-            return Enumerable.Empty<OptionAssetPrice>();
+            return Enumerable.Empty<SellOperation>();
         }
 
         var expirations = await this.marketDataService.FindExpirationsAsync(item.Ticker);
         if (expirations == null)
         {
-            return Array.Empty<OptionAssetPrice>();
+            return Array.Empty<SellOperation>();
         }
 
-        var options = new List<OptionAssetPrice>();
+        var stockPrices = await this.marketDataService.FindStockPricesAsync(new HashSet<string>(new[] { item.Ticker }));
+
+        var sellOperations = new List<SellOperation>();
+        foreach (var expiration in expirations)
+        {
+            var optionPrices = await this.marketDataService.FindOptionPricesAsync(item.Ticker, expiration);
+            if (optionPrices == null) continue;
+
+            var stock = Stock.From(item.Ticker, expirations.Select(exp => Expiration.FromYYYYMMDD(exp)).AsQueryable());
+
+            var stockPrice = stockPrices.FirstOrDefault(s => s.Ticker == item.Ticker);
+            if (stockPrice != null)
+            {
+                stock.Price = MarketPrice.From(stockPrice.Last ?? decimal.Zero);
+            }
+
+            foreach (var price in optionPrices.Where(p => OptionUtils.GetSide(p.Ticker) == "C"))
+            {
+                var call = StockOption.Call(stock, OptionUtils.GetStrike(price.Ticker),
+                    Expiration.FromYYYYMMDD(expiration));
+
+                var op = call.Sell(price.Bid ?? decimal.Zero);
+                if (op.BreakEvenStockPrice >= item.SellPrice && AreConditionsMet(op, callsFilter))
+                {
+                    sellOperations.Add(op);
+                    if (opsCount + sellOperations.Count > MaxRecsCount)
+                    {
+                        this.logger.LogWarning("Max recs count of {Maximum} has been reached", MaxRecsCount);
+                        return sellOperations;
+                    }
+                }
+            }
+        }
+
+        return sellOperations;
+    }
+
+    #endregion
+
+    #region Open Interest
+
+    public async Task<string?> FindOpenInterestBoardId()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.FindOpenInterestBoardId));
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        return await this.repository.FindOpenInterestBoardIdAsync(tenant);
+    }
+
+    public async Task UpdateOpenInterestBoardId(string boardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateOpenInterestBoardId),
+            boardId);
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        await this.repository.UpdateOpenInterestBoardIdAsync(tenant, boardId);
+    }
+
+    public async Task<OpenInterestFilter?> GetOpenInterestFilterAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.GetOpenInterestFilterAsync));
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        var filter = await this.repository.FindOpenInterestFilterAsync(tenant);
+
+        try
+        {
+            return string.IsNullOrEmpty(filter) ? null : JsonSerializer.Deserialize<OpenInterestFilter>(filter);
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError(e, e.Message);
+            return null;
+        }
+    }
+
+    public async Task UpdateOpenInterestFilterAsync(OpenInterestFilter filter)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateOpenInterestFilterAsync),
+            filter.AsDescription());
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        await this.repository.UpdateOpenInterestFilterAsync(tenant, JsonSerializer.Serialize(filter));
+    }
+
+    public async Task<IEnumerable<OpenInterestRecommendation>> OpenInterestAsync(OpenInterestFilter filter,
+        Func<int, ProgressTracker> trackerCreator)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.OpenInterestAsync),
+            filter.AsDescription());
+
+        var items = await this.watchListService.FindAllAsync();
+
+        var tracker = trackerCreator(items.Count());
+
+        var options = Enumerable.Empty<OpenInterestRecommendation>();
+
+        foreach (var item in items)
+        {
+            options = options.Union(await this.OpenInterestAsync(item, filter, options.Count()));
+
+            tracker.Increase();
+        }
+
+        tracker.Finish();
+
+        return options;
+    }
+
+    private async Task<IEnumerable<OpenInterestRecommendation>> OpenInterestAsync(WatchListItem item,
+        OpenInterestFilter filter, int count)
+    {
+        if (count > MaxRecsCount)
+        {
+            this.logger.LogWarning("Max recs count of {Maximum} has been reached", MaxRecsCount);
+            return Enumerable.Empty<OpenInterestRecommendation>();
+        }
+
+        var expirations = await this.marketDataService.FindExpirationsAsync(item.Ticker);
+        if (expirations == null)
+        {
+            return Array.Empty<OpenInterestRecommendation>();
+        }
+
+        var options = new List<OpenInterestRecommendation>();
 
         foreach (var expiration in expirations)
         {
@@ -383,16 +405,35 @@ public class RecommendationService : IRecommendationService
 
             foreach (var price in optionPrices)
             {
-                if (changes.TryGetValue(price.Ticker, out var change) && AreConditionsMet(price, change, filter))
+                if (changes.TryGetValue(price.Ticker, out var change))
                 {
-                    price.Last = change.OI;
-                    
-                    options.Add(price);
-                    
-                    if (count + options.Count > MaxRecsCount)
+                    var prevOpenInterest = price.OI.Value - change.OI.Value;
+
+                    var rec = new OpenInterestRecommendation
                     {
-                        this.logger.LogWarning("Max recs count of {Maximum} has been reached", MaxRecsCount);
-                        return options;
+                        Ticker = price.Ticker,
+                        OpenInterest = price.OI.Value,
+                        PrevOpenInterest = prevOpenInterest,
+                        OpenInterestChange = change.OI.Value,
+                        OpenInterestChangePercent = Math.Abs(/*change.Vol.Value*/CalculationUtils.Percent(change.OI.Value /
+                            (prevOpenInterest == decimal.Zero ? decimal.One : prevOpenInterest))),
+                        Bid = price.Bid.Value,
+                        Ask = price.Ask.Value,
+                        Last = price.Last.Value,
+                        Vol = price.Vol.Value,
+                        DaysTillExpiration = Expiration.FromYYYYMMDD(OptionUtils.GetExpiration(price.Ticker))
+                            .DaysTillExpiration
+                    };
+
+                    if (AreConditionsMet(rec, filter))
+                    {
+                        options.Add(rec);
+
+                        if (count + options.Count > MaxRecsCount)
+                        {
+                            this.logger.LogWarning("Max recs count of {Maximum} has been reached", MaxRecsCount);
+                            return options;
+                        }
                     }
                 }
             }
@@ -401,33 +442,54 @@ public class RecommendationService : IRecommendationService
         return options;
     }
 
-   private static bool AreConditionsMet(OptionAssetPrice option, OptionAssetPrice change, OpenInterestFilter filter)
-   {
-       if (filter.MinContractsChange.HasValue)
-       {
-           if (!change.OI.HasValue || Math.Abs(change.OI.Value) < filter.MinContractsChange.Value)
-           {
-               return false;
-           }
-       }
-       
-       if (filter.MinPercentageChange.HasValue)
-       {
-           if (!option.OI.HasValue || !change.OI.HasValue)
-           {
-               return false;
-           }
+    private static bool AreConditionsMet(OpenInterestRecommendation op, OpenInterestFilter filter)
+    {
+        if (filter.MinContractsChange.HasValue)
+        {
+            if (Math.Abs(op.OpenInterestChange) < filter.MinContractsChange.Value)
+            {
+                return false;
+            }
+        }
 
-           if (Math.Abs(CalculationUtils.Percent(change.OI.Value / (option.OI.Value == decimal.Zero ? decimal.One : option.OI.Value))) < filter.MinPercentageChange.Value)
-           {
-               return false;
-           }
-       }
+        if (filter.MinPercentageChange.HasValue)
+        {
+            if (op.OpenInterestChangePercent < filter.MinPercentageChange.Value)
+            {
+                return false;
+            }
+        }
 
-       return true;
-   }
+        if (filter.MinDte.HasValue)
+        {
+            if (op.DaysTillExpiration < filter.MinDte.Value)
+            {
+                return false;
+            }
+        }
 
-   private static bool AreConditionsMet(SellOperation op, RecommendationFilter filter)
+        if (filter.MaxDte.HasValue)
+        {
+            if (op.DaysTillExpiration > filter.MaxDte.Value)
+            {
+                return false;
+            }
+        }
+
+        if (filter.MinPremium.HasValue)
+        {
+            if (op.Last < filter.MinPremium.Value)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    #endregion
+
+    private static bool AreConditionsMet(SellOperation op, RecommendationFilter filter)
     {
         if (filter.MinAnnualPercent.HasValue)
         {
@@ -440,6 +502,14 @@ public class RecommendationService : IRecommendationService
         if (filter.MinPremium.HasValue)
         {
             if (op.ContractPrice < filter.MinPremium.Value)
+            {
+                return false;
+            }
+        }
+
+        if (filter.MinDte.HasValue)
+        {
+            if (op.Option.DaysTillExpiration < filter.MinDte.Value)
             {
                 return false;
             }
@@ -459,7 +529,7 @@ public class RecommendationService : IRecommendationService
             {
                 return !op.Option.InTheMoney;
             }
-            
+
             return op.Option.InTheMoney;
         }
 

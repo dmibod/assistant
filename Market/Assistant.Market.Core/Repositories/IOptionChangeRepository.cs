@@ -17,4 +17,9 @@ public interface IOptionChangeRepository
     Task<decimal> FindOpenInterestMinAsync(string ticker);
     
     Task<decimal> FindOpenInterestMaxAsync(string ticker);
+    
+    Task<decimal> FindOpenInterestPercentMinAsync(string ticker);
+    
+    Task<decimal> FindOpenInterestPercentMaxAsync(string ticker);
+
 }

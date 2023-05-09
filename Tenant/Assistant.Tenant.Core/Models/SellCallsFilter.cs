@@ -8,16 +8,16 @@ public class SellCallsFilter : RecommendationFilter
     {
         var filters = new List<string>();
 
+        if (this.Covered)
+        {
+            filters.Add("covered");
+        }
+
         var description = base.AsDescription();
 
         if (!string.IsNullOrWhiteSpace(description))
         {
             filters.Add(description);
-        }
-
-        if (this.Covered)
-        {
-            filters.Add("covered");
         }
 
         return filters.Count == 0 ? string.Empty : filters.Aggregate((curr, el) => $"{curr}, {el}");;

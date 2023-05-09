@@ -23,4 +23,8 @@ public interface IOptionService
     Task<decimal> FindOpenInterestChangeMinAsync(string ticker);
     
     Task<decimal> FindOpenInterestChangeMaxAsync(string ticker);
+    
+    Task<decimal> FindOpenInterestChangePercentMinAsync(string ticker);
+    
+    Task<decimal> FindOpenInterestChangePercentMaxAsync(string ticker);
 }

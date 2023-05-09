@@ -9,9 +9,9 @@ using Microsoft.Extensions.Logging;
 public class PublishingService : IPublishingService
 {
     private const string Recommendations = "Recommendations";
-    private const string SellPuts = "sell puts";
-    private const string SellCalls = "sell calls";
-    private const string OpenInterest = "open interest";
+    private const string SellPuts = "Sell Puts";
+    private const string SellCalls = "Sell Calls";
+    private const string OpenInterest = "OI";
     private readonly IRecommendationService recommendationService;
     private readonly IWatchListService watchListService;
     private readonly IMarketDataService marketDataService;
@@ -351,7 +351,7 @@ public class PublishingService : IPublishingService
             var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, filterLane.Id,
                 new Lane { Name = group.Key, Description = laneTitle });
 
-            foreach (var opInfo in group.OrderByDescending(op => Math.Abs(op.Last.Value / (op.OI.Value == decimal.Zero ? decimal.One : op.OI.Value))).Select(OpInfo))
+            foreach (var opInfo in group.OrderByDescending(op => op.OpenInterestChangePercent).Select(OpInfo))
             {
                 try
                 {
@@ -380,30 +380,30 @@ public class PublishingService : IPublishingService
         await this.kanbanService.UpdateBoardAsync(board);
     }
 
-    private static Tuple<string, string> OpInfo(OptionAssetPrice op)
+    private static Tuple<string, string> OpInfo(OpenInterestRecommendation op)
     {
         var exp = Expiration.FromYYYYMMDD(OptionUtils.GetExpiration(op.Ticker));
-        var name = $"{OptionUtils.GetSide(op.Ticker)}${OptionUtils.GetStrike(op.Ticker)} {(int)exp.Month}/{exp.Day}/{exp.Year}";
+        var name = $"{OptionUtils.GetSide(op.Ticker)}${OptionUtils.GetStrike(op.Ticker)} {FormatUtils.FormatExpiration(exp.AsDate())}";
 
         var labelStyle = RenderUtils.CreateStyle(new Tuple<string, string>("whiteSpace", "nowrap"));
-        var valueStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"),
-            op.Last < decimal.Zero ? RenderUtils.Red : RenderUtils.Green);
+        var valueStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"));
+        var oiValueStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"), op.OpenInterestChange < decimal.Zero ? RenderUtils.Red : RenderUtils.Green);
 
         var list = new List<Tuple<string, string>>();
 
-        list.Add(new Tuple<string, string>("oi", $"{op.OI.Value}"));
-        list.Add(new Tuple<string, string>("oi\u0394#", $"{Math.Abs(Math.Round(op.Last.Value, 0))}"));
-        list.Add(new Tuple<string, string>("oi\u0394%", $"{Math.Abs(Math.Round(CalculationUtils.Percent(op.Last.Value / (op.OI.Value == decimal.Zero ? decimal.One : op.OI.Value)), 2))}%"));
-        list.Add(new Tuple<string, string>("vol", $"{op.Vol.Value}"));
-        list.Add(new Tuple<string, string>("bid", $"${op.Bid}"));
-        list.Add(new Tuple<string, string>("ask", $"${op.Ask}"));
-        list.Add(new Tuple<string, string>("dte", $"{Expiration.FromYYYYMMDD(OptionUtils.GetExpiration(op.Ticker)).DaysTillExpiration}"));
+        list.Add(new Tuple<string, string>("oi", RenderUtils.PropToContent($"{op.OpenInterest}", valueStyle)));
+        list.Add(new Tuple<string, string>("oi\u0394#", RenderUtils.PropToContent($"{Math.Abs(Math.Round(op.OpenInterestChange, 0))}", oiValueStyle)));
+        list.Add(new Tuple<string, string>("oi\u0394%", RenderUtils.PropToContent(FormatUtils.FormatPercent(Math.Abs(op.OpenInterestChangePercent)), oiValueStyle)));
+        list.Add(new Tuple<string, string>("vol", RenderUtils.PropToContent($"{op.Vol}", valueStyle)));
+        list.Add(new Tuple<string, string>("bid", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Bid*100), valueStyle)));
+        list.Add(new Tuple<string, string>("ask", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Ask*100), valueStyle)));
+        list.Add(new Tuple<string, string>("last", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Last*100), valueStyle)));        
+        list.Add(new Tuple<string, string>("dte", RenderUtils.PropToContent($"{op.DaysTillExpiration}", valueStyle)));
         
 
         var body = list
             .Select(x =>
-                RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1, labelStyle),
-                    RenderUtils.PropToContent(x.Item2, valueStyle))).Aggregate((curr, x) => $"{curr},{x}");
+                RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1, labelStyle), x.Item2)).Aggregate((curr, x) => $"{curr},{x}");
 
         return new Tuple<string, string>(name, "[" + body + "]");
     }

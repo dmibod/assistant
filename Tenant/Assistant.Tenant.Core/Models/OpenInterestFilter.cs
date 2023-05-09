@@ -10,13 +10,6 @@ public class OpenInterestFilter : RecommendationFilter
     {
         var filters = new List<string>();
 
-        var description = base.AsDescription();
-
-        if (!string.IsNullOrWhiteSpace(description))
-        {
-            filters.Add(description);
-        }
-            
         if (this.MinContractsChange.HasValue)
         {
             filters.Add($"min contracts change >= {this.MinContractsChange}");
@@ -25,6 +18,13 @@ public class OpenInterestFilter : RecommendationFilter
         if (this.MinPercentageChange.HasValue)
         {
             filters.Add($"min % change >= {this.MinPercentageChange}");
+        }
+
+        var description = base.AsDescription();
+
+        if (!string.IsNullOrWhiteSpace(description))
+        {
+            filters.Add(description);
         }
 
         return filters.Count == 0 ? string.Empty : filters.Aggregate((curr, el) => $"{curr}, {el}");

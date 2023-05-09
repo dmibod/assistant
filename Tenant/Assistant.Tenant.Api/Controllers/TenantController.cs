@@ -505,17 +505,19 @@ public class TenantController : ControllerBase
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
     /// <param name="minPremium">Min premium (option contract price), $</param>
-    /// <param name="maxDte">Max days till expiration, days</param>
+    /// <param name="minDte">Min days till expiration</param>
+    /// <param name="maxDte">Max days till expiration</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
     /// <param name="covered">true - to check if there is stock position available for 'covered' calls</param>
     [HttpPost("Recommendations/SellCalls/Filter")]
-    public async Task RecommendationUpdateSellCallsFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte,
+    public async Task RecommendationUpdateSellCallsFilterAsync(int? minAnnualPercent, decimal? minPremium, int? minDte, int? maxDte,
         bool? otm, bool covered)
     {
         var filter = new SellCallsFilter
         {
             MinAnnualPercent = minAnnualPercent,
             MinPremium = minPremium,
+            MinDte = minDte,
             MaxDte = maxDte,
             Otm = otm,
             Covered = covered
@@ -529,11 +531,12 @@ public class TenantController : ControllerBase
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
     /// <param name="minPremium">Min premium (option contract price), $</param>
-    /// <param name="maxDte">Max days till expiration, days</param>
+    /// <param name="minDte">Min days till expiration</param>
+    /// <param name="maxDte">Max days till expiration</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
     /// <param name="covered">true - to check if there is stock position available for 'covered' calls</param>
     [HttpPost("Recommendations/SellCalls")]
-    public async Task RecommendationSellCallsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm, bool? covered)
+    public async Task RecommendationSellCallsAsync(int? minAnnualPercent, decimal? minPremium, int? minDte, int? maxDte, bool? otm, bool? covered)
     {
         var defaultFilter = await this.recommendationService.GetSellCallsFilterAsync();
 
@@ -547,6 +550,11 @@ public class TenantController : ControllerBase
         if (minPremium.HasValue)
         {
             filter.MinPremium = minPremium;
+        }
+
+        if (minDte.HasValue)
+        {
+            filter.MinDte = minDte;
         }
 
         if (maxDte.HasValue)
@@ -582,16 +590,18 @@ public class TenantController : ControllerBase
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
     /// <param name="minPremium">Min premium (option contract price), $</param>
-    /// <param name="maxDte">Max days till expiration, days</param>
+    /// <param name="minDte">Min days till expiration</param>
+    /// <param name="maxDte">Max days till expiration</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
     [HttpPost("Recommendations/SellPuts/Filter")]
-    public async Task RecommendationUpdateSellPutsFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte,
+    public async Task RecommendationUpdateSellPutsFilterAsync(int? minAnnualPercent, decimal? minPremium, int? minDte, int? maxDte,
         bool? otm)
     {
         var filter = new SellPutsFilter
         {
             MinAnnualPercent = minAnnualPercent,
             MinPremium = minPremium,
+            MinDte = minDte,
             MaxDte = maxDte,
             Otm = otm
         };
@@ -604,10 +614,11 @@ public class TenantController : ControllerBase
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
     /// <param name="minPremium">Min premium (option contract price), $</param>
-    /// <param name="maxDte">Max days till expiration, days</param>
+    /// <param name="minDte">Min days till expiration</param>
+    /// <param name="maxDte">Max days till expiration</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
     [HttpPost("Recommendations/SellPuts")]
-    public async Task RecommendationSellPutsAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm)
+    public async Task RecommendationSellPutsAsync(int? minAnnualPercent, decimal? minPremium, int? minDte, int? maxDte, bool? otm)
     {
         var defaultFilter = await this.recommendationService.GetSellPutsFilterAsync();
 
@@ -621,6 +632,11 @@ public class TenantController : ControllerBase
         if (minPremium.HasValue)
         {
             filter.MinPremium = minPremium;
+        }
+
+        if (minDte.HasValue)
+        {
+            filter.MinDte = minDte;
         }
 
         if (maxDte.HasValue)
@@ -651,18 +667,20 @@ public class TenantController : ControllerBase
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
     /// <param name="minPremium">Min premium (option contract price), $</param>
-    /// <param name="maxDte">Max days till expiration, days</param>
+    /// <param name="minDte">Min days till expiration</param>
+    /// <param name="maxDte">Max days till expiration</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
     /// <param name="minContractsChange">min contracts change</param>
     /// <param name="minPercentageChange">min percentage change</param>
     [HttpPost("Recommendations/OpenInterest/Filter")]
-    public async Task RecommendationUpdateOpenInterestFilterAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte,
+    public async Task RecommendationUpdateOpenInterestFilterAsync(int? minAnnualPercent, decimal? minPremium, int? minDte, int? maxDte,
         bool? otm, decimal? minContractsChange, decimal? minPercentageChange)
     {
         var filter = new OpenInterestFilter
         {
             MinAnnualPercent = minAnnualPercent,
             MinPremium = minPremium,
+            MinDte = minDte,
             MaxDte = maxDte,
             Otm = otm,
             MinContractsChange = minContractsChange,
@@ -677,12 +695,13 @@ public class TenantController : ControllerBase
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
     /// <param name="minPremium">Min premium (option contract price), $</param>
-    /// <param name="maxDte">Max days till expiration, days</param>
+    /// <param name="minDte">Min days till expiration</param>
+    /// <param name="maxDte">Max days till expiration</param>
     /// <param name="otm">true - out of the money options, false - in the money options</param>
     /// <param name="minContractsChange">min contracts change</param>
     /// <param name="minPercentageChange">min percentage change</param>
     [HttpPost("Recommendations/OpenInterest")]
-    public async Task RecommendationOpenInterestAsync(int? minAnnualPercent, decimal? minPremium, int? maxDte, bool? otm, decimal? minContractsChange, decimal? minPercentageChange)
+    public async Task RecommendationOpenInterestAsync(int? minAnnualPercent, decimal? minPremium, int? minDte, int? maxDte, bool? otm, decimal? minContractsChange, decimal? minPercentageChange)
     {
         var defaultFilter = await this.recommendationService.GetOpenInterestFilterAsync();
 
@@ -696,6 +715,11 @@ public class TenantController : ControllerBase
         if (minPremium.HasValue)
         {
             filter.MinPremium = minPremium;
+        }
+
+        if (minDte.HasValue)
+        {
+            filter.MinDte = minDte;
         }
 
         if (maxDte.HasValue)
