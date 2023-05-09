@@ -351,7 +351,7 @@ public class PublishingService : IPublishingService
             var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, filterLane.Id,
                 new Lane { Name = group.Key, Description = laneTitle });
 
-            foreach (var opInfo in group.OrderByDescending(op => op.OI).Select(OpInfo))
+            foreach (var opInfo in group.OrderByDescending(op => Math.Abs(op.Last.Value / op.OI.Value)).Select(OpInfo))
             {
                 try
                 {
@@ -392,6 +392,7 @@ public class PublishingService : IPublishingService
         var list = new List<Tuple<string, string>>();
 
         list.Add(new Tuple<string, string>("oi", $"{op.OI.Value}"));
+        list.Add(new Tuple<string, string>("oi#", $"{Math.Abs(Math.Round(op.Last.Value, 0))}"));
         list.Add(new Tuple<string, string>("oi%", $"{Math.Abs(Math.Round(CalculationUtils.Percent(op.Last.Value / op.OI.Value), 2))}%"));
         list.Add(new Tuple<string, string>("vol", $"{op.Vol.Value}"));
         list.Add(new Tuple<string, string>("bid", $"${op.Bid}"));

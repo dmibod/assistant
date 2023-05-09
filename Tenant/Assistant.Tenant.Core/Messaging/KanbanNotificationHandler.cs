@@ -20,7 +20,7 @@ public class KanbanNotificationHandler : IMessageHandler<List<KanbanNotification
 
     public async Task HandleAsync(List<KanbanNotification> notifications)
     {
-        this.logger.LogInformation("Received kanban notifications {Count}", notifications.Count);
+        //this.logger.LogInformation("Received kanban notifications {Count}", notifications.Count);
 
         foreach (var notification in notifications)
         {
