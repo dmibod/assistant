@@ -1,8 +1,10 @@
 ﻿namespace Assistant.Market.Infrastructure.Repositories;
 
+using Amazon.Runtime.Internal.Transform;
 using Assistant.Market.Core.Models;
 using Assistant.Market.Core.Repositories;
 using Assistant.Market.Infrastructure.Configuration;
+using Common.Core.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
@@ -72,8 +74,12 @@ public class OptionChangeRepository : IOptionChangeRepository
         var tickers = option.Contracts.Select(contract => contract.Ticker).ToHashSet().ToArray();
 
         var builder = Builders<OptionChangeEntity>.Update;
-        await this.collection.FindOneAndUpdateAsync(filter, builder.PullFilter(entity => entity.Contracts, Builders<OptionContract>.Filter.In(contract => contract.Ticker, tickers)));
-        await this.collection.FindOneAndUpdateAsync(filter, builder.AddToSetEach(entity => entity.Contracts, option.Contracts).Set(entity => entity.LastRefresh, option.LastRefresh));
+        await this.collection.FindOneAndUpdateAsync(filter,
+            builder.PullFilter(entity => entity.Contracts,
+                Builders<OptionContract>.Filter.In(contract => contract.Ticker, tickers)));
+        await this.collection.FindOneAndUpdateAsync(filter,
+            builder.AddToSetEach(entity => entity.Contracts, option.Contracts)
+                .Set(entity => entity.LastRefresh, option.LastRefresh));
     }
 
     public async Task RemoveAsync(IDictionary<string, ISet<string>> expirations)
@@ -94,12 +100,12 @@ public class OptionChangeRepository : IOptionChangeRepository
 
         await this.collection.DeleteManyAsync(filter);
     }
-    
+
     private Task<bool> ExistsAsync(string ticker, string expiration)
     {
         return this.collection.Find(entity => entity.Ticker == ticker && entity.Expiration == expiration).AnyAsync();
     }
-    
+
     public async Task RemoveAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), ticker);
@@ -108,21 +114,27 @@ public class OptionChangeRepository : IOptionChangeRepository
 
         await this.collection.DeleteManyAsync(filter);
     }
-    
-    public Task<int> FindChangesCountAsync(string ticker)
+
+    public async Task<int> FindChangesCountAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindChangesCountAsync), ticker);
 
-        return this.collection.AsQueryable().Where(entity => entity.Ticker == ticker).SumAsync(entity => entity.Contracts.Length);
+        var today = DateTimeUtils.TodayUtc();
+
+        var cursor = await this.collection.FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
+
+        return cursor.ToEnumerable().Sum(entity => entity.Contracts.Length);
     }
 
     public async Task<decimal> FindOpenInterestMinAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestMinAsync), ticker);
 
+        var today = DateTimeUtils.TodayUtc();
+
         var cursor = await this.collection
-            .FindAsync(entity => entity.Ticker == ticker);
-            
+            .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
+
         return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Min(contract => contract.OI);
     }
 
@@ -130,29 +142,37 @@ public class OptionChangeRepository : IOptionChangeRepository
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestMaxAsync), ticker);
 
-        var cursor = await this.collection
-            .FindAsync(entity => entity.Ticker == ticker);
-            
-        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Max(contract => contract.OI);
-    }
-    
-    public async Task<decimal> FindOpenInterestPercentMinAsync(string ticker)
-    {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestPercentMinAsync), ticker);
+        var today = DateTimeUtils.TodayUtc();
 
         var cursor = await this.collection
-            .FindAsync(entity => entity.Ticker == ticker);
-            
+            .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
+
+        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Max(contract => contract.OI);
+    }
+
+    public async Task<decimal> FindOpenInterestPercentMinAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestPercentMinAsync),
+            ticker);
+
+        var today = DateTimeUtils.TodayUtc();
+
+        var cursor = await this.collection
+            .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
+
         return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Min(contract => contract.Vol);
     }
 
     public async Task<decimal> FindOpenInterestPercentMaxAsync(string ticker)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestPercentMaxAsync), ticker);
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestPercentMaxAsync),
+            ticker);
+
+        var today = DateTimeUtils.TodayUtc();
 
         var cursor = await this.collection
-            .FindAsync(entity => entity.Ticker == ticker);
-            
+            .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
+
         return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Max(contract => contract.Vol);
     }
 }

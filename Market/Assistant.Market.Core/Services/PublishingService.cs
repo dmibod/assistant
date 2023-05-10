@@ -49,7 +49,7 @@ public class PublishingService : IPublishingService
         var board = boards.FirstOrDefault(board => board.Name.StartsWith(OpenInterest));
 
         var now = DateTime.UtcNow;
-        var name = $"{OpenInterest} {now.ToShortDateString()} {now.ToShortTimeString()}";
+        var name = $"{OpenInterest} (Today) {now.ToShortDateString()} {now.ToShortTimeString()}";
 
         if (board != null)
         {
@@ -124,11 +124,18 @@ public class PublishingService : IPublishingService
                     Description = $"[{propMin}, {propPercMin}, {propMax}, {propPercMax}]"
                 });
             }
-            
-            board.Description = dictionary.Keys.Count > 100 
-                ? dictionary.Keys.Take(100).Aggregate((curr, i) => $"{curr}, {i}") + "..."
-                : dictionary.Keys.Aggregate((curr, i) => $"{curr}, {i}");
-            
+
+            if (dictionary.Count > 0)
+            {
+                board.Description = dictionary.Keys.Count > 100
+                    ? dictionary.Keys.Take(100).Aggregate((curr, i) => $"{curr}, {i}") + "..."
+                    : dictionary.Keys.Aggregate((curr, i) => $"{curr}, {i}");
+            }
+            else
+            {
+                board.Description = string.Empty;
+            }
+
             await this.kanbanService.UpdateBoardAsync(board);
         }
         catch (Exception e)

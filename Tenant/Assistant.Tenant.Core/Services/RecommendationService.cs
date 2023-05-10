@@ -398,7 +398,7 @@ public class RecommendationService : IRecommendationService
             var optionPrices = await this.marketDataService.FindOptionPricesAsync(item.Ticker, expiration);
             if (optionPrices == null) continue;
 
-            var optionPricesChange = await this.marketDataService.FindOptionPricesChangeAsync(item.Ticker, expiration);
+            var optionPricesChange = await this.marketDataService.FindOptionPricesChangeSinceAsync(item.Ticker, expiration, DateTimeUtils.TodayUtc());
             if (optionPricesChange == null) continue;
 
             var changes = optionPricesChange.ToDictionary(o => o.Ticker);

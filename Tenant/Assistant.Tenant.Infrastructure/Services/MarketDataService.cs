@@ -5,6 +5,7 @@ using Assistant.Tenant.Core.Services;
 using Assistant.Tenant.Infrastructure.Configuration;
 using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
+using Common.Core.Utils;
 using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -80,6 +81,17 @@ public class MarketDataService : IMarketDataService
         stockTicker = StockUtils.Format(stockTicker);
         
         var cursor = await this.optionChangeCollection.FindAsync(doc => doc.Ticker == stockTicker && doc.Expiration == expiration);
+
+        return cursor.ToEnumerable().SelectMany(doc => doc.Contracts).ToList();
+    }
+
+    public async Task<IEnumerable<OptionAssetPrice>> FindOptionPricesChangeSinceAsync(string stockTicker, string expiration, DateTime since)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOptionPricesChangeSinceAsync), $"{stockTicker}-{expiration}-{FormatUtils.FormatExpiration(since)}");
+
+        stockTicker = StockUtils.Format(stockTicker);
+        
+        var cursor = await this.optionChangeCollection.FindAsync(doc => doc.Ticker == stockTicker && doc.Expiration == expiration && doc.LastRefresh >= since);
 
         return cursor.ToEnumerable().SelectMany(doc => doc.Contracts).ToList();
     }
