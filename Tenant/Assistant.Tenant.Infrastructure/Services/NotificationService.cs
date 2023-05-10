@@ -14,6 +14,7 @@ public class NotificationService : INotificationService
     private readonly IBusService busService;
     private readonly ILogger<NotificationService> logger;
     private readonly string refreshPositionTopic;
+    private readonly string refreshWatchListTopic;
 
     public NotificationService(
         IIdentityProvider identityProvider,
@@ -22,6 +23,7 @@ public class NotificationService : INotificationService
         ILogger<NotificationService> logger)
     {
         this.refreshPositionTopic = topicResolver.ResolveConfig(nameof(NatsSettings.PositionRefreshTopic));
+        this.refreshWatchListTopic = topicResolver.ResolveConfig(nameof(NatsSettings.WatchListRefreshTopic));
         this.identityProvider = identityProvider;
         this.busService = busService;
         this.logger = logger;
@@ -32,6 +34,16 @@ public class NotificationService : INotificationService
         this.logger.LogInformation("{Method}", nameof(this.NotifyRefreshPositionsAsync));
 
         return this.busService.PublishAsync(this.refreshPositionTopic, new PositionRefreshMessage
+        {
+            Tenant = this.identityProvider.Identity.Name!
+        });
+    }
+
+    public Task NotifyRefreshWatchListAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.NotifyRefreshWatchListAsync));
+
+        return this.busService.PublishAsync(this.refreshWatchListTopic, new WatchListRefreshMessage
         {
             Tenant = this.identityProvider.Identity.Name!
         });

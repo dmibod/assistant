@@ -2,7 +2,6 @@
 
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Repositories;
-using Helper.Core.Domain;
 using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 
@@ -11,14 +10,20 @@ public class WatchListService : IWatchListService
     private readonly ITenantService tenantService;
     private readonly ITenantRepository repository;
     private readonly IMarketDataService marketDataService;
+    private readonly INotificationService notificationService;
     private readonly ILogger<WatchListService> logger;
 
-    public WatchListService(ITenantService tenantService, ITenantRepository repository,
-        IMarketDataService marketDataService, ILogger<WatchListService> logger)
+    public WatchListService(
+        ITenantService tenantService, 
+        ITenantRepository repository,
+        IMarketDataService marketDataService,
+        INotificationService notificationService,
+        ILogger<WatchListService> logger)
     {
         this.tenantService = tenantService;
         this.repository = repository;
         this.marketDataService = marketDataService;
+        this.notificationService = notificationService;
         this.logger = logger;
     }
 
@@ -61,16 +66,20 @@ public class WatchListService : IWatchListService
             await this.repository.CreateWatchListItemAsync(tenant, listItem);
 
             await this.marketDataService.EnsureStockAsync(listItem.Ticker);
+            
+            await this.notificationService.NotifyRefreshWatchListAsync();
         }
         else if (!ignoreIfExists)
         {
             await this.repository.SetWatchListItemPricesAsync(tenant, listItem.Ticker, listItem.BuyPrice, listItem.SellPrice);
+
+            await this.notificationService.NotifyRefreshWatchListAsync();
         }
 
         return listItem;
     }
 
-    public async Task RemoveAsync(string ticker)
+    public async Task RemoveAsync(string ticker, bool suppressNotifications)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveAsync), ticker);
 
@@ -79,6 +88,11 @@ public class WatchListService : IWatchListService
         var tenant = await this.tenantService.EnsureExistsAsync();
 
         await this.repository.RemoveWatchListItemAsync(tenant, ticker);
+
+        if (!suppressNotifications)
+        {
+            await this.notificationService.NotifyRefreshWatchListAsync();
+        }
     }
 
     public async Task SetBuyPriceAsync(string ticker, decimal price)
@@ -91,6 +105,8 @@ public class WatchListService : IWatchListService
         var tenant = await this.tenantService.EnsureExistsAsync();
 
         await this.repository.SetWatchListItemBuyPriceAsync(tenant, ticker, price);
+        
+        await this.notificationService.NotifyRefreshWatchListAsync();
     }
 
     public async Task SetSellPriceAsync(string ticker, decimal price)
@@ -103,6 +119,8 @@ public class WatchListService : IWatchListService
         var tenant = await this.tenantService.EnsureExistsAsync();
 
         await this.repository.SetWatchListItemSellPriceAsync(tenant, ticker, price);
+        
+        await this.notificationService.NotifyRefreshWatchListAsync();
     }
 
     public async Task SetPricesAsync(string ticker, decimal buyPrice, decimal sellPrice)
@@ -115,5 +133,43 @@ public class WatchListService : IWatchListService
         var tenant = await this.tenantService.EnsureExistsAsync();
 
         await this.repository.SetWatchListItemPricesAsync(tenant, ticker, buyPrice, sellPrice);
+        
+        await this.notificationService.NotifyRefreshWatchListAsync();
+    }
+
+    public async Task UpdateKanbanBoardId(string boardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateKanbanBoardId), boardId);
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        await this.repository.UpdateWatchListBoardIdAsync(tenant, boardId);
+    }
+
+    public async Task<string?> FindKanbanBoardId()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.FindKanbanBoardId));
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        return await this.repository.FindWatchListBoardIdAsync(tenant);
+    }
+
+    public async Task UpdateKanbanCardIdAsync(string ticker, string cardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateKanbanCardIdAsync), $"{ticker}-{cardId}");
+
+        var tenant = await this.tenantService.EnsureExistsAsync();
+        
+        await this.repository.KanbanWatchListAsync(tenant, ticker, cardId);
+    }
+
+    public async Task<IEnumerable<WatchListItem>> FindByCardIdAsync(string cardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindByCardIdAsync), cardId);
+        
+        var tenant = await this.tenantService.EnsureExistsAsync();
+
+        return await this.repository.FindWatchListAsync(tenant, item => item.CardId == cardId);
     }
 }

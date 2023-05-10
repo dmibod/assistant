@@ -16,6 +16,7 @@ public class TenantController : ControllerBase
     private readonly IPositionService positionService;
     private readonly IPositionPublishingService positionPublishingService;
     private readonly IWatchListService watchListService;
+    private readonly IWatchListPublishingService watchListPublishingService;
     private readonly IPublishingService publishingService;
     private readonly IRecommendationService recommendationService;
     private readonly ITenantService tenantService;
@@ -26,6 +27,7 @@ public class TenantController : ControllerBase
         IPositionService positionService,
         IPositionPublishingService positionPublishingService,
         IWatchListService watchListService,
+        IWatchListPublishingService watchListPublishingService,
         IPublishingService publishingService,
         IRecommendationService recommendationService,
         ITenantService tenantService,
@@ -35,6 +37,7 @@ public class TenantController : ControllerBase
         this.positionService = positionService;
         this.positionPublishingService = positionPublishingService;
         this.watchListService = watchListService;
+        this.watchListPublishingService = watchListPublishingService;
         this.publishingService = publishingService;
         this.recommendationService = recommendationService;
         this.tenantService = tenantService;
@@ -194,7 +197,16 @@ public class TenantController : ControllerBase
     [HttpDelete("WatchList/{ticker}")]
     public Task WatchListRemoveItemAsync(string ticker)
     {
-        return this.watchListService.RemoveAsync(StockUtils.Format(ticker));
+        return this.watchListService.RemoveAsync(StockUtils.Format(ticker), false);
+    }
+
+    /// <summary>
+    /// Publishes your watch list
+    /// </summary>
+    [HttpPost("WatchList/Publish")]
+    public Task WatchListPublishAsync()
+    {
+        return this.watchListPublishingService.PublishAsync();
     }
 
     /// <summary>

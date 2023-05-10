@@ -173,6 +173,23 @@ public class KanbanService : IKanbanService
         };
     }
     
+    public async Task<IEnumerable<Lane>> FindLanesAsync(string boardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindLanesAsync), $"{boardId}");
+
+        var lanes = await this.ApiClient.GetCardLanesAsync(new KanbanApi.Client.Board
+        {
+            Id = boardId
+        });
+
+        return lanes.Select(lane => new Lane
+        {
+            Id = lane.Id,
+            Name = lane.Name,
+            Description = lane.Description
+        });
+    }
+
     public async Task<IEnumerable<Lane>> FindLanesAsync(string boardId, string parentLaneId)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindLanesAsync), $"{boardId}-{parentLaneId}");

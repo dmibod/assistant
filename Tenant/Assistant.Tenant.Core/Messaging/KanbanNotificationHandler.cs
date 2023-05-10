@@ -10,11 +10,16 @@ using Microsoft.Extensions.Logging;
 public class KanbanNotificationHandler : IMessageHandler<List<KanbanNotification>>
 {
     private readonly IPositionService positionService;
+    private readonly IWatchListService watchListService;
     private readonly ILogger<KanbanNotificationHandler> logger;
 
-    public KanbanNotificationHandler(IPositionService positionService, ILogger<KanbanNotificationHandler> logger)
+    public KanbanNotificationHandler(
+        IPositionService positionService,
+        IWatchListService watchListService,
+        ILogger<KanbanNotificationHandler> logger)
     {
         this.positionService = positionService;
+        this.watchListService = watchListService;
         this.logger = logger;
     }
 
@@ -47,6 +52,20 @@ public class KanbanNotificationHandler : IMessageHandler<List<KanbanNotification
             foreach (var position in positions)
             {
                 await this.positionService.RemoveAsync(position.Account, position.Ticker, true);
+            }
+        }
+
+        var watchListBoardId = await this.watchListService.FindKanbanBoardId();
+        
+        if (!string.IsNullOrEmpty(watchListBoardId) && watchListBoardId == notification.BoardId)
+        {
+            this.LogNotification(notification);
+
+            var watchListItems = await this.watchListService.FindByCardIdAsync(notification.EntityId);
+
+            foreach (var item in watchListItems)
+            {
+                await this.watchListService.RemoveAsync(item.Ticker, true);
             }
         }
     }

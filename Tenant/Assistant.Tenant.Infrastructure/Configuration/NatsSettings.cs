@@ -9,4 +9,6 @@ public class NatsSettings : Common.Infrastructure.Configuration.NatsSettings
     public string PositionRefreshTopic { get; set; } = null!;
     
     public string PositionRemoveTopic { get; set; } = null!;
+    
+    public string WatchListRefreshTopic { get; set; } = null!;
 }

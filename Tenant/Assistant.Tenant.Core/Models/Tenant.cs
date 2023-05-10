@@ -17,6 +17,8 @@ public class Tenant
     public string OpenInterestFilter { get; set; }
     
     public string OpenInterestBoardId { get; set; }
+    
+    public string WatchListBoardId { get; set; }
 
     public WatchListItem[] WatchList { get; set; }
 
@@ -30,6 +32,8 @@ public class WatchListItem
     public decimal BuyPrice { get; set; }
 
     public decimal SellPrice { get; set; }
+        
+    public string CardId { get; set; }
 }
 
 public class Position

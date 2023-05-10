@@ -169,6 +169,16 @@ public class TenantRepository : ITenantRepository
         return tenant.WatchList;
     }
 
+    public async Task<IEnumerable<WatchListItem>> FindWatchListAsync(string tenant, Func<WatchListItem, bool> criteria)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindWatchListAsync), $"{tenant}");
+
+        var t = await this.FindByNameAsync(tenant);
+
+        return t == null ? null : t.WatchList.Where(criteria);
+
+    }
+
     public Task CreateWatchListItemAsync(string tenant, WatchListItem listItem)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateWatchListItemAsync), $"{tenant}-{listItem.Ticker}");
@@ -402,6 +412,38 @@ public class TenantRepository : ITenantRepository
 
         var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
         var update = Builders<TenantEntity>.Update.Set(tenant => tenant.OpenInterestBoardId, boardId);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public Task UpdateWatchListBoardIdAsync(string tenant, string boardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateWatchListBoardIdAsync), $"{tenant}-{boardId}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant);
+        var update = Builders<TenantEntity>.Update.Set(tenant => tenant.WatchListBoardId, boardId);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public async Task<string?> FindWatchListBoardIdAsync(string tenant)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindWatchListBoardIdAsync), tenant);
+        
+        return await this.collection
+            .AsQueryable()
+            .Where(item => item.Name == tenant)
+            .Select(item => item.WatchListBoardId)
+            .FirstOrDefaultAsync();
+    }
+
+    public Task KanbanWatchListAsync(string tenant, string ticker, string cardId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.KanbanWatchListAsync), $"{tenant}-{ticker}-{cardId}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.ElemMatch(x => x.WatchList, Builders<WatchListItem>.Filter.Eq(x => x.Ticker, ticker));
+        var update = Builders<TenantEntity>.Update.Set("WatchList.$.CardId", cardId);
         
         return this.collection.FindOneAndUpdateAsync(filter, update);
     }

@@ -13,7 +13,12 @@ public class PositionService : IPositionService
     private readonly INotificationService notificationService;
     private readonly ILogger<PositionService> logger;
 
-    public PositionService(ITenantService tenantService, ITenantRepository repository, IMarketDataService marketDataService, INotificationService notificationService, ILogger<PositionService> logger)
+    public PositionService(
+        ITenantService tenantService, 
+        ITenantRepository repository, 
+        IMarketDataService marketDataService, 
+        INotificationService notificationService, 
+        ILogger<PositionService> logger)
     {
         this.tenantService = tenantService;
         this.repository = repository;

@@ -10,11 +10,19 @@ public interface IWatchListService
 
     Task<WatchListItem> CreateOrUpdateAsync(WatchListItem listItem, bool ignoreIfExists);
 
-    Task RemoveAsync(string ticker);
+    Task RemoveAsync(string ticker, bool suppressNotifications);
 
     Task SetBuyPriceAsync(string ticker, decimal price);
 
     Task SetSellPriceAsync(string ticker, decimal price);
 
     Task SetPricesAsync(string ticker, decimal buyPrice, decimal sellPrice);
+    
+    Task UpdateKanbanBoardId(string boardId);
+    
+    Task<string?> FindKanbanBoardId();
+    
+    Task UpdateKanbanCardIdAsync(string ticker, string cardId);
+    
+    Task<IEnumerable<WatchListItem>> FindByCardIdAsync(string cardId);
 }

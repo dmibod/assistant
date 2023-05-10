@@ -24,6 +24,8 @@ public interface IKanbanService
 
     Task<Lane> CreateBoardLaneAsync(string boardId, Lane lane);
 
+    Task<IEnumerable<Lane>> FindLanesAsync(string boardId);
+
     Task<IEnumerable<Lane>> FindLanesAsync(string boardId, string parentLaneId);
     
     Task<Lane> CreateCardLaneAsync(string boardId, string parentLaneId, Lane lane);

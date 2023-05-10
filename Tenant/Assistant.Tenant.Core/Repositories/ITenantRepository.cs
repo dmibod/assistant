@@ -12,7 +12,7 @@ public interface ITenantRepository
     
     Task CreateAsync(string name);
 
-    Task<IEnumerable<Position>> FindPositionsAsync(string name);
+    Task<IEnumerable<Position>> FindPositionsAsync(string tenant);
     
     Task<IEnumerable<Position>> FindPositionsAsync(string tenant, Func<Position, bool> criteria);
 
@@ -28,7 +28,9 @@ public interface ITenantRepository
     
     Task KanbanPositionAsync(string tenant, string account, string ticker, string cardId);
     
-    Task<IEnumerable<WatchListItem>> FindWatchListAsync(string tenantName);
+    Task<IEnumerable<WatchListItem>> FindWatchListAsync(string tenant);
+    
+    Task<IEnumerable<WatchListItem>> FindWatchListAsync(string tenant, Func<WatchListItem, bool> criteria);
 
     Task CreateWatchListItemAsync(string tenant, WatchListItem listItem);
     
@@ -71,4 +73,10 @@ public interface ITenantRepository
     Task<string?> FindOpenInterestBoardIdAsync(string tenant);
     
     Task UpdateOpenInterestBoardIdAsync(string tenant, string boardId);
+    
+    Task UpdateWatchListBoardIdAsync(string tenant, string boardId);
+    
+    Task<string?> FindWatchListBoardIdAsync(string tenant);
+    
+    Task KanbanWatchListAsync(string tenant, string ticker, string cardId);
 }

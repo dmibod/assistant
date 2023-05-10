@@ -37,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPositionService, PositionService>();
         services.AddScoped<IPositionPublishingService, PositionPublishingService>();
         services.AddScoped<IWatchListService, WatchListService>();
+        services.AddScoped<IWatchListPublishingService, WatchListPublishingService>();
         services.AddScoped<IPublishingService, PublishingService>();
         services.AddScoped<IRecommendationService, RecommendationService>();
         services.AddScoped<IMarketDataService, MarketDataService>();
@@ -69,7 +70,8 @@ public static class ServiceCollectionExtensions
                 [TopicUtils.AsTopic(nameof(NatsSettings.StockCreateTopic))] = natsSettings!.StockCreateTopic,
                 [TopicUtils.AsTopic(nameof(NatsSettings.PositionCreateTopic))] = natsSettings.PositionCreateTopic,
                 [TopicUtils.AsTopic(nameof(NatsSettings.PositionRefreshTopic))] = natsSettings.PositionRefreshTopic,
-                [TopicUtils.AsTopic(nameof(NatsSettings.PositionRemoveTopic))] = natsSettings.PositionRemoveTopic
+                [TopicUtils.AsTopic(nameof(NatsSettings.PositionRemoveTopic))] = natsSettings.PositionRemoveTopic,
+                [TopicUtils.AsTopic(nameof(NatsSettings.WatchListRefreshTopic))] = natsSettings.WatchListRefreshTopic,
             };
 
             return new MapTopicResolver(topics);
