@@ -2,6 +2,8 @@
 
 public static class FormatUtils
 {
+    private const int PercentInfinityThreshold = 10000;
+    
     public static string FormatNumber(decimal? number, int digits = 0)
     {
         return $"{Math.Round(number ?? decimal.Zero, digits)}";
@@ -20,7 +22,7 @@ public static class FormatUtils
     public static string FormatPercent(decimal? percent, int digits = 2)
     {
         var value = Math.Round(percent ?? decimal.Zero, digits);
-        return value >= 1000 ? "\u221E%" : $"{value}%";
+        return value >= PercentInfinityThreshold ? "\u221E%" : $"{value}%";
     }
 
     public static string FormatAbsPercent(decimal? percent, int digits = 2)

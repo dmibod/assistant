@@ -415,8 +415,7 @@ public class RecommendationService : IRecommendationService
                         OpenInterest = price.OI.Value,
                         PrevOpenInterest = prevOpenInterest,
                         OpenInterestChange = change.OI.Value,
-                        OpenInterestChangePercent = Math.Abs(/*change.Vol.Value*/CalculationUtils.Percent(change.OI.Value /
-                            (prevOpenInterest == decimal.Zero ? decimal.One : prevOpenInterest))),
+                        OpenInterestChangePercent = Math.Abs(/*change.Vol.Value*/prevOpenInterest == decimal.Zero ? decimal.MaxValue : CalculationUtils.Percent(change.OI.Value / prevOpenInterest, 2)),
                         Bid = price.Bid.Value,
                         Ask = price.Ask.Value,
                         Last = price.Last.Value,

@@ -140,7 +140,7 @@ public class OptionService : IOptionService
             Bid = next.Bid - prev.Bid,
             Last = next.Last - prev.Last,
             // we store OI delta % here
-            Vol = CalculationUtils.Percent(prev.OI == decimal.Zero ? decimal.One : oiDiff / prev.OI, 2),
+            Vol = prev.OI == decimal.Zero ? decimal.MaxValue : CalculationUtils.Percent(oiDiff / prev.OI, 2),
             OI = oiDiff,
             TimeStamp = next.TimeStamp
         };

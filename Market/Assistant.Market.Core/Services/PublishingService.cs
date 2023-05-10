@@ -59,7 +59,8 @@ public class PublishingService : IPublishingService
         }
         else
         {
-            board = await this.kanbanService.CreateBoardAsync(new Board { Name = name, Description = "Calculation..." });
+            board = await this.kanbanService.CreateBoardAsync(new Board
+                { Name = name, Description = "Calculation..." });
         }
 
         await this.PublishOpenInterestAsync(board);
@@ -76,7 +77,7 @@ public class PublishingService : IPublishingService
             var tickers = await this.stockService.FindTickersAsync();
 
             var dictionary = new Dictionary<string, int>();
-        
+
             foreach (var ticker in tickers.OrderBy(t => t))
             {
                 var count = await this.optionService.FindChangesCountAsync(ticker);
@@ -89,7 +90,7 @@ public class PublishingService : IPublishingService
 
             var lane = await this.kanbanService.CreateCardLaneAsync(board.Id, board.Id, new Lane
             {
-                Name = OpenInterest, 
+                Name = OpenInterest,
                 Description = "companies ordered by the number of OI changes (max > min)"
             });
 
@@ -100,27 +101,25 @@ public class PublishingService : IPublishingService
                 var percMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key);
                 var percMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
 
-                var padding = new Tuple<string, string>("paddingLeft", "1rem");
-                
                 var propMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("oi\u0394\u2193#"),
-                    RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(min), RenderUtils.CreateStyle(padding, min < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+                    RenderUtils.PropToContent(/*"oi\u0394\u2193#"*/"min \u0394#"),
+                    RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(min), GetNumberStyle(min)));
 
                 var propPercMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("oi\u0394\u2193%"),
-                    RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMin, 0), RenderUtils.CreateStyle(padding, percMin < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+                    RenderUtils.PropToContent(/*"oi\u0394\u2193%"*/"min \u0394%"),
+                    RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMin, 2), GetNumberStyle(percMin)));
 
                 var propMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("oi\u0394\u2191#"),
-                    RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(max), RenderUtils.CreateStyle(padding, max < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+                    RenderUtils.PropToContent(/*"oi\u0394\u2191#"*/"max \u0394#"),
+                    RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(max), GetNumberStyle(max)));
 
                 var propPercMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("oi\u0394\u2191%"),
-                    RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMax, 0), RenderUtils.CreateStyle(padding, percMax < decimal.Zero ? RenderUtils.Red : RenderUtils.Green)));
+                    RenderUtils.PropToContent(/*"oi\u0394\u2191%"*/"max \u0394%"),
+                    RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMax, 0), GetNumberStyle(percMax)));
 
                 await this.kanbanService.CreateCardAsync(board.Id, lane.Id, new Card
                 {
-                    Name = $"{pair.Key} ({pair.Value})", 
+                    Name = $"{pair.Key} ({pair.Value})",
                     Description = $"[{propMin}, {propPercMin}, {propMax}, {propPercMax}]"
                 });
             }
@@ -148,11 +147,31 @@ public class PublishingService : IPublishingService
             await this.kanbanService.ResetBoardStateAsync(board.Id);
         }
     }
-    
+
+    private static IEnumerable<Tuple<string, string>> YieldNumberStyle(decimal number)
+    {
+        switch (number)
+        {
+            case < decimal.Zero:
+                yield return RenderUtils.Red;
+                break;
+            case > decimal.Zero:
+                yield return RenderUtils.Green;
+                break;
+        }
+
+        yield return new Tuple<string, string>("paddingLeft", "1rem");
+    }
+
+    private static IDictionary<string, string> GetNumberStyle(decimal number)
+    {
+        return RenderUtils.CreateStyle(YieldNumberStyle(number).ToArray());
+    }
+
     private async Task RemoveBoardLanesAsync(Board board)
     {
         var lanes = await this.kanbanService.FindLanesAsync(board.Id);
-        
+
         foreach (var laneId in lanes.Select(lane => lane.Id))
         {
             await this.kanbanService.RemoveLaneAsync(board.Id, laneId);
@@ -211,7 +230,7 @@ public class PublishingService : IPublishingService
     {
         var lanes = await this.kanbanService
             .FindBoardLanesAsync(board.Id);
-        
+
         var stockLanes = lanes.ToDictionary(lane => lane.Name, lane => lane);
 
         foreach (var stock in chunk)
@@ -237,7 +256,7 @@ public class PublishingService : IPublishingService
         }
 
         var tickers = chunk.Select(i => i.Ticker).ToHashSet();
-        
+
         // remove ticker lanes, which are not included in chunk
         foreach (var pair in stockLanes.Where(pair => !tickers.Contains(pair.Key)))
         {
@@ -258,16 +277,17 @@ public class PublishingService : IPublishingService
             var stockLane = stockLanes[stock.Ticker];
 
             var lanes = await this.kanbanService.FindLanesAsync(board.Id, stockLane.Id);
-            
+
             var expirationLanes = lanes.ToDictionary(l => l.Name);
 
             foreach (var expiration in optionChain.Expirations.Keys.OrderBy(i => i))
             {
-                await this.PublishExpirationAsync(board, stockLane, optionChain, changeChain, expiration, expirationLanes);
+                await this.PublishExpirationAsync(board, stockLane, optionChain, changeChain, expiration,
+                    expirationLanes);
             }
 
             var optionChainExpirations = optionChain.Expirations.Keys.ToHashSet();
-            
+
             // remove expiration lanes, which are not included in chain
             foreach (var pair in expirationLanes.Where(pair => !optionChainExpirations.Contains(pair.Key)))
             {
@@ -276,7 +296,8 @@ public class PublishingService : IPublishingService
         }
     }
 
-    private async Task PublishExpirationAsync(Board board, Lane stockLane, OptionChain chain, OptionChain change, string expiration,
+    private async Task PublishExpirationAsync(Board board, Lane stockLane, OptionChain chain, OptionChain change,
+        string expiration,
         IDictionary<string, Lane> expirationLanes)
     {
         if (!expirationLanes.ContainsKey(expiration))
@@ -292,11 +313,11 @@ public class PublishingService : IPublishingService
         var expirationLane = expirationLanes[expiration];
 
         var cards = await this.kanbanService.FindCardsAsync(board.Id, expirationLane.Id);
-        
+
         var cardsMap = cards.ToDictionary(c => c.Name);
 
         var changeExpiration = change.Expirations.ContainsKey(expiration) ? change.Expirations[expiration] : null;
-        
+
         var callDesc = CallsContent(chain.Expirations[expiration], changeExpiration);
 
         const string CallsCardName = "CALLS";
@@ -304,7 +325,8 @@ public class PublishingService : IPublishingService
         if (!cardsMap.ContainsKey(CallsCardName))
         {
             await this.kanbanService
-                .CreateCardAsync(board.Id, expirationLane.Id, new Card { Name = CallsCardName, Description = callDesc });
+                .CreateCardAsync(board.Id, expirationLane.Id,
+                    new Card { Name = CallsCardName, Description = callDesc });
         }
         else
         {
@@ -345,7 +367,8 @@ public class PublishingService : IPublishingService
         var tuples = expiration.Contracts
             .Where(pair => pair.Value.Call != null)
             .OrderBy(pair => pair.Key)
-            .Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key), PriceToContent(pair.Value.Call, GetCallContract(pair.Key, change))));
+            .Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key),
+                PriceToContent(pair.Value.Call, GetCallContract(pair.Key, change))));
 
         return TupleToContent(tuples);
     }
@@ -365,7 +388,8 @@ public class PublishingService : IPublishingService
         var tuples = expiration.Contracts
             .Where(pair => pair.Value.Put != null)
             .OrderBy(pair => pair.Key)
-            .Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key), PriceToContent(pair.Value.Put, GetPutContract(pair.Key, change))));
+            .Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key),
+                PriceToContent(pair.Value.Put, GetPutContract(pair.Key, change))));
 
         return TupleToContent(tuples);
     }
@@ -377,10 +401,11 @@ public class PublishingService : IPublishingService
         return round.ToString(CultureInfo.InvariantCulture);
     }
 
-    private static Tuple<string, IDictionary<string, string>?> PriceToContent(OptionContract price, OptionContract? contract)
+    private static Tuple<string, IDictionary<string, string>?> PriceToContent(OptionContract price,
+        OptionContract? contract)
     {
-        var content = price.Bid == price.Ask 
-            ? price.Bid == decimal.Zero ? $"${DecimalToContent(price.Last)}" : $"${DecimalToContent(price.Bid)}" 
+        var content = price.Bid == price.Ask
+            ? price.Bid == decimal.Zero ? $"${DecimalToContent(price.Last)}" : $"${DecimalToContent(price.Bid)}"
             : $"${DecimalToContent(price.Bid)} ({DecimalToContent(price.Ask)})";
 
         if (contract != null && contract.OI != decimal.Zero)
@@ -404,7 +429,8 @@ public class PublishingService : IPublishingService
 
         var body = list
             .Select(x =>
-                RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1), RenderUtils.PropToContent(x.Item2.Item1, x.Item2.Item2)))
+                RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1),
+                    RenderUtils.PropToContent(x.Item2.Item1, x.Item2.Item2)))
             .Aggregate((curr, x) => $"{curr},{x}");
 
         return $"[{body}]";

@@ -386,18 +386,18 @@ public class PublishingService : IPublishingService
         var name = $"{OptionUtils.GetSide(op.Ticker)}${OptionUtils.GetStrike(op.Ticker)} {FormatUtils.FormatExpiration(exp.AsDate())}";
 
         var labelStyle = RenderUtils.CreateStyle(new Tuple<string, string>("whiteSpace", "nowrap"));
-        var valueStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"));
-        var oiValueStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"), op.OpenInterestChange < decimal.Zero ? RenderUtils.Red : RenderUtils.Green);
+        var valueStyle = GetNumberStyle(decimal.Zero);
+        var oiValueStyle = GetNumberStyle(op.OpenInterestChange);
 
         var list = new List<Tuple<string, string>>();
 
         list.Add(new Tuple<string, string>("oi", RenderUtils.PropToContent(FormatUtils.FormatNumber(op.OpenInterest), valueStyle)));
-        list.Add(new Tuple<string, string>("oi\u0394#", RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(op.OpenInterestChange), oiValueStyle)));
-        list.Add(new Tuple<string, string>("oi\u0394%", RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(op.OpenInterestChangePercent), oiValueStyle)));
+        list.Add(new Tuple<string, string>("oi \u0394#", RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(op.OpenInterestChange), oiValueStyle)));
+        list.Add(new Tuple<string, string>("oi \u0394%", RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(op.OpenInterestChangePercent), oiValueStyle)));
         list.Add(new Tuple<string, string>("vol", RenderUtils.PropToContent(FormatUtils.FormatNumber(op.Vol), valueStyle)));
-        list.Add(new Tuple<string, string>("bid", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Bid*100), valueStyle)));
-        list.Add(new Tuple<string, string>("ask", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Ask*100), valueStyle)));
-        list.Add(new Tuple<string, string>("last", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Last*100), valueStyle)));        
+        list.Add(new Tuple<string, string>("bid", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Bid * 100), valueStyle)));
+        list.Add(new Tuple<string, string>("ask", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Ask * 100), valueStyle)));
+        list.Add(new Tuple<string, string>("last", RenderUtils.PropToContent(FormatUtils.FormatPrice(op.Last * 100), valueStyle)));        
         list.Add(new Tuple<string, string>("dte", RenderUtils.PropToContent($"{op.DaysTillExpiration}", valueStyle)));
         
 
@@ -406,6 +406,26 @@ public class PublishingService : IPublishingService
                 RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1, labelStyle), x.Item2)).Aggregate((curr, x) => $"{curr},{x}");
 
         return new Tuple<string, string>(name, "[" + body + "]");
+    }
+
+    private static IEnumerable<Tuple<string, string>> YieldNumberStyle(decimal number)
+    {
+        switch (number)
+        {
+            case < decimal.Zero:
+                yield return RenderUtils.Red;
+                break;
+            case > decimal.Zero:
+                yield return RenderUtils.Green;
+                break;
+        }
+
+        yield return new Tuple<string, string>("paddingLeft", "1rem");
+    }
+
+    private static IDictionary<string, string> GetNumberStyle(decimal number)
+    {
+        return RenderUtils.CreateStyle(YieldNumberStyle(number).ToArray());
     }
 
     private static Tuple<string, string> OpInfo(SellOperation op)
