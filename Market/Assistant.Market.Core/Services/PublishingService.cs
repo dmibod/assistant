@@ -296,6 +296,9 @@ public class PublishingService : IPublishingService
         }
     }
 
+    private const string CallsCardName = "CALLS";
+    private const string PutsCardName = "PUTS";
+
     private async Task PublishExpirationAsync(Board board, Lane stockLane, OptionChain chain, OptionChain change,
         string expiration,
         IDictionary<string, Lane> expirationLanes)
@@ -316,11 +319,9 @@ public class PublishingService : IPublishingService
 
         var cardsMap = cards.ToDictionary(c => c.Name);
 
-        var changeExpiration = change.Expirations.ContainsKey(expiration) ? change.Expirations[expiration] : null;
+        var changeExpiration = GetChangeExpiration(change, expiration);
 
         var callDesc = CallsContent(chain.Expirations[expiration], changeExpiration);
-
-        const string CallsCardName = "CALLS";
 
         if (!cardsMap.ContainsKey(CallsCardName))
         {
@@ -337,8 +338,6 @@ public class PublishingService : IPublishingService
 
         var putDesc = PutsContent(chain.Expirations[expiration], changeExpiration);
 
-        const string PutsCardName = "PUTS";
-
         if (!cardsMap.ContainsKey(PutsCardName))
         {
             await this.kanbanService
@@ -350,6 +349,16 @@ public class PublishingService : IPublishingService
 
             await this.kanbanService.UpdateCardAsync(board.Id, cardsMap[PutsCardName]);
         }
+    }
+
+    private static OptionExpiration? GetChangeExpiration(OptionChain change, string expiration)
+    {
+        if (!change.Expirations.TryGetValue(expiration, out var data))
+        {
+            return null;
+        }
+        
+        return data.LastRefresh >= DateTimeUtils.TodayUtc() ? data : null;
     }
 
     private static OptionContract? GetCallContract(decimal strike, OptionExpiration? change)
