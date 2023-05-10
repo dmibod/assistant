@@ -419,7 +419,7 @@ public class PublishingService : IPublishingService
 
         if (contract != null && contract.OI != decimal.Zero)
         {
-            content += $" [{Math.Round(Math.Abs(contract.OI), 0).ToString(CultureInfo.InvariantCulture)}]";
+            content += $" {FormatUtils.FormatAbsNumber(contract.OI, 0)} {FormatUtils.FormatAbsPercent(contract.Vol)}";
 
             return new Tuple<string, IDictionary<string, string>?>(content,
                 contract.OI < decimal.Zero ? RenderUtils.RedStyle : RenderUtils.GreenStyle);
