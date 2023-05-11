@@ -1,14 +1,17 @@
 ﻿namespace Assistant.Market.Core.Services;
 
-using System.Globalization;
 using System.Text.RegularExpressions;
 using Assistant.Market.Core.Models;
 using Common.Core.Utils;
 using Microsoft.Extensions.Logging;
-using Exception = System.Exception;
 
 public class PublishingService : IPublishingService
 {
+    private static readonly IDictionary<string, string> FontStyle = new Dictionary<string, string>
+    {
+        ["fontWeight"] = "500"
+    };
+
     private const string MarketData = "Market Data";
     private const string OpenInterest = "Open Interest";
     private const int ChunkSize = 10;
@@ -102,19 +105,19 @@ public class PublishingService : IPublishingService
                 var percMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
 
                 var propMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent(/*"oi\u0394\u2193#"*/"min \u0394#"),
+                    RenderUtils.PropToContent( /*"oi\u0394\u2193#"*/"min \u0394#"),
                     RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(min), GetNumberStyle(min)));
 
                 var propPercMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent(/*"oi\u0394\u2193%"*/"min \u0394%"),
+                    RenderUtils.PropToContent( /*"oi\u0394\u2193%"*/"min \u0394%"),
                     RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMin, 2), GetNumberStyle(percMin)));
 
                 var propMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent(/*"oi\u0394\u2191#"*/"max \u0394#"),
+                    RenderUtils.PropToContent( /*"oi\u0394\u2191#"*/"max \u0394#"),
                     RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(max), GetNumberStyle(max)));
 
                 var propPercMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent(/*"oi\u0394\u2191%"*/"max \u0394%"),
+                    RenderUtils.PropToContent( /*"oi\u0394\u2191%"*/"max \u0394%"),
                     RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMax, 0), GetNumberStyle(percMax)));
 
                 await this.kanbanService.CreateCardAsync(board.Id, lane.Id, new Card
@@ -357,7 +360,7 @@ public class PublishingService : IPublishingService
         {
             return null;
         }
-        
+
         return data.LastRefresh >= DateTimeUtils.TodayUtc() ? data : null;
     }
 
@@ -373,13 +376,34 @@ public class PublishingService : IPublishingService
 
     private static string CallsContent(OptionExpiration expiration, OptionExpiration? change)
     {
-        var tuples = expiration.Contracts
+        var strikesWithContracts = expiration.Contracts
             .Where(pair => pair.Value.Call != null)
             .OrderBy(pair => pair.Key)
-            .Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key),
-                PriceToContent(pair.Value.Call, GetCallContract(pair.Key, change))));
+            .ToList();
+        
+        var priceTuples = strikesWithContracts.Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key), PriceToContent(pair.Value.Call))).ToList();
+        if (priceTuples.Count > 0)
+        {
+            priceTuples.Insert(0, new Tuple<string, Tuple<string, IDictionary<string, string>>>("Strike", new Tuple<string, IDictionary<string, string>>("bid/ask", FontStyle))); 
+        }
 
-        return TupleToContent(tuples);
+        if (change != null)
+        {
+            var openInterestContracts = strikesWithContracts
+                .Select(pair => new KeyValuePair<decimal, OptionContract>(pair.Key, GetCallContract(pair.Key, change)))
+                .Where(pair => pair.Value != null && pair.Value.OI != decimal.Zero)
+                .OrderBy(pair => pair.Key)
+                .Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key), OpenInterestToContent(pair.Value)))
+                .ToList();
+
+            if (openInterestContracts.Count > 0)
+            {
+                openInterestContracts.Insert(0, new Tuple<string, Tuple<string, IDictionary<string, string>>>("Strike", new Tuple<string, IDictionary<string, string>>("oi", FontStyle)));
+                priceTuples = priceTuples.Union(openInterestContracts).ToList();
+            }
+        }
+
+        return TupleToContent(priceTuples);
     }
 
     private static OptionContract? GetPutContract(decimal strike, OptionExpiration? change)
@@ -394,38 +418,56 @@ public class PublishingService : IPublishingService
 
     private static string PutsContent(OptionExpiration expiration, OptionExpiration? change)
     {
-        var tuples = expiration.Contracts
+        var strikesWithContracts = expiration.Contracts
             .Where(pair => pair.Value.Put != null)
             .OrderBy(pair => pair.Key)
-            .Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key),
-                PriceToContent(pair.Value.Put, GetPutContract(pair.Key, change))));
+            .ToList();
+        
+        var priceTuples = strikesWithContracts.Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key), PriceToContent(pair.Value.Put))).ToList();
+        if (priceTuples.Count > 0)
+        {
+            priceTuples.Insert(0, new Tuple<string, Tuple<string, IDictionary<string, string>>>("Strike", new Tuple<string, IDictionary<string, string>>("bid/ask", FontStyle))); 
+        }
 
-        return TupleToContent(tuples);
+        if (change != null)
+        {
+            var openInterestContracts = strikesWithContracts
+                .Select(pair => new KeyValuePair<decimal, OptionContract>(pair.Key, GetPutContract(pair.Key, change)))
+                .Where(pair => pair.Value != null && pair.Value.OI != decimal.Zero)
+                .OrderBy(pair => pair.Key)
+                .Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key), OpenInterestToContent(pair.Value)))
+                .ToList();
+
+            if (openInterestContracts.Count > 0)
+            {
+                openInterestContracts.Insert(0, new Tuple<string, Tuple<string, IDictionary<string, string>>>("Strike", new Tuple<string, IDictionary<string, string>>("oi", FontStyle)));
+                priceTuples = priceTuples.Union(openInterestContracts).ToList();
+            }
+        }
+
+        return TupleToContent(priceTuples);
     }
 
     private static string DecimalToContent(decimal? value)
     {
-        var round = Math.Round(value ?? decimal.Zero, 2);
-
-        return round.ToString(CultureInfo.InvariantCulture);
+        return FormatUtils.FormatNumber(value, 2);
     }
 
-    private static Tuple<string, IDictionary<string, string>?> PriceToContent(OptionContract price,
-        OptionContract? contract)
+    private static Tuple<string, IDictionary<string, string>?> PriceToContent(OptionContract price)
     {
         var content = price.Bid == price.Ask
             ? price.Bid == decimal.Zero ? $"${DecimalToContent(price.Last)}" : $"${DecimalToContent(price.Bid)}"
             : $"${DecimalToContent(price.Bid)} ({DecimalToContent(price.Ask)})";
 
-        if (contract != null && contract.OI != decimal.Zero)
-        {
-            content += $" {FormatUtils.FormatAbsNumber(contract.OI, 0)} {FormatUtils.FormatAbsPercent(contract.Vol)}";
-
-            return new Tuple<string, IDictionary<string, string>?>(content,
-                contract.OI < decimal.Zero ? RenderUtils.RedStyle : RenderUtils.GreenStyle);
-        }
-
         return new Tuple<string, IDictionary<string, string>?>(content, null);
+    }
+
+    private static Tuple<string, IDictionary<string, string>?> OpenInterestToContent(OptionContract contract)
+    {
+        var content = $" {FormatUtils.FormatAbsPercent(contract.Vol)} ({FormatUtils.FormatAbsNumber(contract.OI)})";
+
+        return new Tuple<string, IDictionary<string, string>?>(content,
+            contract.OI < decimal.Zero ? RenderUtils.RedStyle : RenderUtils.GreenStyle);
     }
 
     private static string TupleToContent(IEnumerable<Tuple<string, Tuple<string, IDictionary<string, string>?>>> tuples)
