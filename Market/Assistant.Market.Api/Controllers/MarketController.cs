@@ -129,12 +129,12 @@ public class MarketController : ControllerBase
         {
             Func<OptionContracts, bool> filter = contracts =>
             {
-                if (contracts.Call != null && contracts.Call.OI >= minOpenInterest.Value)
+                if (contracts.Call != null && Math.Abs(contracts.Call.OI) >= minOpenInterest.Value)
                 {
                     return true;
                 }
 
-                if (contracts.Put != null && contracts.Put.OI >= minOpenInterest.Value)
+                if (contracts.Put != null && Math.Abs(contracts.Put.OI) >= minOpenInterest.Value)
                 {
                     return true;
                 }

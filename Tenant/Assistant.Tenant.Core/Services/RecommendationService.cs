@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 public class RecommendationService : IRecommendationService
 {
-    private const int MaxRecsCount = 50;
+    private const int MaxRecsCount = 100;
 
     private readonly ITenantService tenantService;
     private readonly ITenantRepository repository;
@@ -415,7 +415,7 @@ public class RecommendationService : IRecommendationService
                         OpenInterest = price.OI.Value,
                         PrevOpenInterest = prevOpenInterest,
                         OpenInterestChange = change.OI.Value,
-                        OpenInterestChangePercent = Math.Abs(/*change.Vol.Value*/prevOpenInterest == decimal.Zero ? decimal.MaxValue : CalculationUtils.Percent(change.OI.Value / prevOpenInterest, 2)),
+                        OpenInterestChangePercent = change.Vol.Value,
                         Bid = price.Bid.Value,
                         Ask = price.Ask.Value,
                         Last = price.Last.Value,
@@ -453,7 +453,7 @@ public class RecommendationService : IRecommendationService
 
         if (filter.MinPercentageChange.HasValue)
         {
-            if (op.OpenInterestChangePercent < filter.MinPercentageChange.Value)
+            if (Math.Abs(op.OpenInterestChangePercent) < filter.MinPercentageChange.Value)
             {
                 return false;
             }
