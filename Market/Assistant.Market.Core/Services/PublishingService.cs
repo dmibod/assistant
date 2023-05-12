@@ -94,9 +94,11 @@ public class PublishingService : IPublishingService
             var lane = await this.kanbanService.CreateCardLaneAsync(board.Id, board.Id, new Lane
             {
                 Name = OpenInterest,
-                Description = "companies ordered by the number of OI changes (max > min)"
+                Description = "companies ordered by the absolute change of OI in contracts, from high to low value"
             });
 
+            var list = new List<Tuple<decimal, Card>>();
+            
             foreach (var pair in dictionary.OrderByDescending(p => p.Value))
             {
                 var min = await this.optionService.FindOpenInterestChangeMinAsync(pair.Key);
@@ -105,26 +107,33 @@ public class PublishingService : IPublishingService
                 var percMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
 
                 var propMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent( /*"oi\u0394\u2193#"*/"min \u0394#"),
+                    RenderUtils.PropToContent( /*"oi\u0394\u2193#"*/"max decrease#"),
                     RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(min), GetNumberStyle(min)));
 
                 var propPercMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent( /*"oi\u0394\u2193%"*/"min \u0394%"),
+                    RenderUtils.PropToContent( /*"oi\u0394\u2193%"*/"max decrease%"),
                     RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMin, 2), GetNumberStyle(percMin)));
 
                 var propMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent( /*"oi\u0394\u2191#"*/"max \u0394#"),
+                    RenderUtils.PropToContent( /*"oi\u0394\u2191#"*/"max increase#"),
                     RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(max), GetNumberStyle(max)));
 
                 var propPercMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent( /*"oi\u0394\u2191%"*/"max \u0394%"),
+                    RenderUtils.PropToContent( /*"oi\u0394\u2191%"*/"max increase%"),
                     RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMax, 0), GetNumberStyle(percMax)));
 
-                await this.kanbanService.CreateCardAsync(board.Id, lane.Id, new Card
+                var card = new Card
                 {
                     Name = $"{pair.Key} ({pair.Value})",
                     Description = $"[{propMin}, {propPercMin}, {propMax}, {propPercMax}]"
-                });
+                };
+                
+                list.Add(new Tuple<decimal, Card>(Math.Max(Math.Abs(min), Math.Abs(max)), card));
+            }
+
+            foreach (var pair in list.OrderByDescending(pair => pair.Item1))
+            {
+                await this.kanbanService.CreateCardAsync(board.Id, lane.Id, pair.Item2);
             }
 
             if (dictionary.Count > 0)
