@@ -77,11 +77,13 @@ public class PublishingService : IPublishingService
 
             await this.RemoveBoardLanesAsync(board);
 
-            var tickers = await this.stockService.FindTickersAsync();
+            var stocks = await this.stockService.FindAllAsync();
+
+            var stockMap = stocks.ToDictionary(stock => stock.Ticker);
 
             var dictionary = new Dictionary<string, int>();
 
-            foreach (var ticker in tickers.OrderBy(t => t))
+            foreach (var ticker in stockMap.Keys.OrderBy(t => t))
             {
                 var count = await this.optionService.FindChangesCountAsync(ticker);
 
@@ -103,42 +105,45 @@ public class PublishingService : IPublishingService
             
             foreach (var pair in dictionary.OrderByDescending(p => p.Value))
             {
+                var price = stockMap[pair.Key].Last;
                 var min = await this.optionService.FindOpenInterestChangeMinAsync(pair.Key);
                 var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key);
-                var percMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key);
-                var percMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
+                var percentMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key);
+                var percentMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
 
+                var propPrice = RenderUtils.PairToContent(
+                    RenderUtils.PropToContent("price", labelStyle),
+                    RenderUtils.PropToContent($"{FormatUtils.FormatPrice(price)}"));
+                
                 var propMin = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("oi \u0394 \u2193", labelStyle),
-                    RenderUtils.PropToContent($"{FormatUtils.FormatAbsNumber(min)} ({FormatUtils.FormatAbsPercent(percMin, 2)})", GetNumberStyle(min)));
+                    RenderUtils.PropToContent($"{FormatUtils.FormatAbsNumber(min)} ({FormatUtils.FormatAbsPercent(percentMin, 2)})", GetNumberStyle(min)));
 
                 var propMax = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("oi \u0394 \u2191", labelStyle),
-                    RenderUtils.PropToContent($"{FormatUtils.FormatAbsNumber(max)} ({FormatUtils.FormatAbsPercent(percMax, 2)})", GetNumberStyle(max)));
+                    RenderUtils.PropToContent($"{FormatUtils.FormatAbsNumber(max)} ({FormatUtils.FormatAbsPercent(percentMax, 2)})", GetNumberStyle(max)));
 
                 var card = new Card
                 {
                     Name = $"{pair.Key} ({pair.Value})",
-                    Description = $"[{propMin}, {propMax}]"
+                    Description = $"[{propPrice}, {propMin}, {propMax}]"
                 };
                 
                 list.Add(new Tuple<decimal, Card>(Math.Max(Math.Abs(min), Math.Abs(max)), card));
             }
 
+            var counter = 0;
+
+            board.Description = string.Empty;
+
             foreach (var pair in list.OrderByDescending(pair => pair.Item1))
             {
                 await this.kanbanService.CreateCardAsync(board.Id, lane.Id, pair.Item2);
-            }
-
-            if (dictionary.Count > 0)
-            {
-                board.Description = dictionary.Keys.Count > 100
-                    ? dictionary.Keys.Take(100).Aggregate((curr, i) => $"{curr}, {i}") + "..."
-                    : dictionary.Keys.Aggregate((curr, i) => $"{curr}, {i}");
-            }
-            else
-            {
-                board.Description = string.Empty;
+                
+                if (counter++ < 100)
+                {
+                    board.Description += (counter == 1 ? string.Empty : ", ") + pair.Item2.Name.Split(' ')[0];
+                }
             }
 
             await this.kanbanService.UpdateBoardAsync(board);
