@@ -97,6 +97,8 @@ public class PublishingService : IPublishingService
                 Description = "companies ordered by the absolute change of OI in contracts, from high to low value"
             });
 
+            var labelStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"));
+            
             var list = new List<Tuple<decimal, Card>>();
             
             foreach (var pair in dictionary.OrderByDescending(p => p.Value))
@@ -107,25 +109,17 @@ public class PublishingService : IPublishingService
                 var percMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
 
                 var propMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent( /*"oi\u0394\u2193#"*/"max decrease#"),
-                    RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(min), GetNumberStyle(min)));
-
-                var propPercMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent( /*"oi\u0394\u2193%"*/"max decrease%"),
-                    RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMin, 2), GetNumberStyle(percMin)));
+                    RenderUtils.PropToContent("oi \u0394 \u2193", labelStyle),
+                    RenderUtils.PropToContent($"{FormatUtils.FormatAbsNumber(min)} ({FormatUtils.FormatAbsPercent(percMin, 2)})", GetNumberStyle(min)));
 
                 var propMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent( /*"oi\u0394\u2191#"*/"max increase#"),
-                    RenderUtils.PropToContent(FormatUtils.FormatAbsNumber(max), GetNumberStyle(max)));
-
-                var propPercMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent( /*"oi\u0394\u2191%"*/"max increase%"),
-                    RenderUtils.PropToContent(FormatUtils.FormatAbsPercent(percMax, 0), GetNumberStyle(percMax)));
+                    RenderUtils.PropToContent("oi \u0394 \u2191", labelStyle),
+                    RenderUtils.PropToContent($"{FormatUtils.FormatAbsNumber(max)} ({FormatUtils.FormatAbsPercent(percMax, 2)})", GetNumberStyle(max)));
 
                 var card = new Card
                 {
                     Name = $"{pair.Key} ({pair.Value})",
-                    Description = $"[{propMin}, {propPercMin}, {propMax}, {propPercMax}]"
+                    Description = $"[{propMin}, {propMax}]"
                 };
                 
                 list.Add(new Tuple<decimal, Card>(Math.Max(Math.Abs(min), Math.Abs(max)), card));
@@ -171,8 +165,6 @@ public class PublishingService : IPublishingService
                 yield return RenderUtils.Green;
                 break;
         }
-
-        yield return new Tuple<string, string>("paddingLeft", "1rem");
     }
 
     private static IDictionary<string, string> GetNumberStyle(decimal number)
@@ -473,7 +465,7 @@ public class PublishingService : IPublishingService
 
     private static Tuple<string, IDictionary<string, string>?> OpenInterestToContent(OptionContract contract)
     {
-        var content = $" {FormatUtils.FormatAbsPercent(contract.Vol)} ({FormatUtils.FormatAbsNumber(contract.OI)})";
+        var content = $" {FormatUtils.FormatAbsNumber(contract.OI)} ({FormatUtils.FormatAbsPercent(contract.Vol)})";
 
         return new Tuple<string, IDictionary<string, string>?>(content,
             contract.OI < decimal.Zero ? RenderUtils.RedStyle : RenderUtils.GreenStyle);
