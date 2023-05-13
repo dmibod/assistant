@@ -9,8 +9,17 @@ public class PublishingService : IPublishingService
 {
     private static readonly IDictionary<string, string> FontStyle = new Dictionary<string, string>
     {
-        ["fontWeight"] = "500"
+        ["fontWeight"] = "500",
+        ["fontStyle"] = "normal"
     };
+
+    private static readonly IDictionary<string, string> ContentStyle = new Dictionary<string, string>
+    {
+        ["width"] = "2.5rem"
+    };
+
+    private static readonly IDictionary<string, string> ContentHeaderStyle =
+        RenderUtils.MergeStyle(FontStyle, ContentStyle);
 
     private const string MarketData = "Market Data";
     private const string OpenInterest = "Open Interest";
@@ -100,9 +109,9 @@ public class PublishingService : IPublishingService
             });
 
             var labelStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"));
-            
+
             var list = new List<Tuple<decimal, Card>>();
-            
+
             foreach (var pair in dictionary.OrderByDescending(p => p.Value))
             {
                 var price = stockMap[pair.Key].Last;
@@ -114,21 +123,25 @@ public class PublishingService : IPublishingService
                 var propPrice = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("price", labelStyle),
                     RenderUtils.PropToContent($"{FormatUtils.FormatPrice(price)}"));
-                
+
                 var propMin = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("oi \u0394 \u2193", labelStyle),
-                    RenderUtils.PropToContent($"{FormatUtils.FormatAbsNumber(min)} ({FormatUtils.FormatAbsPercent(percentMin, 2)})", GetNumberStyle(min)));
+                    RenderUtils.PropToContent(
+                        $"{FormatUtils.FormatAbsNumber(min)} ({FormatUtils.FormatAbsPercent(percentMin, 2)})",
+                        GetNumberStyle(min)));
 
                 var propMax = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("oi \u0394 \u2191", labelStyle),
-                    RenderUtils.PropToContent($"{FormatUtils.FormatAbsNumber(max)} ({FormatUtils.FormatAbsPercent(percentMax, 2)})", GetNumberStyle(max)));
+                    RenderUtils.PropToContent(
+                        $"{FormatUtils.FormatAbsNumber(max)} ({FormatUtils.FormatAbsPercent(percentMax, 2)})",
+                        GetNumberStyle(max)));
 
                 var card = new Card
                 {
                     Name = $"{pair.Key} ({pair.Value})",
                     Description = $"[{propPrice}, {propMin}, {propMax}]"
                 };
-                
+
                 list.Add(new Tuple<decimal, Card>(Math.Max(Math.Abs(min), Math.Abs(max)), card));
             }
 
@@ -139,7 +152,7 @@ public class PublishingService : IPublishingService
             foreach (var pair in list.OrderByDescending(pair => pair.Item1))
             {
                 await this.kanbanService.CreateCardAsync(board.Id, lane.Id, pair.Item2);
-                
+
                 if (counter++ < 100)
                 {
                     board.Description += (counter == 1 ? string.Empty : ", ") + pair.Item2.Name.Split(' ')[0];
@@ -226,7 +239,7 @@ public class PublishingService : IPublishingService
         }
         catch (Exception e)
         {
-            this.logger.LogError(e, "Failed to publish marked data for {Board} with {Content}", board.Name,
+            this.logger.LogError(e, "Failed to publish market data for {Board} with {Content}", board.Name,
                 board.Description);
         }
         finally
@@ -380,36 +393,112 @@ public class PublishingService : IPublishingService
         return contracts.Call;
     }
 
-    private static string CallsContent(OptionExpiration expiration, OptionExpiration? change)
+    private static string OptionsContent(
+        OptionExpiration expiration, 
+        OptionExpiration? change,
+        Func<OptionContracts, OptionContract> sideFn, 
+        Func<decimal, OptionExpiration?, OptionContract> contractFn)
     {
         var strikesWithContracts = expiration.Contracts
-            .Where(pair => pair.Value.Call != null)
+            .Where(pair => sideFn(pair.Value) != null)
             .OrderBy(pair => pair.Key)
             .ToList();
-        
-        var priceTuples = strikesWithContracts.Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key), PriceToContent(pair.Value.Call))).ToList();
+
+        var priceTuples = strikesWithContracts.Select(pair => PriceToContent(pair.Key, sideFn(pair.Value))).ToList();
         if (priceTuples.Count > 0)
         {
-            priceTuples.Insert(0, new Tuple<string, Tuple<string, IDictionary<string, string>>>("Strike", new Tuple<string, IDictionary<string, string>>("bid/ask", FontStyle))); 
+            priceTuples.Insert(0, new Row
+            {
+                Key = new Item
+                {
+                    Text = "Strike",
+                    Style = FontStyle
+                },
+                Values = new[]
+                {
+                    new Item
+                    {
+                        Text = "Bid",
+                        Style = ContentHeaderStyle
+                    },
+                    new Item
+                    {
+                        Text = "Ask",
+                        Style = ContentHeaderStyle
+                    }
+                }
+            });
         }
 
         if (change != null)
         {
             var openInterestContracts = strikesWithContracts
-                .Select(pair => new KeyValuePair<decimal, OptionContract>(pair.Key, GetCallContract(pair.Key, change)))
+                .Select(pair => new KeyValuePair<decimal, OptionContract>(pair.Key, contractFn(pair.Key, change)))
                 .Where(pair => pair.Value != null && pair.Value.OI != decimal.Zero)
                 .OrderBy(pair => pair.Key)
-                .Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key), OpenInterestToContent(pair.Value)))
+                .Select(pair => OpenInterestToContent(pair.Key, pair.Value))
                 .ToList();
 
             if (openInterestContracts.Count > 0)
             {
-                openInterestContracts.Insert(0, new Tuple<string, Tuple<string, IDictionary<string, string>>>("Strike", new Tuple<string, IDictionary<string, string>>("oi", FontStyle)));
+                openInterestContracts.Insert(0, new Row
+                {
+                    Key = new Item
+                    {
+                        Text = "Space",
+                        Style = RenderUtils.CreateStyle(new Tuple<string, string>("color", "transparent"))
+                    },
+                    Values = new[]
+                    {
+                        new Item
+                        {
+                            Text = "",
+                            Style = ContentHeaderStyle
+                        },
+                        new Item
+                        {
+                            Text = "",
+                            Style = ContentHeaderStyle
+                        }
+                    }
+                });
+
+                openInterestContracts.Insert(1, new Row
+                {
+                    Key = new Item
+                    {
+                        Text = "Strike",
+                        Style = FontStyle
+                    },
+                    Values = new[]
+                    {
+                        new Item
+                        {
+                            Text = "Oi\u0394#",
+                            Style = ContentHeaderStyle
+                        },
+                        new Item
+                        {
+                            Text = "Oi\u0394%",
+                            Style = ContentHeaderStyle
+                        }
+                    }
+                });
+
                 priceTuples = priceTuples.Union(openInterestContracts).ToList();
             }
         }
 
-        return TupleToContent(priceTuples);
+        return RowsToContent(priceTuples);
+    }
+
+    private static string CallsContent(OptionExpiration expiration, OptionExpiration? change)
+    {
+        return OptionsContent(
+            expiration, 
+            change, 
+            contracts => contracts.Call,
+            (strike, exp) => GetCallContract(strike, exp));
     }
 
     private static OptionContract? GetPutContract(decimal strike, OptionExpiration? change)
@@ -424,34 +513,11 @@ public class PublishingService : IPublishingService
 
     private static string PutsContent(OptionExpiration expiration, OptionExpiration? change)
     {
-        var strikesWithContracts = expiration.Contracts
-            .Where(pair => pair.Value.Put != null)
-            .OrderBy(pair => pair.Key)
-            .ToList();
-        
-        var priceTuples = strikesWithContracts.Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key), PriceToContent(pair.Value.Put))).ToList();
-        if (priceTuples.Count > 0)
-        {
-            priceTuples.Insert(0, new Tuple<string, Tuple<string, IDictionary<string, string>>>("Strike", new Tuple<string, IDictionary<string, string>>("bid/ask", FontStyle))); 
-        }
-
-        if (change != null)
-        {
-            var openInterestContracts = strikesWithContracts
-                .Select(pair => new KeyValuePair<decimal, OptionContract>(pair.Key, GetPutContract(pair.Key, change)))
-                .Where(pair => pair.Value != null && pair.Value.OI != decimal.Zero)
-                .OrderBy(pair => pair.Key)
-                .Select(pair => new Tuple<string, Tuple<string, IDictionary<string, string>?>>(DecimalToContent(pair.Key), OpenInterestToContent(pair.Value)))
-                .ToList();
-
-            if (openInterestContracts.Count > 0)
-            {
-                openInterestContracts.Insert(0, new Tuple<string, Tuple<string, IDictionary<string, string>>>("Strike", new Tuple<string, IDictionary<string, string>>("oi", FontStyle)));
-                priceTuples = priceTuples.Union(openInterestContracts).ToList();
-            }
-        }
-
-        return TupleToContent(priceTuples);
+        return OptionsContent(
+            expiration, 
+            change, 
+            contracts => contracts.Put,
+            (strike, exp) => GetPutContract(strike, exp));
     }
 
     private static string DecimalToContent(decimal? value)
@@ -459,37 +525,92 @@ public class PublishingService : IPublishingService
         return FormatUtils.FormatNumber(value, 2);
     }
 
-    private static Tuple<string, IDictionary<string, string>?> PriceToContent(OptionContract price)
+    private static Row PriceToContent(decimal strike, OptionContract price)
     {
-        var content = price.Bid == price.Ask
-            ? price.Bid == decimal.Zero ? $"${DecimalToContent(price.Last)}" : $"${DecimalToContent(price.Bid)}"
-            : $"${DecimalToContent(price.Bid)} ({DecimalToContent(price.Ask)})";
+        return new Row
+        {
+            Key = new Item
+            {
+                Text = DecimalToContent(strike)
+            },
 
-        return new Tuple<string, IDictionary<string, string>?>(content, null);
+            Values = PriceToContent(price)
+        };
     }
 
-    private static Tuple<string, IDictionary<string, string>?> OpenInterestToContent(OptionContract contract)
+    private static IEnumerable<Item> PriceToContent(OptionContract price)
     {
-        var content = $" {FormatUtils.FormatAbsNumber(contract.OI)} ({FormatUtils.FormatAbsPercent(contract.Vol)})";
+        yield return new Item
+        {
+            Text = FormatUtils.FormatPrice(price.Bid),
+            Style = ContentStyle
+        };
 
-        return new Tuple<string, IDictionary<string, string>?>(content,
-            contract.OI < decimal.Zero ? RenderUtils.RedStyle : RenderUtils.GreenStyle);
+        yield return new Item
+        {
+            Text = FormatUtils.FormatPrice(price.Ask),
+            Style = ContentStyle
+        };
     }
 
-    private static string TupleToContent(IEnumerable<Tuple<string, Tuple<string, IDictionary<string, string>?>>> tuples)
+    private static Row OpenInterestToContent(decimal strike, OptionContract contract)
     {
-        var list = tuples.ToList();
+        return new Row
+        {
+            Key = new Item
+            {
+                Text = DecimalToContent(strike)
+            },
+
+            Values = OpenInterestToContent(contract)
+        };
+    }
+
+    private static IEnumerable<Item> OpenInterestToContent(OptionContract contract)
+    {
+        var style = RenderUtils.MergeStyle(ContentStyle, contract.OI < decimal.Zero ? RenderUtils.RedStyle : RenderUtils.GreenStyle);
+
+        yield return new Item
+        {
+            Text = FormatUtils.FormatAbsNumber(contract.OI),
+            Style = style
+        };
+
+        yield return new Item
+        {
+            Text = FormatUtils.FormatAbsPercent(contract.Vol),
+            Style = style
+        };
+    }
+
+    private static string RowsToContent(IEnumerable<Row> rows)
+    {
+        var list = rows.ToList();
         if (list.Count == 0)
         {
             return string.Empty;
         }
 
         var body = list
-            .Select(x =>
-                RenderUtils.PairToContent(RenderUtils.PropToContent(x.Item1),
-                    RenderUtils.PropToContent(x.Item2.Item1, x.Item2.Item2)))
+            .Select(row => RenderUtils.PairToContent(RenderUtils.PropToContent(row.Key.Text, row.Key.Style),
+                RenderUtils.PropsToContent(row.Values.Select(item =>
+                    RenderUtils.PropToContent(item.Text, item.Style)))))
             .Aggregate((curr, x) => $"{curr},{x}");
 
         return $"[{body}]";
     }
+}
+
+internal class Row
+{
+    public Item Key { get; set; }
+
+    public IEnumerable<Item> Values { get; set; }
+}
+
+internal class Item
+{
+    public string Text { get; set; }
+
+    public IDictionary<string, string> Style { get; set; }
 }
