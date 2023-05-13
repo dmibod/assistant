@@ -108,7 +108,7 @@ public class RecommendationService : IRecommendationService
         return operations;
     }
 
-    private async Task<IEnumerable<SellOperation>> SellPutsAsync(WatchListItem item, SellPutsFilter putsFilter,
+    private async Task<IEnumerable<SellOperation>> SellPutsAsync(WatchListItem item, SellPutsFilter filter,
         int opsCount)
     {
         if (opsCount > MaxRecsCount)
@@ -128,6 +128,11 @@ public class RecommendationService : IRecommendationService
         var sellOperations = new List<SellOperation>();
         foreach (var expiration in expirations)
         {
+            if (filter.MonthlyExpirations.HasValue && filter.MonthlyExpirations.Value && !Expiration.FromYYYYMMDD(expiration).IsMonthly)
+            {
+                continue;
+            }
+
             var optionPrices = await this.marketDataService.FindOptionPricesAsync(item.Ticker, expiration);
             if (optionPrices == null) continue;
 
@@ -145,7 +150,7 @@ public class RecommendationService : IRecommendationService
                     Expiration.FromYYYYMMDD(expiration));
 
                 var op = put.Sell(price.Bid ?? decimal.Zero);
-                if (op.BreakEvenStockPrice <= item.BuyPrice && AreConditionsMet(op, putsFilter))
+                if (op.BreakEvenStockPrice <= item.BuyPrice && AreConditionsMet(op, filter))
                 {
                     sellOperations.Add(op);
                     if (opsCount + sellOperations.Count > MaxRecsCount)
@@ -248,7 +253,7 @@ public class RecommendationService : IRecommendationService
         return operations;
     }
 
-    private async Task<IEnumerable<SellOperation>> SellCallsAsync(WatchListItem item, SellCallsFilter callsFilter,
+    private async Task<IEnumerable<SellOperation>> SellCallsAsync(WatchListItem item, SellCallsFilter filter,
         int opsCount)
     {
         if (opsCount > MaxRecsCount)
@@ -268,6 +273,11 @@ public class RecommendationService : IRecommendationService
         var sellOperations = new List<SellOperation>();
         foreach (var expiration in expirations)
         {
+            if (filter.MonthlyExpirations.HasValue && filter.MonthlyExpirations.Value && !Expiration.FromYYYYMMDD(expiration).IsMonthly)
+            {
+                continue;
+            }
+
             var optionPrices = await this.marketDataService.FindOptionPricesAsync(item.Ticker, expiration);
             if (optionPrices == null) continue;
 
@@ -285,7 +295,7 @@ public class RecommendationService : IRecommendationService
                     Expiration.FromYYYYMMDD(expiration));
 
                 var op = call.Sell(price.Bid ?? decimal.Zero);
-                if (op.BreakEvenStockPrice >= item.SellPrice && AreConditionsMet(op, callsFilter))
+                if (op.BreakEvenStockPrice >= item.SellPrice && AreConditionsMet(op, filter))
                 {
                     sellOperations.Add(op);
                     if (opsCount + sellOperations.Count > MaxRecsCount)
@@ -395,6 +405,11 @@ public class RecommendationService : IRecommendationService
 
         foreach (var expiration in expirations)
         {
+            if (filter.MonthlyExpirations.HasValue && filter.MonthlyExpirations.Value && !Expiration.FromYYYYMMDD(expiration).IsMonthly)
+            {
+                continue;
+            }
+
             var optionPrices = await this.marketDataService.FindOptionPricesAsync(item.Ticker, expiration);
             if (optionPrices == null) continue;
 

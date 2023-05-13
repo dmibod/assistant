@@ -11,6 +11,8 @@ public abstract class RecommendationFilter
     public int? MaxDte { get; set; }
 
     public bool? Otm { get; set; }
+    
+    public bool? MonthlyExpirations { get; set; }
 
     public virtual string AsDescription()
     {
@@ -39,6 +41,11 @@ public abstract class RecommendationFilter
         if (this.Otm.HasValue)
         {
             filters.Add(this.Otm.Value ? "otm" : "itm");
+        }
+
+        if (this.MonthlyExpirations.HasValue)
+        {
+            filters.Add(this.MonthlyExpirations.Value ? "exp(m)" : "exp(w)");
         }
 
         return filters.Count == 0 ? string.Empty : filters.Aggregate((curr, el) => $"{curr}, {el}");
