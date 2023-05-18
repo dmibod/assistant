@@ -19,11 +19,16 @@ public class PositionCreateMessageHandler : IMessageHandler<PositionCreateMessag
         this.logger = logger;
     }
 
-    public Task HandleAsync(PositionCreateMessage message)
+    public async Task HandleAsync(PositionCreateMessage message)
     {
         this.logger.LogInformation("Received message to add position: {Account} {Ticker} for {Tenant}", message.Account, message.Ticker, message.Tenant);
-        
-        return this.positionService.CreateOrUpdateAsync(message.AsPosition());
+
+        var position = message.AsPosition();
+
+        if (position.Quantity > 0)
+        {
+            await this.positionService.CreateOrUpdateAsync(position);
+        }
     }
 }
 

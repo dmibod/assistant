@@ -24,7 +24,6 @@ public class WatchListRefreshMessageHandler : IMessageHandler<WatchListRefreshMe
         
         return this.publishingService.PublishAsync();
     }
-
 }
 
 public class WatchListRefreshMessage : TenantMessage
