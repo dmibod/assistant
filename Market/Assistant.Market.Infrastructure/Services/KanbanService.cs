@@ -263,7 +263,7 @@ public class KanbanService : IKanbanService
     public async Task UpdateCardAsync(string boardId, Card card)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateCardAsync),
-            $"{boardId}-{card.Id}-{card.Description}");
+            $"{boardId}-{card.Id}-{card.Name}");
 
         var kanbanBoard = new KanbanApi.Client.Board
         {

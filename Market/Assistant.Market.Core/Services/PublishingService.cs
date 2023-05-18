@@ -3,6 +3,7 @@
 using System.Text.RegularExpressions;
 using Assistant.Market.Core.Models;
 using Common.Core.Utils;
+using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
 
 public class PublishingService : IPublishingService
@@ -108,8 +109,6 @@ public class PublishingService : IPublishingService
                 Description = "companies ordered by the absolute change of OI in contracts, from high to low value"
             });
 
-            var labelStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"));
-
             var list = new List<Tuple<decimal, Card>>();
 
             foreach (var pair in dictionary.OrderByDescending(p => p.Value))
@@ -119,27 +118,46 @@ public class PublishingService : IPublishingService
                 var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key);
                 var percentMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key);
                 var percentMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
+                var tops = await this.optionService.FindTopsAsync(pair.Key, 5);
 
                 var propPrice = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("price", labelStyle),
+                    RenderUtils.PropToContent("Price"),
                     RenderUtils.PropToContent($"{FormatUtils.FormatPrice(price)}"));
 
                 var propMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("oi \u0394 \u2193", labelStyle),
+                    RenderUtils.PropToContent("OI \u0394 \u2193"),
                     RenderUtils.PropToContent(
                         $"{FormatUtils.FormatAbsNumber(min)} ({FormatUtils.FormatAbsPercent(percentMin, 2)})",
                         GetNumberStyle(min)));
 
                 var propMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("oi \u0394 \u2191", labelStyle),
+                    RenderUtils.PropToContent("OI \u0394 \u2191"),
                     RenderUtils.PropToContent(
                         $"{FormatUtils.FormatAbsNumber(max)} ({FormatUtils.FormatAbsPercent(percentMax, 2)})",
                         GetNumberStyle(max)));
 
+                var props = new List<string>
+                {
+                    propPrice,
+                    propMin,
+                    propMax,
+                    RenderUtils.PairToContent(RenderUtils.PropToContent("Top"), RenderUtils.PropToContent($"{tops.Count()}"))
+                };
+
+                foreach (var top in tops)
+                {
+                    var label = $"{OptionUtils.GetSide(top.OptionTicker)}{OptionUtils.GetStrike(top.OptionTicker)} {FormatUtils.FormatExpiration(OptionUtils.ParseExpiration(OptionUtils.GetExpiration(top.OptionTicker)))}";
+                    var value = $"{FormatUtils.FormatAbsNumber(top.OpenInterestChange)} ({FormatUtils.FormatAbsPercent(top.OpenInterestChangePercent, 2)})";
+                    var prop = RenderUtils.PairToContent(RenderUtils.PropToContent(label), RenderUtils.PropToContent(value, GetNumberStyle(top.OpenInterestChange)));
+                    props.Add(prop);
+                }
+
+                var desc = props.Aggregate((curr, i) => $"{curr}, {i}");
+                    
                 var card = new Card
                 {
                     Name = $"{pair.Key} ({pair.Value})",
-                    Description = $"[{propPrice}, {propMin}, {propMax}]"
+                    Description = $"[{desc}]"
                 };
 
                 list.Add(new Tuple<decimal, Card>(Math.Max(Math.Abs(min), Math.Abs(max)), card));

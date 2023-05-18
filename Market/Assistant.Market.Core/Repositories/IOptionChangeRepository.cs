@@ -22,4 +22,5 @@ public interface IOptionChangeRepository
     
     Task<decimal> FindOpenInterestPercentMaxAsync(string ticker);
 
+    Task<IEnumerable<OptionChange>> FindTopsAsync(string ticker, int count);
 }

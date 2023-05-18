@@ -87,7 +87,10 @@ public class OptionService : IOptionService
                     Ticker = option.Ticker,
                     Expiration = option.Expiration,
                     LastRefresh = DateTime.UtcNow,
-                    Contracts = Difference(values.Contracts, option.Contracts).Where(item => item.OI != decimal.Zero).ToArray()
+                    Contracts = Difference(values.Contracts, option.Contracts)
+                        .Where(item => item.OI != decimal.Zero)
+                        .OrderByDescending(item => Math.Abs(item.OI))
+                        .ToArray()
                 };
 
                 if (change.Contracts.Length > 0)
@@ -227,5 +230,12 @@ public class OptionService : IOptionService
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestChangePercentMaxAsync), ticker);
 
         return this.changeRepository.FindOpenInterestPercentMaxAsync(StockUtils.Format(ticker));
+    }
+
+    public Task<IEnumerable<OptionChange>> FindTopsAsync(string ticker, int count)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindTopsAsync), $"{ticker}-{count}");
+
+        return this.changeRepository.FindTopsAsync(StockUtils.Format(ticker), count);
     }
 }
