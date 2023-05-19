@@ -7,4 +7,6 @@ public interface ITenantService
     Task<Tenant> GetOrCreateAsync();
 
     Task<string> EnsureExistsAsync();
+
+    Task<IEnumerable<string>> FindAllTenantsAsync();
 }

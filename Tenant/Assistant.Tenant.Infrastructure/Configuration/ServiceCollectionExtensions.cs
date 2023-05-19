@@ -39,13 +39,17 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWatchListService, WatchListService>();
         services.AddScoped<IWatchListPublishingService, WatchListPublishingService>();
         services.AddScoped<IPublishingService, PublishingService>();
+        services.AddScoped<IScheduleService, ScheduleService>();
         services.AddScoped<IRecommendationService, RecommendationService>();
+        services.AddScoped<IRecommendationPublishingService, RecommendationPublishingService>();
         services.AddScoped<IMarketDataService, MarketDataService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<ITenantRepository, TenantRepository>();
 
         services.ConfigureMessaging(configuration);
         services.ConfigureTenantResolver();
+        
+        services.AddHostedService<ScheduleTimerService>();
 
         return services;
     }
@@ -72,6 +76,7 @@ public static class ServiceCollectionExtensions
                 [TopicUtils.AsTopic(nameof(NatsSettings.PositionRefreshTopic))] = natsSettings.PositionRefreshTopic,
                 [TopicUtils.AsTopic(nameof(NatsSettings.PositionRemoveTopic))] = natsSettings.PositionRemoveTopic,
                 [TopicUtils.AsTopic(nameof(NatsSettings.WatchListRefreshTopic))] = natsSettings.WatchListRefreshTopic,
+                [TopicUtils.AsTopic(nameof(NatsSettings.ScheduleTopic))] = natsSettings.ScheduleTopic
             };
 
             return new MapTopicResolver(topics);

@@ -44,11 +44,20 @@ public class TenantRepository : ITenantRepository
         return await this.collection.Find(x => x.Name == name).FirstOrDefaultAsync();
     }
 
-    public Task<bool> ExistsAsync(string name)
+    public async Task<bool> ExistsAsync(string name)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ExistsAsync), name);
 
-        return this.collection.Find(doc => doc.Name == name).AnyAsync();
+        var exists = await this.collection.Find(doc => doc.Name == name).AnyAsync();
+
+        if (exists)
+        {
+            await this.InitPositionsAsync(name);
+            await this.InitWatchListAsync(name);
+            await this.InitSchedulesAsync(name);
+        }
+
+        return exists;
     }
 
     public Task CreateAsync(string name)
@@ -59,8 +68,99 @@ public class TenantRepository : ITenantRepository
         {
             Name = name,
             WatchList = Array.Empty<WatchListItem>(),
-            Positions = Array.Empty<Position>()
+            Positions = Array.Empty<Position>(),
+            Schedules = Array.Empty<Schedule>()
         });
+    }
+
+    public async Task<IEnumerable<Schedule>> FindSchedules(string name)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindSchedules), name);
+
+        var tenant = await this.collection.Find(entity => entity.Name == name).FirstOrDefaultAsync();
+
+        return tenant.Schedules;
+    }
+
+    public async Task<Schedule> FindSchedule(string tenant, ScheduleType scheduleType)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindSchedule), $"{tenant}-{scheduleType}");
+
+        var t = await this.FindByNameAsync(tenant);
+
+        return t == null ? null : t.Schedules.FirstOrDefault(schedule => schedule.ScheduleType == scheduleType);
+    }
+
+    public async Task<Schedule> CreateScheduleAsync(string tenant, ScheduleType scheduleType, ScheduleInterval interval)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateScheduleAsync), $"{tenant}-{scheduleType}-{interval}");
+
+        var schedule = new Schedule{ ScheduleType = scheduleType, Interval = interval, LastExecution = DateTime.UnixEpoch };
+        
+        var filter = Builders<TenantEntity>.Filter
+            .Eq(tenant => tenant.Name, tenant);
+
+        var update = Builders<TenantEntity>.Update
+            .Push(tenant => tenant.Schedules, schedule);
+        
+        await this.collection.FindOneAndUpdateAsync(filter, update);
+
+        return schedule;
+    }
+
+    public Task UpdateSchedule(string tenant, ScheduleType scheduleType, ScheduleInterval interval)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.UpdateSchedule), $"{tenant}-{scheduleType}-{interval}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) &
+                     Builders<TenantEntity>.Filter.ElemMatch(x => x.Schedules,
+                         Builders<Schedule>.Filter.Eq(x => x.ScheduleType, scheduleType));
+        
+        var update = Builders<TenantEntity>.Update
+            .Set("Schedules.$.Interval", interval);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    private Task InitSchedulesAsync(string tenant)
+    {
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.Not(Builders<TenantEntity>.Filter.Exists(x => x.Schedules));
+        var update = Builders<TenantEntity>.Update.Set(entity => entity.Schedules, Array.Empty<Schedule>());
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    private Task InitPositionsAsync(string tenant)
+    {
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.Not(Builders<TenantEntity>.Filter.Exists(x => x.Positions));
+        var update = Builders<TenantEntity>.Update.Set(entity => entity.Positions, Array.Empty<Position>());
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    private Task InitWatchListAsync(string tenant)
+    {
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) & 
+                     Builders<TenantEntity>.Filter.Not(Builders<TenantEntity>.Filter.Exists(x => x.WatchList));
+        var update = Builders<TenantEntity>.Update.Set(entity => entity.WatchList, Array.Empty<WatchListItem>());
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public Task ExecuteSchedule(string tenant, ScheduleType scheduleType)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.ExecuteSchedule), $"{tenant}-{scheduleType}");
+
+        var filter = Builders<TenantEntity>.Filter.Eq(tenant => tenant.Name, tenant) &
+                     Builders<TenantEntity>.Filter.ElemMatch(x => x.Schedules,
+                         Builders<Schedule>.Filter.Eq(x => x.ScheduleType, scheduleType));
+        
+        var update = Builders<TenantEntity>.Update
+            .Set("Schedules.$.LastExecution", DateTime.UtcNow);
+        
+        return this.collection.FindOneAndUpdateAsync(filter, update);
     }
 
     public async Task<IEnumerable<Position>> FindPositionsAsync(string name)
@@ -176,7 +276,6 @@ public class TenantRepository : ITenantRepository
         var t = await this.FindByNameAsync(tenant);
 
         return t == null ? null : t.WatchList.Where(criteria);
-
     }
 
     public Task CreateWatchListItemAsync(string tenant, WatchListItem listItem)

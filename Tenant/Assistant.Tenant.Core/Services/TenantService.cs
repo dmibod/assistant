@@ -1,6 +1,5 @@
 ﻿namespace Assistant.Tenant.Core.Services;
 
-using System.Text.Json;
 using Assistant.Tenant.Core.Models;
 using Assistant.Tenant.Core.Repositories;
 using Common.Core.Security;
@@ -45,5 +44,12 @@ public class TenantService : ITenantService
         }
 
         return identityName;
+    }
+
+    public Task<IEnumerable<string>> FindAllTenantsAsync()
+    {
+        this.logger.LogInformation("{Method}", nameof(this.FindAllTenantsAsync));
+
+        return this.repository.FindAllTenantsAsync();
     }
 }

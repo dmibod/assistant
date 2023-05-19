@@ -20,6 +20,7 @@ public class TenantController : ControllerBase
     private readonly IPublishingService publishingService;
     private readonly IRecommendationService recommendationService;
     private readonly ITenantService tenantService;
+    private readonly IScheduleService scheduleService;
     private readonly IIdentityProvider identityProvider;
     private readonly IMarketDataService marketDataService;
 
@@ -28,9 +29,10 @@ public class TenantController : ControllerBase
         IPositionPublishingService positionPublishingService,
         IWatchListService watchListService,
         IWatchListPublishingService watchListPublishingService,
-        IPublishingService publishingService,
         IRecommendationService recommendationService,
+        IPublishingService publishingService,
         ITenantService tenantService,
+        IScheduleService scheduleService,
         IIdentityProvider identityProvider,
         IMarketDataService marketDataService)
     {
@@ -38,9 +40,10 @@ public class TenantController : ControllerBase
         this.positionPublishingService = positionPublishingService;
         this.watchListService = watchListService;
         this.watchListPublishingService = watchListPublishingService;
-        this.publishingService = publishingService;
         this.recommendationService = recommendationService;
+        this.publishingService = publishingService;
         this.tenantService = tenantService;
+        this.scheduleService = scheduleService;
         this.identityProvider = identityProvider;
         this.marketDataService = marketDataService;
     }
@@ -207,6 +210,43 @@ public class TenantController : ControllerBase
     public Task WatchListPublishAsync()
     {
         return this.watchListPublishingService.PublishAsync();
+    }
+
+    /// <summary>
+    /// The list of your schedules 
+    /// </summary>
+    [HttpGet("Schedules")]
+    public async Task<ActionResult> SchedulesGetAsync()
+    {
+        var schedules = await this.scheduleService.FindAllAsync();
+
+        var list = schedules.ToList();
+
+        var result = new
+        {
+            list.Count,
+            Items = list.ToArray()
+        };
+
+        return this.Ok(result);
+    }
+
+    /// <summary>
+    /// Creates schedule
+    /// </summary>
+    [HttpPost("Schedules/{schedule}")]
+    public Task<Schedule> SchedulesAddAsync(ScheduleType schedule)
+    {
+        return this.scheduleService.CreateAsync(schedule);
+    }
+
+    /// <summary>
+    /// Updates schedule
+    /// </summary>
+    [HttpPut("Schedules/{schedule}")]
+    public Task SchedulesAddAsync(ScheduleType schedule, ScheduleInterval interval)
+    {
+        return this.scheduleService.UpdateAsync(schedule, interval);
     }
 
     /// <summary>

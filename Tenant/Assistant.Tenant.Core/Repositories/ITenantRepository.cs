@@ -12,6 +12,16 @@ public interface ITenantRepository
     
     Task CreateAsync(string name);
 
+    Task<IEnumerable<Schedule>> FindSchedules(string tenant);
+    
+    Task<Schedule> FindSchedule(string tenant, ScheduleType scheduleType);
+
+    Task<Schedule> CreateScheduleAsync(string tenant, ScheduleType scheduleType, ScheduleInterval interval);
+    
+    Task UpdateSchedule(string tenant, ScheduleType scheduleType, ScheduleInterval interval);
+    
+    Task ExecuteSchedule(string tenant, ScheduleType scheduleType);
+
     Task<IEnumerable<Position>> FindPositionsAsync(string tenant);
     
     Task<IEnumerable<Position>> FindPositionsAsync(string tenant, Func<Position, bool> criteria);
