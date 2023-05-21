@@ -34,4 +34,4 @@ jobs:
       run: dotnet build ./Helper.Core.Tests --configuration Release --no-restore
     
     - name: Test
-      run: dotnet test ./Helper.Core.Tests --no-restore --no-build --verbosity normal
+      run: dotnet test ./Helper.Core.Tests --no-restore --verbosity normal
