@@ -32,9 +32,12 @@ jobs:
 
     - name: Build domain
       run: dotnet build ./Helper.Core.Tests --configuration Release --no-restore
+
+    - name: Test domain
+      run: dotnet test ./Helper.Core.Tests --no-restore --verbosity normal
       
     - name: Build core
       run: dotnet build ./Common/Common.Core.Tests --configuration Release --no-restore
     
-    - name: Test
-      run: dotnet test ./Helper.Core.Tests ./Common/Common.Core.Tests --no-restore --verbosity normal
+    - name: Test core
+      run: dotnet test ./Common/Common.Core.Tests --no-restore --verbosity normal
