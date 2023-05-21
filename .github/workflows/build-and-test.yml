@@ -29,9 +29,12 @@ jobs:
 
     - name: Install dependencies
       run: dotnet restore
+
+    - name: Build domain
+      run: dotnet build ./Helper.Core.Tests --configuration Release --no-restore
       
-    - name: Build
-      run: dotnet build ./Helper.Core.Tests ./Common/Common.Core.Tests --configuration Release --no-restore
+    - name: Build core
+      run: dotnet build ./Common/Common.Core.Tests --configuration Release --no-restore
     
     - name: Test
       run: dotnet test ./Helper.Core.Tests ./Common/Common.Core.Tests --no-restore --verbosity normal
