@@ -1,0 +1,1 @@
+[![build and test](https://github.com/dmibod/assistant/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/dmibod/assistant/actions/workflows/build-and-test.yml)
