@@ -26,6 +26,13 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+    - uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        # Look to see if there is a cache hit for the corresponding requirements file
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget
 
     - name: Install dependencies
       run: dotnet restore
@@ -41,3 +48,4 @@ jobs:
     
     - name: Test core
       run: dotnet test ./Common/Common.Core.Tests --no-restore --verbosity normal
+    
