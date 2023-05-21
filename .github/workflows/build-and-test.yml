@@ -31,7 +31,7 @@ jobs:
       run: dotnet restore
       
     - name: Build
-      run: dotnet build ./Helper.Core.Tests --configuration Release --no-restore
+      run: dotnet build ./Helper.Core.Tests ./Common/Common.Core.Tests --configuration Release --no-restore
     
     - name: Test
-      run: dotnet test ./Helper.Core.Tests --no-restore --verbosity normal
+      run: dotnet test ./Helper.Core.Tests ./Common/Common.Core.Tests --no-restore --verbosity normal
