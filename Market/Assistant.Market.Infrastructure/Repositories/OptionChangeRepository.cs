@@ -187,7 +187,7 @@ public class OptionChangeRepository : IOptionChangeRepository
 
         return cursor
             .ToEnumerable()
-            .SelectMany(entity => entity.Contracts.Take(entity.Contracts.Length > count - 1 ? count : entity.Contracts.Length))
+            .SelectMany(entity => entity.Contracts.Take(count))
             .ToArray()
             .OrderByDescending(contract => Math.Abs(contract.OI))
             .Select(contract => new OptionChange
