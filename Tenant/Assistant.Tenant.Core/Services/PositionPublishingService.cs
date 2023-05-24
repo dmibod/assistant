@@ -388,22 +388,54 @@ public class PositionPublishingService : IPositionPublishingService
                "]";
     }
 
+    private string ShortCallToContent(Position pos, IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations)
+    {
+        var ticker = OptionUtils.GetStock(pos.Ticker);
+        var strike = OptionUtils.GetStrike(pos.Ticker);
+
+        var watchListItem = stocks[ticker];
+        var underlying = watchListItem.Last ?? decimal.Zero;
+        var collateral = strike * 100.0m;
+        var breakEven = (collateral + pos.AverageCost) / 100.0m;
+        var style = breakEven == underlying ? null :
+            breakEven > underlying ? RenderUtils.GreenStyle : RenderUtils.RedStyle;
+        var breakEvenValue = $"{FormatUtils.FormatPrice(breakEven)} ({FormatUtils.FormatPrice(Math.Abs(breakEven - underlying))})";
+        var dte = Expiration.From(OptionUtils.ParseExpiration(pos.Ticker)).DaysTillExpiration;
+        var itm = underlying > strike;
+
+        return "["
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("ticker"), RenderUtils.PropToContent(ticker)) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("quantity"),
+                   RenderUtils.PropToContent(FormatUtils.FormatSize(pos.Quantity))) + ","
+               + this.PriceToContent(pos, stocks, expirations) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("underlying"),
+                   RenderUtils.PropToContent(FormatUtils.FormatPrice(underlying))) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("collateral"),
+                   RenderUtils.PropToContent(FormatUtils.FormatPrice(collateral))) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("break.even"),
+                   RenderUtils.PropToContent(breakEvenValue, style)) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("dte"), RenderUtils.PropToContent($"{dte}")) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("itm"),
+                   RenderUtils.PropToContent($"{itm}", itm ? RenderUtils.RedStyle : RenderUtils.GreenStyle)) +
+               "]";
+    }
+
     private string OptionPositionToContent(Position pos, IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
-        if (OptionUtils.GetSide(pos.Ticker) == "P" && pos.Quantity < decimal.Zero)
+        if (pos.Quantity < decimal.Zero)
         {
-            return this.ShortPutToContent(pos, stocks, expirations);
+            return OptionUtils.GetSide(pos.Ticker) == "P" 
+                ? this.ShortPutToContent(pos, stocks, expirations) 
+                : this.ShortCallToContent(pos, stocks, expirations);
         }
 
         var ticker = OptionUtils.GetStock(pos.Ticker);
 
         return "["
                + RenderUtils.PairToContent(RenderUtils.PropToContent("ticker"), RenderUtils.PropToContent(ticker)) + ","
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("underlying"),
-                   RenderUtils.PropToContent(FormatUtils.FormatPrice(stocks[ticker].Last))) + ","
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("quantity"),
-                   RenderUtils.PropToContent(FormatUtils.FormatSize(pos.Quantity))) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("quantity"), RenderUtils.PropToContent(FormatUtils.FormatSize(pos.Quantity))) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("underlying"), RenderUtils.PropToContent(FormatUtils.FormatPrice(stocks[ticker].Last))) + ","
                + this.PriceToContent(pos, stocks, expirations) +
                "]";
     }
