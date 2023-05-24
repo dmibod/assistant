@@ -178,7 +178,8 @@ public class OptionChangeRepository : IOptionChangeRepository
 
     public async Task<IEnumerable<OptionChange>> FindTopsAsync(string ticker, int count)
     {
-        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindTopsAsync), $"{ticker}-{count}");
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindTopsAsync),
+            $"{ticker}-{count}");
 
         var today = DateTimeUtils.TodayUtc();
 
@@ -187,15 +188,15 @@ public class OptionChangeRepository : IOptionChangeRepository
 
         return cursor
             .ToEnumerable()
-            .SelectMany(entity => entity.Contracts.Take(count))
-            .ToArray()
-            .OrderByDescending(contract => Math.Abs(contract.OI))
+            .SelectMany(entity => entity.Contracts.OrderByDescending(contract => Math.Abs(contract.OI)).Take(count))
             .Select(contract => new OptionChange
             {
-                OptionTicker = contract.Ticker, 
+                OptionTicker = contract.Ticker,
                 OpenInterestChange = contract.OI,
                 OpenInterestChangePercent = contract.Vol
             })
+            .ToArray()
+            .OrderByDescending(contract => Math.Abs(contract.OpenInterestChange))
             .Take(count);
     }
 }
