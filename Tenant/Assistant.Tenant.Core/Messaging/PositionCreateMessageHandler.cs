@@ -25,7 +25,7 @@ public class PositionCreateMessageHandler : IMessageHandler<PositionCreateMessag
 
         var position = message.AsPosition();
 
-        if (position.Quantity > 0)
+        if (position.Quantity != 0)
         {
             await this.positionService.CreateOrUpdateAsync(position);
         }
