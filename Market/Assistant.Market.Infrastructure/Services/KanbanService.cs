@@ -272,4 +272,18 @@ public class KanbanService : IKanbanService
 
         await this.ApiClient.DescribeCardAsync(kanbanBoard, new KanbanApi.Client.Card { Id = card.Id }, card.Description);
     }
+
+    public Task RemoveCardAsync(string boardId, string cardId, string parentId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveCardAsync),
+            $"{boardId}-{cardId}");
+
+        return this.ApiClient.RemoveCardAsync(new KanbanApi.Client.Board
+        {
+            Id = boardId
+        }, new KanbanApi.Client.Card
+        {
+            Id = cardId
+        }, parentId);
+    }
 }
