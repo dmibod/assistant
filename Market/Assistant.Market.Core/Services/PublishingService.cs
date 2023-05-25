@@ -19,6 +19,11 @@ public class PublishingService : IPublishingService
         ["fontSize"] = "50%"
     };
 
+    private static readonly IDictionary<string, string> WideCellStyle = new Dictionary<string, string>
+    {
+        ["width"] = "4.5rem"
+    };
+
     private static readonly IDictionary<string, string> ContentStyle = new Dictionary<string, string>
     {
         ["width"] = "2.5rem"
@@ -127,7 +132,7 @@ public class PublishingService : IPublishingService
 
                 var propPrice = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("Price"),
-                    RenderUtils.PropToContent($"{FormatUtils.FormatPrice(price)}"));
+                    RenderUtils.PropToContent($"{FormatUtils.FormatPrice(price)}", WideCellStyle));
 
                 var propMin = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("OI \u0394 \u2193", SmallFontStyle),
@@ -146,13 +151,13 @@ public class PublishingService : IPublishingService
                     propPrice,
                     propMin,
                     propMax,
-                    RenderUtils.PairToContent(RenderUtils.PropToContent("Top"), RenderUtils.PropToContent($"{tops.Count()}"))
+                    RenderUtils.PairToContent(RenderUtils.PropToContent("Top"), RenderUtils.PropToContent($"{tops.Count()}", WideCellStyle))
                 };
 
                 foreach (var top in tops)
                 {
-                    var label = $"{OptionUtils.GetSide(top.OptionTicker)}${OptionUtils.GetStrike(top.OptionTicker)} {FormatUtils.FormatExpiration(OptionUtils.ParseExpiration(OptionUtils.GetExpiration(top.OptionTicker)), true)}";
-                    var value = $"{FormatUtils.FormatAbsNumber(top.OpenInterestChange)}({FormatUtils.FormatAbsPercent(top.OpenInterestChangePercent, 2)})@{FormatUtils.FormatPrice(top.Last)}";
+                    var label = $"{OptionUtils.GetSide(top.OptionTicker)}${OptionUtils.GetStrike(top.OptionTicker)}@{FormatUtils.FormatExpiration(OptionUtils.ParseExpiration(OptionUtils.GetExpiration(top.OptionTicker)), true)}";
+                    var value = $"{FormatUtils.FormatAbsNumber(top.OpenInterestChange)} ({FormatUtils.FormatAbsPercent(top.OpenInterestChangePercent, 2)}) {FormatUtils.FormatPrice(top.Last)}";
                     var prop = RenderUtils.PairToContent(RenderUtils.PropToContent(label, SmallFontStyle), RenderUtils.PropToContent(value, GetNumberStyle(top.OpenInterestChange)));
                     props.Add(prop);
                 }
@@ -210,7 +215,7 @@ public class PublishingService : IPublishingService
 
     private static IDictionary<string, string> GetNumberStyle(decimal number)
     {
-        return RenderUtils.MergeStyle(SmallFontStyle, RenderUtils.CreateStyle(YieldNumberStyle(number).ToArray()));
+        return RenderUtils.MergeStyle(SmallFontStyle, WideCellStyle, RenderUtils.CreateStyle(YieldNumberStyle(number).ToArray()));
     }
 
     private async Task RemoveBoardLanesAsync(Board board)
