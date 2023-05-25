@@ -193,7 +193,10 @@ public class OptionChangeRepository : IOptionChangeRepository
             {
                 OptionTicker = contract.Ticker,
                 OpenInterestChange = contract.OI,
-                OpenInterestChangePercent = contract.Vol
+                OpenInterestChangePercent = contract.Vol,
+                Bid = contract.Bid,
+                Ask = contract.Ask,
+                Last = contract.Last
             })
             .ToArray()
             .OrderByDescending(contract => Math.Abs(contract.OpenInterestChange))

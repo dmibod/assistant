@@ -139,9 +139,9 @@ public class OptionService : IOptionService
         return new OptionContract
         {
             Ticker = next.Ticker,
-            Ask = next.Ask - prev.Ask,
-            Bid = next.Bid - prev.Bid,
-            Last = next.Last - prev.Last,
+            Ask = next.Ask,
+            Bid = next.Bid,
+            Last = next.Last,
             // we store OI delta % here
             Vol = prev.OI == decimal.Zero ? decimal.MaxValue : CalculationUtils.Percent(oiDiff / prev.OI, 2),
             OI = oiDiff,

@@ -152,7 +152,7 @@ public class PublishingService : IPublishingService
                 foreach (var top in tops)
                 {
                     var label = $"{OptionUtils.GetSide(top.OptionTicker)}${OptionUtils.GetStrike(top.OptionTicker)} {FormatUtils.FormatExpiration(OptionUtils.ParseExpiration(OptionUtils.GetExpiration(top.OptionTicker)))}";
-                    var value = $"{FormatUtils.FormatAbsNumber(top.OpenInterestChange)} ({FormatUtils.FormatAbsPercent(top.OpenInterestChangePercent, 2)})";
+                    var value = $"{FormatUtils.FormatAbsNumber(top.OpenInterestChange)} ({FormatUtils.FormatAbsPercent(top.OpenInterestChangePercent, 2)}) [{FormatUtils.FormatPrice(top.Last)}]";
                     var prop = RenderUtils.PairToContent(RenderUtils.PropToContent(label, SmallFontStyle), RenderUtils.PropToContent(value, GetNumberStyle(top.OpenInterestChange)));
                     props.Add(prop);
                 }
