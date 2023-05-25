@@ -41,6 +41,8 @@ public interface IKanbanService
     Task RemoveCardAsync(string boardId, string cardLaneId, string cardId);
     
     Task RemoveBoardLaneAsync(string boardId, string laneId);
+
+    Task RemoveLaneAsync(string boardId, string laneId, string parentId);
 }
 
 public abstract class Entity

@@ -457,9 +457,29 @@ public class PublishingService : IPublishingService
     private async Task RemoveBoardLanesAsync(Board board)
     {
         var lanes = await this.kanbanService.FindBoardLanesAsync(board.Id);
+        
+        foreach (var lane in lanes)
+        {
+            await this.RemoveCardLanesAsync(board, lane);
+
+            await this.kanbanService.RemoveBoardLaneAsync(board.Id, lane.Id);
+        }
+    }
+    
+    private async Task RemoveCardLanesAsync(Board board, Lane compositeLane)
+    {
+        var lanes = await this.kanbanService.FindLanesAsync(board.Id, compositeLane.Id);
+        
         foreach (var laneId in lanes.Select(lane => lane.Id))
         {
-            await this.kanbanService.RemoveBoardLaneAsync(board.Id, laneId);
+            var cards = await this.kanbanService.FindCardsAsync(board.Id, laneId);
+
+            foreach (var cardId in cards.Select(card => card.Id))
+            {
+                await this.kanbanService.RemoveCardAsync(board.Id, cardId, laneId);
+            }
+
+            await this.kanbanService.RemoveLaneAsync(board.Id, laneId, compositeLane.Id);
         }
     }
 }

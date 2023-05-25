@@ -322,4 +322,18 @@ public class KanbanService : IKanbanService
 
         await this.ApiClient.RemoveBoardLaneAsync(kanbanBoard, new KanbanApi.Client.Lane { Id = laneId });
     }
+    
+    public Task RemoveLaneAsync(string boardId, string laneId, string parentId)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.RemoveLaneAsync),
+            $"{boardId}-{laneId}-{parentId}");
+
+        return this.ApiClient.RemoveLaneAsync(new KanbanApi.Client.Board
+        {
+            Id = boardId
+        }, new KanbanApi.Client.Lane
+        {
+            Id = laneId
+        }, parentId);
+    }
 }
