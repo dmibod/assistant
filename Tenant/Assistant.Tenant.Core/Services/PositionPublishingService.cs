@@ -156,7 +156,7 @@ public class PositionPublishingService : IPositionPublishingService
 
         var actualCards = new List<Card>();
 
-        foreach (var p in singleOptionPositions.OrderBy(p => p.Ticker))
+        foreach (var p in singleOptionPositions.OrderBy(p => OptionUtils.ParseExpiration(p.Ticker)))
         {
             var name =
                 $"{OptionUtils.GetSide(p.Ticker)}${OptionUtils.GetStrike(p.Ticker)} {FormatUtils.FormatExpiration(OptionUtils.ParseExpiration(p.Ticker))}";

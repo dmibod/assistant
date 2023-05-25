@@ -17,6 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\Helper.Core\Helper.Core.csproj" />
       <ProjectReference Include="..\Common.Core\Common.Core.csproj" />
     </ItemGroup>
 

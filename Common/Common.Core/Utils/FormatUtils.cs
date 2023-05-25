@@ -35,9 +35,10 @@ public static class FormatUtils
         return size < 0 ? $"short({Math.Abs(size)})" : $"long({size})";
     }
 
-    public static string FormatExpiration(DateTime expiraion)
+    public static string FormatExpiration(DateTime expiration, bool shortYear = false)
     {
-        return $"{expiraion.Year}/{expiraion.Month}/{expiraion.Day}";
+        var year = shortYear ? expiration.Year % 100 : expiration.Year;
+        return $"{year}/{expiration.Month:00}/{expiration.Day:00}";
     }
 
     public static string FormatAccount(string value)
