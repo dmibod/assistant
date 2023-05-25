@@ -476,7 +476,7 @@ public class PublishingService : IPublishingService
 
             foreach (var cardId in cards.Select(card => card.Id))
             {
-                await this.kanbanService.RemoveCardAsync(board.Id, cardId, laneId);
+                await this.kanbanService.RemoveCardAsync(board.Id, laneId, cardId);
             }
 
             await this.kanbanService.RemoveLaneAsync(board.Id, laneId, compositeLane.Id);
