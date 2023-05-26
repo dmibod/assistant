@@ -68,11 +68,20 @@ public class PublishingService : IPublishingService
     {
         this.logger.LogInformation("{Method}", nameof(this.PublishOpenInterestAsync));
 
-        var boards = await this.kanbanService.FindBoardsAsync();
-        var board = boards.FirstOrDefault(board => board.Name.StartsWith(OpenInterest));
-
         var now = DateTime.UtcNow;
-        var name = $"{OpenInterest} (Today) {now.ToShortDateString()} {now.ToShortTimeString()}";
+        var dayOfWeek = now.DayOfWeek;
+        
+        if (dayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+        {
+            return;
+        }
+
+        var prefix = $"{OpenInterest} ({dayOfWeek})";
+
+        var boards = await this.kanbanService.FindBoardsAsync();
+        var board = boards.FirstOrDefault(board => board.Name.StartsWith(prefix));
+
+        var name = $"{prefix} {now.ToShortDateString()} {now.ToShortTimeString()}";
 
         if (board != null)
         {
@@ -128,7 +137,7 @@ public class PublishingService : IPublishingService
                 var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key);
                 var percentMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key);
                 var percentMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
-                var tops = await this.optionService.FindTopsAsync(pair.Key, 5);
+                var tops = await this.optionService.FindTopsAsync(pair.Key, 10);
 
                 var propPrice = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("Price"),
