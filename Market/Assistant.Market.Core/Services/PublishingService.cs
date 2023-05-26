@@ -137,7 +137,7 @@ public class PublishingService : IPublishingService
                 var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key);
                 var percentMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key);
                 var percentMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
-                var tops = await this.optionService.FindTopsAsync(pair.Key, 10);
+                var tops = await this.optionService.FindTopsAsync(pair.Key, 20);
 
                 var propPrice = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("Price"),
