@@ -188,9 +188,17 @@ public class PublishingService : IPublishingService
 
             foreach (var pair in list.OrderByDescending(pair => pair.Item1))
             {
-                await this.kanbanService.CreateCardAsync(board.Id, lane.Id, pair.Item2);
+                try
+                {
+                    await this.kanbanService.CreateCardAsync(board.Id, lane.Id, pair.Item2);
+                }
+                catch (Exception e)
+                {
+                    this.logger.LogError(e, "Failed to create card {Name} in board with id {Id}", pair.Item2.Name,
+                        board.Id);
+                }
 
-                if (counter++ < 100)
+                if (counter++ < 90)
                 {
                     board.Description += (counter == 1 ? string.Empty : ", ") + pair.Item2.Name.Split(' ')[0];
                 }
