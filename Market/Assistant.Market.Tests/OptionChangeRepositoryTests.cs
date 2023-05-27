@@ -100,7 +100,7 @@ public class OptionChangeRepositoryTests
         var repository = Repository;
 
         // Act
-        var value = await repository.FindChangesCountAsync("KMI");
+        var value = await repository.FindChangesCountAsync("KMI", null);
         
         // Assert
         Assert.AreEqual(26, value);
@@ -113,7 +113,7 @@ public class OptionChangeRepositoryTests
         var repository = Repository;
 
         // Act
-        var value = await repository.FindOpenInterestMaxAsync("KMI");
+        var value = await repository.FindOpenInterestMaxAsync("KMI", null);
         
         // Assert
         Assert.AreEqual(6201, value);

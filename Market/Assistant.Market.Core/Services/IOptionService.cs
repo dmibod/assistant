@@ -18,15 +18,15 @@ public interface IOptionService
     
     Task RemoveAsync(string ticker);
     
-    Task<int> FindChangesCountAsync(string ticker);
+    Task<int> FindChangesCountAsync(string ticker, Func<DateTime> todayFn);
 
-    Task<decimal> FindOpenInterestChangeMinAsync(string ticker);
+    Task<decimal> FindOpenInterestChangeMinAsync(string ticker, Func<DateTime> todayFn);
     
-    Task<decimal> FindOpenInterestChangeMaxAsync(string ticker);
+    Task<decimal> FindOpenInterestChangeMaxAsync(string ticker, Func<DateTime> todayFn);
     
-    Task<decimal> FindOpenInterestChangePercentMinAsync(string ticker);
+    Task<decimal> FindOpenInterestChangePercentMinAsync(string ticker, Func<DateTime> todayFn);
     
-    Task<decimal> FindOpenInterestChangePercentMaxAsync(string ticker);
+    Task<decimal> FindOpenInterestChangePercentMaxAsync(string ticker, Func<DateTime> todayFn);
 
-    Task<IEnumerable<OptionChange>> FindTopsAsync(string ticker, int count);
+    Task<IEnumerable<OptionChange>> FindTopsAsync(string ticker, int count, Func<DateTime> todayFn);
 }

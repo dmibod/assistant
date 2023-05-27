@@ -20,13 +20,22 @@ public class DataPublishMessageHandler : IMessageHandler<DataPublishMessage>
     public async Task HandleAsync(DataPublishMessage message)
     {
         this.logger.LogInformation("Received publish data message");
-        
-        await this.publishingService.PublishAsync();
 
-        await this.publishingService.PublishOpenInterestAsync();
+        if (message.MarketData)
+        {
+            await this.publishingService.PublishAsync();
+        }
+
+        if (message.OpenInterest)
+        {
+            await this.publishingService.PublishOpenInterestAsync();
+        }
     }
 }
 
 public class DataPublishMessage
 {
+    public bool MarketData { get; set; }
+
+    public bool OpenInterest { get; set; }
 } 

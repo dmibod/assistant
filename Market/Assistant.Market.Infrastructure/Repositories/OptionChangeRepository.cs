@@ -115,22 +115,22 @@ public class OptionChangeRepository : IOptionChangeRepository
         await this.collection.DeleteManyAsync(filter);
     }
 
-    public async Task<int> FindChangesCountAsync(string ticker)
+    public async Task<int> FindChangesCountAsync(string ticker, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindChangesCountAsync), ticker);
 
-        var today = DateTimeUtils.TodayUtc();
+        var today = todayFn != null ? todayFn() : DateTimeUtils.TodayUtc();
 
         var cursor = await this.collection.FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
 
         return cursor.ToEnumerable().Sum(entity => entity.Contracts.Length);
     }
 
-    public async Task<decimal> FindOpenInterestMinAsync(string ticker)
+    public async Task<decimal> FindOpenInterestMinAsync(string ticker, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestMinAsync), ticker);
 
-        var today = DateTimeUtils.TodayUtc();
+        var today = todayFn != null ? todayFn() : DateTimeUtils.TodayUtc();
 
         var cursor = await this.collection
             .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
@@ -138,11 +138,11 @@ public class OptionChangeRepository : IOptionChangeRepository
         return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Min(contract => contract.OI);
     }
 
-    public async Task<decimal> FindOpenInterestMaxAsync(string ticker)
+    public async Task<decimal> FindOpenInterestMaxAsync(string ticker, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestMaxAsync), ticker);
 
-        var today = DateTimeUtils.TodayUtc();
+        var today = todayFn != null ? todayFn() : DateTimeUtils.TodayUtc();
 
         var cursor = await this.collection
             .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
@@ -150,12 +150,12 @@ public class OptionChangeRepository : IOptionChangeRepository
         return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Max(contract => contract.OI);
     }
 
-    public async Task<decimal> FindOpenInterestPercentMinAsync(string ticker)
+    public async Task<decimal> FindOpenInterestPercentMinAsync(string ticker, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestPercentMinAsync),
             ticker);
 
-        var today = DateTimeUtils.TodayUtc();
+        var today = todayFn != null ? todayFn() : DateTimeUtils.TodayUtc();
 
         var cursor = await this.collection
             .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
@@ -163,12 +163,12 @@ public class OptionChangeRepository : IOptionChangeRepository
         return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Min(contract => contract.Vol);
     }
 
-    public async Task<decimal> FindOpenInterestPercentMaxAsync(string ticker)
+    public async Task<decimal> FindOpenInterestPercentMaxAsync(string ticker, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestPercentMaxAsync),
             ticker);
 
-        var today = DateTimeUtils.TodayUtc();
+        var today = todayFn != null ? todayFn() : DateTimeUtils.TodayUtc();
 
         var cursor = await this.collection
             .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
@@ -176,12 +176,12 @@ public class OptionChangeRepository : IOptionChangeRepository
         return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Max(contract => contract.Vol);
     }
 
-    public async Task<IEnumerable<OptionChange>> FindTopsAsync(string ticker, int count)
+    public async Task<IEnumerable<OptionChange>> FindTopsAsync(string ticker, int count, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindTopsAsync),
             $"{ticker}-{count}");
 
-        var today = DateTimeUtils.TodayUtc();
+        var today = todayFn != null ? todayFn() : DateTimeUtils.TodayUtc();
 
         var cursor = await this.collection
             .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);

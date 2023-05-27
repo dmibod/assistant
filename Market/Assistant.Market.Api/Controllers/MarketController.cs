@@ -197,8 +197,12 @@ public class MarketController : ControllerBase
     /// Publish market data
     /// </summary>
     [HttpPost("Publish"), Authorize("publishing")]
-    public Task PublishAsync()
+    public Task PublishAsync(bool marketData = true, bool openInterest = true)
     {
-        return this.busService.PublishAsync(this.dataPublishTopic);
+        return this.busService.PublishAsync(this.dataPublishTopic, new DataPublishMessage
+        {
+            MarketData = marketData,
+            OpenInterest = openInterest
+        });
     }
 }

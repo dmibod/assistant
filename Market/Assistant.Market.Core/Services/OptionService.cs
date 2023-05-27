@@ -197,45 +197,45 @@ public class OptionService : IOptionService
         }
     }
 
-    public Task<int> FindChangesCountAsync(string ticker)
+    public Task<int> FindChangesCountAsync(string ticker, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindChangesCountAsync), ticker);
 
-        return this.changeRepository.FindChangesCountAsync(StockUtils.Format(ticker));
+        return this.changeRepository.FindChangesCountAsync(StockUtils.Format(ticker), todayFn);
     }
 
-    public Task<decimal> FindOpenInterestChangeMinAsync(string ticker)
+    public Task<decimal> FindOpenInterestChangeMinAsync(string ticker, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestChangeMinAsync), ticker);
 
-        return this.changeRepository.FindOpenInterestMinAsync(StockUtils.Format(ticker));
+        return this.changeRepository.FindOpenInterestMinAsync(StockUtils.Format(ticker), todayFn);
     }
 
-    public Task<decimal> FindOpenInterestChangeMaxAsync(string ticker)
+    public Task<decimal> FindOpenInterestChangeMaxAsync(string ticker, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestChangeMaxAsync), ticker);
 
-        return this.changeRepository.FindOpenInterestMaxAsync(StockUtils.Format(ticker));
+        return this.changeRepository.FindOpenInterestMaxAsync(StockUtils.Format(ticker), todayFn);
     }
     
-    public Task<decimal> FindOpenInterestChangePercentMinAsync(string ticker)
+    public Task<decimal> FindOpenInterestChangePercentMinAsync(string ticker, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestChangePercentMinAsync), ticker);
 
-        return this.changeRepository.FindOpenInterestPercentMinAsync(StockUtils.Format(ticker));
+        return this.changeRepository.FindOpenInterestPercentMinAsync(StockUtils.Format(ticker), todayFn);
     }
 
-    public Task<decimal> FindOpenInterestChangePercentMaxAsync(string ticker)
+    public Task<decimal> FindOpenInterestChangePercentMaxAsync(string ticker, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindOpenInterestChangePercentMaxAsync), ticker);
 
-        return this.changeRepository.FindOpenInterestPercentMaxAsync(StockUtils.Format(ticker));
+        return this.changeRepository.FindOpenInterestPercentMaxAsync(StockUtils.Format(ticker), todayFn);
     }
 
-    public Task<IEnumerable<OptionChange>> FindTopsAsync(string ticker, int count)
+    public Task<IEnumerable<OptionChange>> FindTopsAsync(string ticker, int count, Func<DateTime> todayFn)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindTopsAsync), $"{ticker}-{count}");
 
-        return this.changeRepository.FindTopsAsync(StockUtils.Format(ticker), count);
+        return this.changeRepository.FindTopsAsync(StockUtils.Format(ticker), count, todayFn);
     }
 }

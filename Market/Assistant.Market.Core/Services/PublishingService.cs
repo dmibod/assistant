@@ -14,6 +14,11 @@ public class PublishingService : IPublishingService
         ["fontStyle"] = "normal"
     };
 
+    private static readonly IDictionary<string, string> EvenRowStyle = new Dictionary<string, string>
+    {
+        ["backgroundColor"] = "rgba(0,0,0,.03)"
+    };
+    
     private static readonly IDictionary<string, string> SmallFontStyle = new Dictionary<string, string>
     {
         ["fontSize"] = "50%"
@@ -68,19 +73,23 @@ public class PublishingService : IPublishingService
     {
         this.logger.LogInformation("{Method}", nameof(this.PublishOpenInterestAsync));
 
-        var now = DateTime.UtcNow;
-        var dayOfWeek = now.DayOfWeek;
+        var today = DateTimeUtils.TodayUtc();
         
-        if (dayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+        if (today.DayOfWeek == DayOfWeek.Saturday)
         {
-            return;
+            today = today.AddDays(-1);
+        }
+        else if (today.DayOfWeek == DayOfWeek.Sunday)
+        {
+            today = today.AddDays(-2);
         }
 
-        var prefix = $"{OpenInterest} ({dayOfWeek})";
+        var prefix = $"{OpenInterest} ({today.DayOfWeek})";
 
         var boards = await this.kanbanService.FindBoardsAsync();
         var board = boards.FirstOrDefault(board => board.Name.StartsWith(prefix));
 
+        var now = DateTime.UtcNow;
         var name = $"{prefix} {now.ToShortDateString()} {now.ToShortTimeString()}";
 
         if (board != null)
@@ -95,10 +104,10 @@ public class PublishingService : IPublishingService
                 { Name = name, Description = "Calculation..." });
         }
 
-        await this.PublishOpenInterestAsync(board);
+        await this.PublishOpenInterestAsync(board, today);
     }
 
-    private async Task PublishOpenInterestAsync(Board board)
+    private async Task PublishOpenInterestAsync(Board board, DateTime today)
     {
         try
         {
@@ -114,7 +123,7 @@ public class PublishingService : IPublishingService
 
             foreach (var ticker in stockMap.Keys.OrderBy(t => t))
             {
-                var count = await this.optionService.FindChangesCountAsync(ticker);
+                var count = await this.optionService.FindChangesCountAsync(ticker, () => today);
 
                 if (count > 0)
                 {
@@ -133,11 +142,11 @@ public class PublishingService : IPublishingService
             foreach (var pair in dictionary.OrderByDescending(p => p.Value))
             {
                 var price = stockMap[pair.Key].Last;
-                var min = await this.optionService.FindOpenInterestChangeMinAsync(pair.Key);
-                var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key);
-                var percentMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key);
-                var percentMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key);
-                var tops = await this.optionService.FindTopsAsync(pair.Key, 20);
+                var min = await this.optionService.FindOpenInterestChangeMinAsync(pair.Key, () => today);
+                var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key, () => today);
+                var percentMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key, () => today);
+                var percentMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key, () => today);
+                var tops = await this.optionService.FindTopsAsync(pair.Key, 20, () => today);
 
                 var propPrice = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("Price"),
@@ -163,12 +172,25 @@ public class PublishingService : IPublishingService
                     RenderUtils.PairToContent(RenderUtils.PropToContent("Top"), RenderUtils.PropToContent($"{tops.Count()}", WideCellStyle))
                 };
 
-                foreach (var top in tops)
+                var groups = tops
+                    .GroupBy(top => OptionUtils.ParseExpiration(top.OptionTicker))
+                    .OrderByDescending(group => group.Sum(top => Math.Abs(top.OpenInterestChange)));
+
+                var oddRow = true;
+                foreach (var group in groups)
                 {
-                    var label = $"{OptionUtils.GetSide(top.OptionTicker)}${OptionUtils.GetStrike(top.OptionTicker)}@{FormatUtils.FormatExpiration(OptionUtils.ParseExpiration(OptionUtils.GetExpiration(top.OptionTicker)), true)}";
-                    var value = $"{FormatUtils.FormatAbsNumber(top.OpenInterestChange)} ({FormatUtils.FormatAbsPercent(top.OpenInterestChangePercent, 2)}) {FormatUtils.FormatPrice(top.Last)}";
-                    var prop = RenderUtils.PairToContent(RenderUtils.PropToContent(label, SmallFontStyle), RenderUtils.PropToContent(value, GetNumberStyle(top.OpenInterestChange)));
-                    props.Add(prop);
+                    var labelStyle = oddRow ? SmallFontStyle : RenderUtils.MergeStyle(EvenRowStyle, SmallFontStyle);
+                    
+                    foreach (var top in group)
+                    {
+                        var label = $"{OptionUtils.GetSide(top.OptionTicker)}${OptionUtils.GetStrike(top.OptionTicker)}@{FormatUtils.FormatExpiration(OptionUtils.ParseExpiration(OptionUtils.GetExpiration(top.OptionTicker)), true)}";
+                        var value = $"{FormatUtils.FormatAbsNumber(top.OpenInterestChange)} ({FormatUtils.FormatAbsPercent(top.OpenInterestChangePercent, 2)}) {FormatUtils.FormatPrice(top.Last)}";
+                        var valueStyle = oddRow ? GetNumberStyle(top.OpenInterestChange) : RenderUtils.MergeStyle(EvenRowStyle, GetNumberStyle(top.OpenInterestChange));
+                        var prop = RenderUtils.PairToContent(RenderUtils.PropToContent(label, labelStyle), RenderUtils.PropToContent(value, valueStyle));
+                        props.Add(prop);
+                    }
+
+                    oddRow = !oddRow;
                 }
 
                 var desc = props.Aggregate((curr, i) => $"{curr}, {i}");
