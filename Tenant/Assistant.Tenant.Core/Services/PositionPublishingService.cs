@@ -330,7 +330,7 @@ public class PositionPublishingService : IPositionPublishingService
         legs = legs.OrderBy(leg => leg.Type).ThenByDescending(leg => OptionUtils.GetStrike(leg.Ticker));
 
         return "["
-               + legs.Select(leg => LegToContent(leg, stocks, expirations)).Aggregate((curr, el) => $"{curr}, {el}") +
+               + legs.Select(leg => this.LegToContent(leg, stocks, expirations)).Aggregate((curr, el) => $"{curr}, {el}") +
                ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("underlying"),
                    RenderUtils.PropToContent(FormatUtils.FormatPrice(stocks[OptionUtils.GetStock(legs.First().Ticker)].Last))) + ","
@@ -464,13 +464,13 @@ public class PositionPublishingService : IPositionPublishingService
 
             if (leg.Quantity > decimal.Zero)
             {
-                comboChange = new Tuple<decimal, decimal>(comboChange.Item1 + legChange.Item1,
-                    comboChange.Item2 + legChange.Item2);
+                comboChange = new Tuple<decimal, decimal>(comboChange.Item1 + legChange.Item1 * Math.Abs(leg.Quantity),
+                    comboChange.Item2 + legChange.Item2 * Math.Abs(leg.Quantity));
             }
             else
             {
-                comboChange = new Tuple<decimal, decimal>(comboChange.Item1 - legChange.Item1,
-                    comboChange.Item2 - legChange.Item2);
+                comboChange = new Tuple<decimal, decimal>(comboChange.Item1 - legChange.Item1 * Math.Abs(leg.Quantity),
+                    comboChange.Item2 - legChange.Item2 * Math.Abs(leg.Quantity));
             }
         }
 
