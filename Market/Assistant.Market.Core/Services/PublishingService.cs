@@ -109,6 +109,8 @@ public class PublishingService : IPublishingService
 
     private async Task PublishOpenInterestAsync(Board board, DateTime today)
     {
+        const int maxDescTickers = 90;
+
         try
         {
             await this.kanbanService.SetBoardLoadingStateAsync(board.Id);
@@ -220,9 +222,14 @@ public class PublishingService : IPublishingService
                         board.Id);
                 }
 
-                if (counter++ < 90)
+                if (counter++ < maxDescTickers)
                 {
                     board.Description += (counter == 1 ? string.Empty : ", ") + pair.Item2.Name.Split(' ')[0];
+
+                    if (counter == maxDescTickers)
+                    {
+                        board.Description += "...";
+                    }
                 }
             }
 

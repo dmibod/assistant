@@ -434,7 +434,7 @@ public class PublishingService : IPublishingService
             $"{op.Option.Id.OptionType.ToString().Substring(0, 1)}${op.Option.Id.Strike} {(int)op.Option.Id.Expiration.Month}/{op.Option.Id.Expiration.Day}/{op.Option.Id.Expiration.Year}";
 
         var labelStyle = RenderUtils.CreateStyle(new Tuple<string, string>("whiteSpace", "nowrap"));
-        var valueStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "2rem"));
+        var valueStyle = RenderUtils.CreateStyle(new Tuple<string, string>("paddingLeft", "1rem"));
 
         var list = new List<Tuple<string, string>>();
 
