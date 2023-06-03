@@ -590,6 +590,75 @@ public class TenantController : ControllerBase
     }
 
     /// <summary>
+    /// Allows to update default filter for the sell calls recommendations
+    /// </summary>
+    /// <param name="minAnnualPercent">Min annual yield, %</param>
+    /// <param name="minPremium">Min premium (option contract price), $</param>
+    /// <param name="minDte">Min days till expiration</param>
+    /// <param name="maxDte">Max days till expiration</param>
+    /// <param name="minVol">Min volume</param>
+    /// <param name="otm">true - out of the money options, false - in the money options</param>
+    /// <param name="monthly">true - use monthly option expirations only</param>
+    /// <param name="covered">true - to check if there is stock position available for 'covered' calls</param>
+    [HttpPut("Recommendations/SellCalls/Filter")]
+    public async Task RecommendationUpgradeSellCallsFilterAsync(
+        int? minAnnualPercent, 
+        decimal? minPremium, 
+        int? minDte, 
+        int? maxDte,
+        int? minVol,
+        bool? otm, 
+        bool? monthly, 
+        bool? covered)
+    {
+        var defaultFilter = await this.recommendationService.GetSellCallsFilterAsync();
+
+        var filter = defaultFilter ?? new SellCallsFilter();
+
+        if (minAnnualPercent.HasValue)
+        {
+            filter.MinAnnualPercent = minAnnualPercent;
+        }
+
+        if (minPremium.HasValue)
+        {
+            filter.MinPremium = minPremium;
+        }
+
+        if (minDte.HasValue)
+        {
+            filter.MinDte = minDte;
+        }
+
+        if (maxDte.HasValue)
+        {
+            filter.MaxDte = maxDte;
+        }
+
+        if (minVol.HasValue)
+        {
+            filter.MinVolume = minVol;
+        }
+
+        if (otm.HasValue)
+        {
+            filter.Otm = otm;
+        }
+
+        if (monthly.HasValue)
+        {
+            filter.MonthlyExpirations = monthly;
+        }
+
+        if (covered.HasValue)
+        {
+            filter.Covered = covered.Value;
+        }
+
+        await this.recommendationService.UpdateSellCallsFilterAsync(filter);
+    }
+
+    /// <summary>
     /// Generates 'Sell Calls' recommendations (call options you need to pay attention to) based on your watch list, sell prices and filtering criteria 
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
@@ -703,6 +772,68 @@ public class TenantController : ControllerBase
     }
 
     /// <summary>
+    /// Allows to update default filter for the sell puts recommendations
+    /// </summary>
+    /// <param name="minAnnualPercent">Min annual yield, %</param>
+    /// <param name="minPremium">Min premium (option contract price), $</param>
+    /// <param name="minDte">Min days till expiration</param>
+    /// <param name="maxDte">Max days till expiration</param>
+    /// <param name="minVol">Min volume</param>
+    /// <param name="otm">true - out of the money options, false - in the money options</param>
+    /// <param name="monthly">true - use monthly option expirations only</param>
+    [HttpPut("Recommendations/SellPuts/Filter")]
+    public async Task RecommendationUpgradeSellPutsFilterAsync(
+        int? minAnnualPercent, 
+        decimal? minPremium, 
+        int? minDte, 
+        int? maxDte,
+        int? minVol,
+        bool? otm, 
+        bool? monthly)
+    {
+        var defaultFilter = await this.recommendationService.GetSellPutsFilterAsync();
+
+        var filter = defaultFilter ?? new SellPutsFilter();
+
+        if (minAnnualPercent.HasValue)
+        {
+            filter.MinAnnualPercent = minAnnualPercent;
+        }
+
+        if (minPremium.HasValue)
+        {
+            filter.MinPremium = minPremium;
+        }
+
+        if (minDte.HasValue)
+        {
+            filter.MinDte = minDte;
+        }
+
+        if (maxDte.HasValue)
+        {
+            filter.MaxDte = maxDte;
+        }
+
+        if (minVol.HasValue)
+        {
+            filter.MinVolume = minVol;
+        }
+
+        if (otm.HasValue)
+        {
+            filter.Otm = otm;
+        }
+
+        if (monthly.HasValue)
+        {
+            filter.MonthlyExpirations = monthly;
+        }
+
+        await this.recommendationService.UpdateSellPutsFilterAsync(filter);
+    }
+
+    /// <summary>
     /// Generates 'Sell Puts' recommendations (put options you need to pay attention to) based on your watch list, buy prices and filtering criteria 
     /// </summary>
     /// <param name="minAnnualPercent">Min annual yield, %</param>
@@ -810,6 +941,82 @@ public class TenantController : ControllerBase
             MinContractsChange = minContractsChange,
             MinPercentageChange = minPercentageChange
         };
+
+        await this.recommendationService.UpdateOpenInterestFilterAsync(filter);
+    }
+
+    /// <summary>
+    /// Allows to update default filter for the open interest recommendations
+    /// </summary>
+    /// <param name="minAnnualPercent">Min annual yield, %</param>
+    /// <param name="minPremium">Min premium (option contract price), $</param>
+    /// <param name="minDte">Min days till expiration</param>
+    /// <param name="maxDte">Max days till expiration</param>
+    /// <param name="minVol">Min volume</param>
+    /// <param name="otm">true - out of the money options, false - in the money options</param>
+    /// <param name="monthly">true - use monthly option expirations only</param>
+    /// <param name="minContractsChange">min contracts change</param>
+    /// <param name="minPercentageChange">min percentage change</param>
+    [HttpPut("Recommendations/OpenInterest/Filter")]
+    public async Task RecommendationUpgradeOpenInterestFilterAsync(
+        int? minAnnualPercent, 
+        decimal? minPremium, 
+        int? minDte, 
+        int? maxDte,
+        int? minVol,
+        bool? otm, 
+        bool? monthly, 
+        decimal? minContractsChange, 
+        decimal? minPercentageChange)
+    {
+        var defaultFilter = await this.recommendationService.GetOpenInterestFilterAsync();
+
+        var filter = defaultFilter ?? new OpenInterestFilter();
+
+        if (minAnnualPercent.HasValue)
+        {
+            filter.MinAnnualPercent = minAnnualPercent;
+        }
+
+        if (minPremium.HasValue)
+        {
+            filter.MinPremium = minPremium;
+        }
+
+        if (minDte.HasValue)
+        {
+            filter.MinDte = minDte;
+        }
+
+        if (maxDte.HasValue)
+        {
+            filter.MaxDte = maxDte;
+        }
+
+        if (minVol.HasValue)
+        {
+            filter.MinVolume = minVol;
+        }
+
+        if (otm.HasValue)
+        {
+            filter.Otm = otm;
+        }
+
+        if (monthly.HasValue)
+        {
+            filter.MonthlyExpirations = monthly;
+        }
+
+        if (minContractsChange.HasValue)
+        {
+            filter.MinContractsChange = minContractsChange;
+        }
+        
+        if (minPercentageChange.HasValue)
+        {
+            filter.MinPercentageChange = minPercentageChange;
+        }
 
         await this.recommendationService.UpdateOpenInterestFilterAsync(filter);
     }
