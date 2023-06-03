@@ -84,7 +84,8 @@ public class RecommendationService : IRecommendationService
         await this.repository.UpdateSellPutsFilterAsync(tenant, JsonSerializer.Serialize(filter));
     }
 
-    public async Task<IEnumerable<SellOperation>> SellPutsAsync(SellPutsFilter filter,
+    public async Task<IEnumerable<SellOperation>> SellPutsAsync(
+        SellPutsFilter filter,
         Func<int, ProgressTracker> trackerCreator)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SellPutsAsync),
@@ -108,7 +109,9 @@ public class RecommendationService : IRecommendationService
         return operations;
     }
 
-    private async Task<IEnumerable<SellOperation>> SellPutsAsync(WatchListItem item, SellPutsFilter filter,
+    private async Task<IEnumerable<SellOperation>> SellPutsAsync(
+        WatchListItem item, 
+        SellPutsFilter filter,
         int opsCount)
     {
         if (opsCount > MaxRecsCount)
@@ -150,7 +153,7 @@ public class RecommendationService : IRecommendationService
                     Expiration.FromYYYYMMDD(expiration));
 
                 var op = put.Sell(price.Bid ?? decimal.Zero);
-                if (op.BreakEvenStockPrice <= item.BuyPrice && AreConditionsMet(op, filter))
+                if (op.BreakEvenStockPrice <= item.BuyPrice && AreConditionsMet(price, filter) && AreConditionsMet(op, filter))
                 {
                     sellOperations.Add(op);
                     if (opsCount + sellOperations.Count > MaxRecsCount)
@@ -166,7 +169,6 @@ public class RecommendationService : IRecommendationService
     }
 
     #endregion
-
     #region Sell Calls
 
     public async Task<string?> FindSellCallsBoardId()
@@ -216,7 +218,8 @@ public class RecommendationService : IRecommendationService
         await this.repository.UpdateSellCallsFilterAsync(tenant, JsonSerializer.Serialize(filter));
     }
 
-    public async Task<IEnumerable<SellOperation>> SellCallsAsync(SellCallsFilter filter,
+    public async Task<IEnumerable<SellOperation>> SellCallsAsync(
+        SellCallsFilter filter,
         Func<int, ProgressTracker> trackerCreator)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.SellCallsAsync),
@@ -253,7 +256,9 @@ public class RecommendationService : IRecommendationService
         return operations;
     }
 
-    private async Task<IEnumerable<SellOperation>> SellCallsAsync(WatchListItem item, SellCallsFilter filter,
+    private async Task<IEnumerable<SellOperation>> SellCallsAsync(
+        WatchListItem item, 
+        SellCallsFilter filter,
         int opsCount)
     {
         if (opsCount > MaxRecsCount)
@@ -295,7 +300,7 @@ public class RecommendationService : IRecommendationService
                     Expiration.FromYYYYMMDD(expiration));
 
                 var op = call.Sell(price.Bid ?? decimal.Zero);
-                if (op.BreakEvenStockPrice >= item.SellPrice && AreConditionsMet(op, filter))
+                if (op.BreakEvenStockPrice >= item.SellPrice && AreConditionsMet(price, filter) && AreConditionsMet(op, filter))
                 {
                     sellOperations.Add(op);
                     if (opsCount + sellOperations.Count > MaxRecsCount)
@@ -311,7 +316,6 @@ public class RecommendationService : IRecommendationService
     }
 
     #endregion
-
     #region Open Interest
 
     public async Task<string?> FindOpenInterestBoardId()
@@ -362,7 +366,8 @@ public class RecommendationService : IRecommendationService
         await this.repository.UpdateOpenInterestFilterAsync(tenant, JsonSerializer.Serialize(filter));
     }
 
-    public async Task<IEnumerable<OpenInterestRecommendation>> OpenInterestAsync(OpenInterestFilter filter,
+    public async Task<IEnumerable<OpenInterestRecommendation>> OpenInterestAsync(
+        OpenInterestFilter filter,
         Func<int, ProgressTracker> trackerCreator)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.OpenInterestAsync),
@@ -386,8 +391,10 @@ public class RecommendationService : IRecommendationService
         return options;
     }
 
-    private async Task<IEnumerable<OpenInterestRecommendation>> OpenInterestAsync(WatchListItem item,
-        OpenInterestFilter filter, int count)
+    private async Task<IEnumerable<OpenInterestRecommendation>> OpenInterestAsync(
+        WatchListItem item,
+        OpenInterestFilter filter, 
+        int count)
     {
         if (count > MaxRecsCount)
         {
@@ -439,7 +446,7 @@ public class RecommendationService : IRecommendationService
                             .DaysTillExpiration
                     };
 
-                    if (AreConditionsMet(rec, filter))
+                    if (AreConditionsMet(price, filter) && AreConditionsMet(rec, filter))
                     {
                         options.Add(rec);
 
@@ -502,6 +509,19 @@ public class RecommendationService : IRecommendationService
     }
 
     #endregion
+
+    private static bool AreConditionsMet(OptionAssetPrice price, RecommendationFilter filter)
+    {
+        if (filter.MinVolume.HasValue && price.Vol.HasValue)
+        {
+            if (filter.MinVolume.Value > price.Vol)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     private static bool AreConditionsMet(SellOperation op, RecommendationFilter filter)
     {

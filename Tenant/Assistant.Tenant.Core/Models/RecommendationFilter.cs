@@ -11,7 +11,9 @@ public abstract class RecommendationFilter
     public int? MaxDte { get; set; }
 
     public bool? Otm { get; set; }
-    
+
+    public int? MinVolume { get; set; }
+
     public bool? MonthlyExpirations { get; set; }
 
     public virtual string AsDescription()
@@ -38,6 +40,11 @@ public abstract class RecommendationFilter
             filters.Add($"dte <= {this.MaxDte}");
         }
         
+        if (this.MinVolume.HasValue)
+        {
+            filters.Add($"vol >= {this.MinVolume}");
+        }
+
         if (this.Otm.HasValue)
         {
             filters.Add(this.Otm.Value ? "otm" : "itm");
