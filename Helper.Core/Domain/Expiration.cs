@@ -46,7 +46,7 @@ public readonly struct Expiration
 
     public ushort Year { get; }
 
-    public bool IsMonthly => this.AsDate().DayOfWeek == DayOfWeek.Friday && this.Day > 14;
+    public bool IsMonthly => this.AsDate().DayOfWeek == DayOfWeek.Friday && this.Day > 14 && this.Day < 22;
     
     public ushort DaysTillExpiration => (ushort)(this.AsDate() - DateTime.UtcNow.Date).Days;
     
