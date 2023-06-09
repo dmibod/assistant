@@ -193,7 +193,7 @@ public class PositionPublishingService : IPositionPublishingService
 
         var actualCards = new List<Card>();
 
-        foreach (var p in comboOptionPositions.OrderBy(p => p.Key))
+        foreach (var p in comboOptionPositions.OrderBy(p => OptionUtils.ParseExpiration(p.Value.First().Ticker)))
         {
             var leg = p.Value.First();
             var name =
@@ -450,7 +450,7 @@ public class PositionPublishingService : IPositionPublishingService
 
     private string PriceToContent(IEnumerable<Position> legs, IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
-        const string label = "price";
+        const string label = "Premium";
         var comboChange = new Tuple<decimal, decimal>(decimal.Zero, decimal.Zero);
 
         foreach (var leg in legs)
