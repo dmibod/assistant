@@ -3,8 +3,11 @@
 using System.Text.RegularExpressions;
 using Assistant.Market.Core.Models;
 using Common.Core.Utils;
+using Helper.Core.Domain;
 using Helper.Core.Utils;
 using Microsoft.Extensions.Logging;
+using OptionChain = Assistant.Market.Core.Models.OptionChain;
+using Stock = Assistant.Market.Core.Models.Stock;
 
 public class PublishingService : IPublishingService
 {
@@ -104,10 +107,16 @@ public class PublishingService : IPublishingService
                 { Name = name, Description = "Calculation..." });
         }
 
-        await this.PublishOpenInterestAsync(board, today);
+        await this.PublishOpenInterestAsync(board, today, new OpenInterestFilter
+        {
+            PublishIncrease = true,
+            PublishDecrease = false,
+            Top = 20,
+            MinPercent = 20m
+        });
     }
 
-    private async Task PublishOpenInterestAsync(Board board, DateTime today)
+    private async Task PublishOpenInterestAsync(Board board, DateTime today, OpenInterestFilter filter)
     {
         const int maxDescTickers = 90;
 
@@ -136,56 +145,103 @@ public class PublishingService : IPublishingService
             var lane = await this.kanbanService.CreateCardLaneAsync(board.Id, board.Id, new Lane
             {
                 Name = OpenInterest,
-                Description = "companies ordered by the absolute change of OI in contracts, from high to low value"
+                Description = $"{filter.AsDescription()}. Companies ordered by the absolute change of OI in contracts, from high to low value"
             });
 
             var list = new List<Tuple<decimal, Card>>();
 
             foreach (var pair in dictionary.OrderByDescending(p => p.Value))
             {
+                var props = new List<string>();
+
                 var price = stockMap[pair.Key].Last;
-                var min = await this.optionService.FindOpenInterestChangeMinAsync(pair.Key, () => today);
-                var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key, () => today);
-                var percentMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key, () => today);
-                var percentMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key, () => today);
-                var tops = await this.optionService.FindTopsAsync(pair.Key, 20, () => today);
+
+                var stock = Helper.Core.Domain.Stock.From(pair.Key);
+                stock.Price = MarketPrice.From(price);
 
                 var propPrice = RenderUtils.PairToContent(
                     RenderUtils.PropToContent("Price"),
                     RenderUtils.PropToContent($"{FormatUtils.FormatPrice(price)}", WideCellStyle));
 
-                var propMin = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("OI \u0394 \u2193", SmallFontStyle),
-                    RenderUtils.PropToContent(
-                        $"{FormatUtils.FormatAbsNumber(min)} ({FormatUtils.FormatAbsPercent(percentMin, 2)})",
-                        GetNumberStyle(min)));
+                props.Add(propPrice);
 
-                var propMax = RenderUtils.PairToContent(
-                    RenderUtils.PropToContent("OI \u0394 \u2191", SmallFontStyle),
-                    RenderUtils.PropToContent(
-                        $"{FormatUtils.FormatAbsNumber(max)} ({FormatUtils.FormatAbsPercent(percentMax, 2)})",
-                        GetNumberStyle(max)));
-
-                var props = new List<string>
+                var change = decimal.Zero;
+                var percentChange = decimal.Zero;
+                
+                if (filter.PublishDecrease)
                 {
-                    propPrice,
-                    propMin,
-                    propMax,
-                    RenderUtils.PairToContent(RenderUtils.PropToContent("Top"), RenderUtils.PropToContent($"{tops.Count()}", WideCellStyle))
-                };
+                    var min = await this.optionService.FindOpenInterestChangeMinAsync(pair.Key, () => today);
+                    var percentMin = await this.optionService.FindOpenInterestChangePercentMinAsync(pair.Key, () => today);
+
+                    if (min > decimal.Zero)
+                    {
+                        min = decimal.Zero;
+                        percentMin = decimal.Zero;
+                    }
+
+                    var propMin = RenderUtils.PairToContent(
+                        RenderUtils.PropToContent("OI max \u2193", SmallFontStyle),
+                        RenderUtils.PropToContent(
+                            $"{FormatUtils.FormatAbsNumber(min)} ({FormatUtils.FormatAbsPercent(percentMin, 2)})",
+                            GetNumberStyle(min)));
+                    
+                    props.Add(propMin);
+
+                    change = Math.Max(Math.Abs(min), change);
+                    percentChange = Math.Max(Math.Abs(percentMin), percentChange);
+                }
+
+                if (filter.PublishIncrease)
+                {
+                    var max = await this.optionService.FindOpenInterestChangeMaxAsync(pair.Key, () => today);
+                    var percentMax = await this.optionService.FindOpenInterestChangePercentMaxAsync(pair.Key, () => today);
+                    
+                    if (max < decimal.Zero)
+                    {
+                        max = decimal.Zero;
+                        percentMax = decimal.Zero;
+                    }
+
+                    var propMax = RenderUtils.PairToContent(
+                        RenderUtils.PropToContent("OI max \u2191", SmallFontStyle),
+                        RenderUtils.PropToContent(
+                            $"{FormatUtils.FormatAbsNumber(max)} ({FormatUtils.FormatAbsPercent(percentMax, 2)})",
+                            GetNumberStyle(max)));
+
+                    props.Add(propMax);
+                    
+                    change = Math.Max(Math.Abs(max), change);
+                    percentChange = Math.Max(Math.Abs(percentMax), percentChange);
+                }
+
+                var tops = await this.optionService.FindTopsAsync(pair.Key, filter.Top, () => today);
 
                 var groups = tops
+                    .Where(top => filter.PublishDecrease || top.OpenInterestChange >= decimal.Zero)
+                    .Where(top => filter.PublishIncrease || top.OpenInterestChange < decimal.Zero)
+                    .Where(top => CalculationUtils.Percent(Math.Abs(top.OpenInterestChange) / change) >= filter.MinPercent)
                     .GroupBy(top => OptionUtils.ParseExpiration(top.OptionTicker))
                     .OrderByDescending(group => group.Sum(top => Math.Abs(top.OpenInterestChange)));
 
-                var oddRow = true;
+                var oddRow = false;
+                
                 foreach (var group in groups)
                 {
-                    var labelStyle = oddRow ? SmallFontStyle : RenderUtils.MergeStyle(EvenRowStyle, SmallFontStyle);
+                    var expiration = Expiration.FromYYYYMMDD(OptionUtils.GetExpiration(group.First().OptionTicker));
+                    var groupLabel = $"{FormatUtils.FormatExpiration(expiration.AsDate())}";
+                    var groupValue = $"dte({expiration.DaysTillExpiration})";
+                    var groupProp = RenderUtils.PairToContent(RenderUtils.PropToContent(groupLabel, oddRow ? null : EvenRowStyle), RenderUtils.PropToContent(groupValue, oddRow ? WideCellStyle : RenderUtils.MergeStyle(EvenRowStyle, WideCellStyle)));
                     
+                    props.Add(groupProp);
+
+                    var labelStyle = oddRow ? SmallFontStyle : RenderUtils.MergeStyle(EvenRowStyle, SmallFontStyle);
+
                     foreach (var top in group)
                     {
-                        var label = $"{OptionUtils.GetSide(top.OptionTicker)}${OptionUtils.GetStrike(top.OptionTicker)}@{FormatUtils.FormatExpiration(OptionUtils.ParseExpiration(OptionUtils.GetExpiration(top.OptionTicker)), true)}";
+                        var strike = OptionUtils.GetStrike(top.OptionTicker);
+                        var option = OptionUtils.IsCall(top.OptionTicker) ? StockOption.Call(stock, strike, expiration) : StockOption.Put(stock, strike, expiration);
+                        var op = option.Sell(top.Last);
+                        var label = $"{OptionUtils.GetSide(top.OptionTicker)}${strike} {FormatUtils.FormatAbsPercent(CalculationUtils.Percent(op.Roi), 0)}/{FormatUtils.FormatAbsPercent(CalculationUtils.Percent(op.AnnualRoi), 0)}";
                         var value = $"{FormatUtils.FormatAbsNumber(top.OpenInterestChange)} ({FormatUtils.FormatAbsPercent(top.OpenInterestChangePercent, 2)}) {FormatUtils.FormatPrice(top.Last)}";
                         var valueStyle = oddRow ? GetNumberStyle(top.OpenInterestChange) : RenderUtils.MergeStyle(EvenRowStyle, GetNumberStyle(top.OpenInterestChange));
                         var prop = RenderUtils.PairToContent(RenderUtils.PropToContent(label, labelStyle), RenderUtils.PropToContent(value, valueStyle));
@@ -203,7 +259,7 @@ public class PublishingService : IPublishingService
                     Description = $"[{desc}]"
                 };
 
-                list.Add(new Tuple<decimal, Card>(Math.Max(Math.Abs(min), Math.Abs(max)), card));
+                list.Add(new Tuple<decimal, Card>(change, card));
             }
 
             var counter = 0;

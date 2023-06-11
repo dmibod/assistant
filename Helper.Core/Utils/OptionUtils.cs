@@ -65,6 +65,16 @@ public static class OptionUtils
         return match.Groups[3].Value;
     }
 
+    public static bool IsCall(string optionTicker)
+    {
+        return GetSide(optionTicker).ToUpper() == "C";
+    }
+
+    public static bool IsPut(string optionTicker)
+    {
+        return GetSide(optionTicker).ToUpper() == "P";
+    }
+
     public static string GetExpiration(string optionTicker)
     {
         return AsYYYYMMDD(ParseExpiration(optionTicker));
