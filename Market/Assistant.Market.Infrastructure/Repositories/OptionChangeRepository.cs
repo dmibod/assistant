@@ -123,7 +123,7 @@ public class OptionChangeRepository : IOptionChangeRepository
 
         var cursor = await this.collection.FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
 
-        return cursor.ToEnumerable().Sum(entity => entity.Contracts.Length);
+        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Count(contract => contract.TimeStamp >= today);
     }
 
     public async Task<decimal> FindOpenInterestMinAsync(string ticker, Func<DateTime> todayFn)
@@ -135,7 +135,7 @@ public class OptionChangeRepository : IOptionChangeRepository
         var cursor = await this.collection
             .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
 
-        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Min(contract => contract.OI);
+        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Where(contract => contract.TimeStamp >= today).Min(contract => contract.OI);
     }
 
     public async Task<decimal> FindOpenInterestMaxAsync(string ticker, Func<DateTime> todayFn)
@@ -147,7 +147,7 @@ public class OptionChangeRepository : IOptionChangeRepository
         var cursor = await this.collection
             .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
 
-        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Max(contract => contract.OI);
+        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Where(contract => contract.TimeStamp >= today).Max(contract => contract.OI);
     }
 
     public async Task<decimal> FindOpenInterestPercentMinAsync(string ticker, Func<DateTime> todayFn)
@@ -160,7 +160,7 @@ public class OptionChangeRepository : IOptionChangeRepository
         var cursor = await this.collection
             .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
 
-        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Min(contract => contract.Vol);
+        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Where(contract => contract.TimeStamp >= today).Min(contract => contract.Vol);
     }
 
     public async Task<decimal> FindOpenInterestPercentMaxAsync(string ticker, Func<DateTime> todayFn)
@@ -173,7 +173,7 @@ public class OptionChangeRepository : IOptionChangeRepository
         var cursor = await this.collection
             .FindAsync(entity => entity.Ticker == ticker && entity.LastRefresh >= today);
 
-        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Max(contract => contract.Vol);
+        return cursor.ToEnumerable().SelectMany(entity => entity.Contracts).Where(contract => contract.TimeStamp >= today).Max(contract => contract.Vol);
     }
 
     public async Task<IEnumerable<OptionChange>> FindTopsAsync(string ticker, int count, Func<DateTime> todayFn)
@@ -188,7 +188,7 @@ public class OptionChangeRepository : IOptionChangeRepository
 
         return cursor
             .ToEnumerable()
-            .SelectMany(entity => entity.Contracts.OrderByDescending(contract => Math.Abs(contract.OI)).Take(count))
+            .SelectMany(entity => entity.Contracts.Where(contract => contract.TimeStamp >= today).OrderByDescending(contract => Math.Abs(contract.OI)).Take(count))
             .Select(contract => new OptionChange
             {
                 OptionTicker = contract.Ticker,
