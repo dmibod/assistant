@@ -229,7 +229,7 @@ public class PublishingService : IPublishingService
                 {
                     var expiration = Expiration.FromYYYYMMDD(OptionUtils.GetExpiration(group.First().OptionTicker));
                     var groupLabel = $"{FormatUtils.FormatExpiration(expiration.AsDate())}";
-                    var groupValue = $"{expiration.DaysTillExpiration} dte";
+                    var groupValue = $"{expiration.DaysTillExpiration}d";
                     var groupProp = RenderUtils.PairToContent(RenderUtils.PropToContent(groupLabel, oddRow ? null : EvenRowStyle), RenderUtils.PropToContent(groupValue, oddRow ? WideCellStyle : RenderUtils.MergeStyle(EvenRowStyle, WideCellStyle)));
                     
                     props.Add(groupProp);
