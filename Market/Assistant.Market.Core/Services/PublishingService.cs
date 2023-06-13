@@ -107,7 +107,7 @@ public class PublishingService : IPublishingService
                 { Name = name, Description = "Calculation..." });
         }
 
-        await this.PublishOpenInterestAsync(board, today, new OpenInterestFilter
+        await this.PublishOpenInterestAsync(board, today.AddHours(-4), new OpenInterestFilter
         {
             PublishIncrease = true,
             PublishDecrease = false,
