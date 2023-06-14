@@ -1,5 +1,6 @@
 ﻿namespace Assistant.Market.Infrastructure.Services;
 
+using Assistant.Market.Core.Messaging;
 using Assistant.Market.Infrastructure.Configuration;
 using Common.Core.Messaging.TopicResolver;
 using Common.Core.Services;
@@ -23,7 +24,7 @@ public class CleanDataTimerService : BaseTimerService
 
     protected override void DoWork(object? state)
     {
-        this.busService.PublishAsync(this.dataCleanTopic).GetAwaiter().GetResult();
+        this.busService.PublishAsync(this.dataCleanTopic, new DataCleanMessage()).GetAwaiter().GetResult();
     }
 
     protected override void LogMessage(string message)
