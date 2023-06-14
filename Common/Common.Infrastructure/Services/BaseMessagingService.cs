@@ -74,6 +74,7 @@ public abstract class BaseMessagingService : BaseHostedService
         catch (Exception e)
         {
             this.LogError(e.Message);
+            this.LogError(e.StackTrace!);
         }
     }
 
