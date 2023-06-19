@@ -157,9 +157,14 @@ public class WatchListPublishingService : IWatchListPublishingService
     private string ItemToContent(WatchListItem item, AssetPrice price)
     {
         return "["
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("buy"), RenderUtils.PropToContent(FormatUtils.FormatPrice(item.BuyPrice))) + ","
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("sell"), RenderUtils.PropToContent(FormatUtils.FormatPrice(item.SellPrice))) + ","
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("price"), RenderUtils.PropToContent(FormatUtils.FormatPrice(price.Last))) +
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Buy"), RenderUtils.PropToContent(FormatUtils.FormatPrice(item.BuyPrice), IsGreater(item.BuyPrice, price.Last) ? RenderUtils.RedStyle : RenderUtils.NoStyle)) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Sell"), RenderUtils.PropToContent(FormatUtils.FormatPrice(item.SellPrice), IsGreater(price.Last, item.SellPrice) ? RenderUtils.RedStyle : RenderUtils.NoStyle)) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Price"), RenderUtils.PropToContent(FormatUtils.FormatPrice(price.Last))) +
                "]";
+    }
+
+    private static bool IsGreater(decimal? left, decimal? right)
+    {
+        return (left ?? decimal.Zero) > (right ?? decimal.Zero);
     }
 }

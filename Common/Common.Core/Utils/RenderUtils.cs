@@ -8,6 +8,8 @@ public static class RenderUtils
     public static IDictionary<string, string> GreenStyle => CreateStyle(Green);
 
     public static IDictionary<string, string> RedStyle => CreateStyle(Red);
+    
+    public static IDictionary<string, string> NoStyle => new Dictionary<string, string>();
 
     public static string PairToContent(string name, string value)
     {
