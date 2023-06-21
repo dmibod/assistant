@@ -93,7 +93,7 @@ public class MarketDataService : IMarketDataService
     private async Task<Dictionary<string, List<OptionChainItemResponse>>> GetOptionChainDataAsync(string ticker)
     {
         var results = new List<OptionChainResponse>();
-        
+
         try
         {
             var stream = this.ApiClient.OptionChainStreamAsync(new OptionChainRequest { Ticker = ticker });
@@ -105,18 +105,18 @@ public class MarketDataService : IMarketDataService
                     results.Add(response);
                 }
             }
+
+            return results.SelectMany(item => item.Results)
+                .Where(item => item.Day != null && item.Day.Close > decimal.Zero && item.Details != null && !string.IsNullOrEmpty(item.Details.ExpirationDate))
+                .GroupBy(item => item.Details.ExpirationDate)
+                .ToDictionary(item => item.Key.Replace("-", string.Empty), item => item.ToList());
         }
         catch (Exception e)
         {
             this.logger.LogError(e, e.Message);
-            
+
             throw;
         }
-
-        return results.SelectMany(item => item.Results)
-            .Where(item => item.Day.Close > decimal.Zero)
-            .GroupBy(item => item.Details.ExpirationDate)
-            .ToDictionary(item => item.Key.Replace("-", string.Empty), item => item.ToList());
     }
 
     private static OptionContract ToContract(string ticker, OptionChainItemResponse item)

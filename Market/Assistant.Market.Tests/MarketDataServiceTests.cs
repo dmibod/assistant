@@ -34,10 +34,10 @@ public class MarketDataServiceTests
         var service = new MarketDataService(new HttpClientFactory(httpClient), Substitute.For<ILogger<MarketDataService>>());
         
         // Act
-        var optionChain = await service.GetOptionChainAsync("FSR");
+        var optionChain = await service.GetOptionChainAsync("PYPL");
         
         // Assert
-        var put = optionChain.Expirations["20230519"].Contracts[5].Put;
+        var put = optionChain.Expirations["20250117"].Contracts[5].Put;
         Assert.IsTrue(put.Last < 0.9m);
     }
 }

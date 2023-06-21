@@ -17,7 +17,7 @@ public class ApiClient : IDisposable
     public async Task<PrevCloseResponse?> PrevCloseAsync(PrevCloseRequest request)
     {
         var requestUri = $"/v2/aggs/ticker/{request.Ticker}/prev?adjusted=true";
-        
+
         using var response = await this.httpClient.GetAsync(requestUri);
 
         response.EnsureSuccessStatusCode();
@@ -29,8 +29,9 @@ public class ApiClient : IDisposable
 
     public async Task<PrevCloseResponse?> PrevCloseAsync(PrevCloseOptionRequest request)
     {
-        var requestUri = $"/v2/aggs/ticker/O:{request.Ticker}{request.Expiration}{request.Side}{Formatting.FormatStrike(request.Strike)}/prev?adjusted=true";
-        
+        var requestUri =
+            $"/v2/aggs/ticker/O:{request.Ticker}{request.Expiration}{request.Side}{Formatting.FormatStrike(request.Strike)}/prev?adjusted=true";
+
         using var response = await this.httpClient.GetAsync(requestUri);
 
         response.EnsureSuccessStatusCode();
@@ -43,7 +44,7 @@ public class ApiClient : IDisposable
     public async Task<OptionChainResponse?> OptionChainAsync(OptionChainRequest request)
     {
         var requestUri = $"/v3/snapshot/options/{request.Ticker}";
-        
+
         using var response = await this.httpClient.GetAsync(requestUri);
 
         response.EnsureSuccessStatusCode();
@@ -55,9 +56,10 @@ public class ApiClient : IDisposable
 
     public async IAsyncEnumerable<OptionChainResponse?> OptionChainStreamAsync(OptionChainRequest request)
     {
-        var requestUri = $"/v3/snapshot/options/{request.Ticker}";
+        var baseUri = $"/v3/snapshot/options/{request.Ticker}";
+        var requestUri = baseUri;
 
-        do
+        while (!string.IsNullOrEmpty(requestUri))
         {
             using var response = await this.httpClient.GetAsync(requestUri);
 
@@ -77,18 +79,26 @@ public class ApiClient : IDisposable
                 break;
             }
 
-            requestUri = chainResponse.NextUrl;
-                
-            yield return chainResponse;
+            if (string.IsNullOrEmpty(chainResponse.NextUrl))
+            {
+                requestUri = null;
+            }
+            else
+            {
+                var uri = new Uri(chainResponse.NextUrl);
 
-        } while (!string.IsNullOrEmpty(requestUri));
+                requestUri = $"{baseUri}{uri.Query}";
+            }
+
+            yield return chainResponse;
+        }
     }
 
     public IEnumerable<OptionChainResponse?> OptionChainStream(OptionChainRequest request)
     {
         var requestUri = $"/v3/snapshot/options/{request.Ticker}";
 
-        do
+        while (!string.IsNullOrEmpty(requestUri))
         {
             using var response = this.httpClient.GetAsync(requestUri).Result;
 
@@ -109,10 +119,9 @@ public class ApiClient : IDisposable
             }
 
             requestUri = chainResponse.NextUrl;
-                
-            yield return chainResponse;
 
-        } while (!string.IsNullOrEmpty(requestUri));
+            yield return chainResponse;
+        }
     }
 
     public void Dispose()
