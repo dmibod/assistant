@@ -177,6 +177,50 @@ public class TenantController : ControllerBase
     }
 
     /// <summary>
+    /// Adds stocks to your watch list, which cost less or equal to "maxPrice"
+    /// </summary>
+    /// <param name="maxPrice">Max price</param>
+    /// <param name="buyPricePercent">The % amount below current price, for ex. stock price 100$ in case buyPricePercent is 10%, buy price is 90$</param>
+    /// <param name="sellPricePercent">The % amount above current price, for ex. stock price 100$ in case sellPricePercent is 10%, sell price is 110$</param>
+    [HttpPost("WatchList/AddByPrice")]
+    public async Task<ActionResult> WatchListAddItemsAsync(decimal maxPrice, decimal buyPricePercent,
+        decimal sellPricePercent)
+    {
+        var tickers = (await this.watchListService.FindAllAsync()).Select(item => item.Ticker).ToHashSet();
+        var prices = (await this.marketDataService.FindStockPricesAsync(maxPrice)).ToDictionary(item => item.Ticker);
+
+        var buyPriceFactor = (100.0m - buyPricePercent) / 100.0m;
+        var sellPriceFactor = (100.0m + sellPricePercent) / 100.0m;
+
+        var list = new List<WatchListItem>();
+
+        foreach (var ticker in prices.Keys.Except(tickers))
+        {
+            var last = prices[ticker].Last;
+            var item = new WatchListItem
+            {
+                Ticker = ticker,
+                BuyPrice = prices.ContainsKey(ticker) && last.HasValue
+                    ? Math.Round(last.Value * buyPriceFactor)
+                    : decimal.Zero,
+                SellPrice = prices.ContainsKey(ticker) && last.HasValue
+                    ? Math.Round(last.Value * sellPriceFactor)
+                    : decimal.Zero
+            };
+
+            item = await this.watchListService.CreateOrUpdateAsync(item, true);
+
+            list.Add(item);
+        }
+
+        return this.Ok(new
+        {
+            list.Count,
+            Items = list.ToArray()
+        });
+    }
+
+    /// <summary>
     /// Here you can change buy price for the stock in your watch list
     /// </summary>
     [HttpPut("WatchList/{ticker}/BuyPrice")]

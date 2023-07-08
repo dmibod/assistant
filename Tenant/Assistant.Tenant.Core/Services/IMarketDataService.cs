@@ -8,6 +8,8 @@ public interface IMarketDataService
     
     Task<IEnumerable<AssetPrice>> FindStockPricesAsync(ISet<string> tickers);
     
+    Task<IEnumerable<AssetPrice>> FindStockPricesAsync(decimal maxPrice);
+    
     Task<IEnumerable<OptionAssetPrice>> FindOptionPricesAsync(string stockTicker, string expiration);
 
     Task<IEnumerable<OptionAssetPrice>> FindOptionPricesChangeAsync(string stockTicker, string expiration);

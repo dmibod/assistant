@@ -56,11 +56,20 @@ public class MarketDataService : IMarketDataService
 
     public async Task<IEnumerable<AssetPrice>> FindStockPricesAsync(ISet<string> tickers)
     {
-        this.logger.LogInformation("{Method}", nameof(this.FindStockPricesAsync));
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindStockPricesAsync), tickers.Count);
 
         var cursor = await this.stockCollection.FindAsync(doc => tickers == null || tickers.Contains(doc.Ticker));
 
         return cursor.ToEnumerable().ToList();
+    }
+
+    public async Task<IEnumerable<AssetPrice>> FindStockPricesAsync(decimal maxPrice)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.FindStockPricesAsync), maxPrice);
+
+        var cursor = await this.stockCollection.FindAsync(_ => true);
+
+        return cursor.ToEnumerable().Where(item => item.Last.HasValue && item.Last.Value <= maxPrice).ToList();
     }
 
     public async Task<IEnumerable<OptionAssetPrice>> FindOptionPricesAsync(string stockTicker, string expiration)
