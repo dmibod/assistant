@@ -8,7 +8,7 @@ public interface IWatchListService
 
     Task<WatchListItem?> FindByTickerAsync(string ticker);
 
-    Task<WatchListItem> CreateOrUpdateAsync(WatchListItem listItem, bool ignoreIfExists);
+    Task<WatchListItem> CreateOrUpdateAsync(WatchListItem listItem, bool ignoreIfExists, bool suppressNotifications);
 
     Task RemoveAsync(string ticker, bool suppressNotifications);
 

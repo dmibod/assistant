@@ -69,6 +69,8 @@ public class WatchListPublishingService : IWatchListPublishingService
 
     private async Task PublishAsync(Board board)
     {
+        const int maxDescTickers = 90;
+
         var watchList = (await this.watchListService.FindAllAsync()).OrderBy(item => item.Ticker).ToList();
         var tickers = watchList.Select(item => item.Ticker).Distinct().ToHashSet();
         var stocks = (await this.marketDataService.FindStockPricesAsync(tickers)).ToDictionary(stock => stock.Ticker);
@@ -105,8 +107,13 @@ public class WatchListPublishingService : IWatchListPublishingService
         tracker.Finish();
 
         board.Description = tickers.Count > 0 
-            ? tickers.Aggregate((curr, i) => $"{curr}, {i}") 
+            ? tickers.Take(maxDescTickers).Aggregate((curr, i) => $"{curr}, {i}") 
             : string.Empty;
+
+        if (tickers.Count > maxDescTickers)
+        {
+            board.Description += "...";
+        }
 
         await this.kanbanService.UpdateBoardAsync(board);
     }

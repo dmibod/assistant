@@ -23,6 +23,7 @@ public class TenantController : ControllerBase
     private readonly IScheduleService scheduleService;
     private readonly IIdentityProvider identityProvider;
     private readonly IMarketDataService marketDataService;
+    private readonly INotificationService notificationService;
 
     public TenantController(
         IPositionService positionService,
@@ -34,7 +35,8 @@ public class TenantController : ControllerBase
         ITenantService tenantService,
         IScheduleService scheduleService,
         IIdentityProvider identityProvider,
-        IMarketDataService marketDataService)
+        IMarketDataService marketDataService,
+        INotificationService notificationService)
     {
         this.positionService = positionService;
         this.positionPublishingService = positionPublishingService;
@@ -46,6 +48,7 @@ public class TenantController : ControllerBase
         this.scheduleService = scheduleService;
         this.identityProvider = identityProvider;
         this.marketDataService = marketDataService;
+        this.notificationService = notificationService;
     }
 
     /// <summary>
@@ -114,7 +117,7 @@ public class TenantController : ControllerBase
             SellPrice = sellPrice
         };
 
-        return this.watchListService.CreateOrUpdateAsync(item, false);
+        return this.watchListService.CreateOrUpdateAsync(item, false, false);
     }
 
     /// <summary>
@@ -164,9 +167,14 @@ public class TenantController : ControllerBase
                     : decimal.Zero
             };
 
-            item = await this.watchListService.CreateOrUpdateAsync(item, true);
+            item = await this.watchListService.CreateOrUpdateAsync(item, true, true);
 
             list.Add(item);
+        }
+
+        if (list.Count > 0)
+        {
+            await this.notificationService.NotifyRefreshWatchListAsync();
         }
 
         return this.Ok(new
@@ -208,9 +216,14 @@ public class TenantController : ControllerBase
                     : decimal.Zero
             };
 
-            item = await this.watchListService.CreateOrUpdateAsync(item, true);
+            item = await this.watchListService.CreateOrUpdateAsync(item, true, true);
 
             list.Add(item);
+        }
+
+        if (list.Count > 0)
+        {
+            await this.notificationService.NotifyRefreshWatchListAsync();
         }
 
         return this.Ok(new

@@ -49,7 +49,7 @@ public class WatchListService : IWatchListService
         return watchList.FirstOrDefault(item => item.Ticker == ticker);
     }
 
-    public async Task<WatchListItem> CreateOrUpdateAsync(WatchListItem listItem, bool ignoreIfExists)
+    public async Task<WatchListItem> CreateOrUpdateAsync(WatchListItem listItem, bool ignoreIfExists, bool suppressNotifications)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.CreateOrUpdateAsync), listItem.Ticker);
 
@@ -66,14 +66,20 @@ public class WatchListService : IWatchListService
             await this.repository.CreateWatchListItemAsync(tenant, listItem);
 
             await this.marketDataService.EnsureStockAsync(listItem.Ticker);
-            
-            await this.notificationService.NotifyRefreshWatchListAsync();
+
+            if (!suppressNotifications)
+            {
+                await this.notificationService.NotifyRefreshWatchListAsync();
+            }
         }
         else if (!ignoreIfExists)
         {
             await this.repository.SetWatchListItemPricesAsync(tenant, listItem.Ticker, listItem.BuyPrice, listItem.SellPrice);
 
-            await this.notificationService.NotifyRefreshWatchListAsync();
+            if (!suppressNotifications)
+            {
+                await this.notificationService.NotifyRefreshWatchListAsync();
+            }
         }
 
         return listItem;
