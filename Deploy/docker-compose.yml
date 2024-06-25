@@ -23,6 +23,10 @@ services:
     depends_on:
       - bus
       - db
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "5"
   market:
     image: dmibod/assistant-market
     environment:
