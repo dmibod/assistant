@@ -21,7 +21,7 @@ public static class FormatUtils
 
     public static string FormatCap(double? cap)
     {
-        return $"${Math.Round((cap ?? 0.0) / 1000_000.0, 1)}";
+        return $"${Math.Round((cap ?? 0.0) / 1000_000_000.0, 2)}B";
     }
 
     public static string FormatPercent(decimal? percent, int digits = 2)
