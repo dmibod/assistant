@@ -9,6 +9,8 @@ public class AssetPrice
     public decimal? Ask { get; set; }
 
     public decimal? Last { get; set; }
+
+    public double? MarketCap { get; set; }
     
     public DateTime TimeStamp { get; set; }
 }

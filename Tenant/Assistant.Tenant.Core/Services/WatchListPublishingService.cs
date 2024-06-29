@@ -166,7 +166,8 @@ public class WatchListPublishingService : IWatchListPublishingService
         return "["
                + RenderUtils.PairToContent(RenderUtils.PropToContent("Buy"), RenderUtils.PropToContent(FormatUtils.FormatPrice(item.BuyPrice), IsGreater(item.BuyPrice, price.Last) ? RenderUtils.RedStyle : RenderUtils.NoStyle)) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("Sell"), RenderUtils.PropToContent(FormatUtils.FormatPrice(item.SellPrice), IsGreater(price.Last, item.SellPrice) ? RenderUtils.RedStyle : RenderUtils.NoStyle)) + ","
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("Price"), RenderUtils.PropToContent(FormatUtils.FormatPrice(price.Last))) +
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Price"), RenderUtils.PropToContent(FormatUtils.FormatPrice(price.Last))) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Cap"), RenderUtils.PropToContent(FormatUtils.FormatCap(price.MarketCap))) +
                "]";
     }
 

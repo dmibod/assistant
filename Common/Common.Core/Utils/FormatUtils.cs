@@ -19,6 +19,11 @@ public static class FormatUtils
         return $"${Math.Round(price ?? decimal.Zero, digits)}";
     }
 
+    public static string FormatCap(double? cap)
+    {
+        return $"${Math.Round((cap ?? 0.0) / 1000_000.0, 1)}";
+    }
+
     public static string FormatPercent(decimal? percent, int digits = 2)
     {
         var value = Math.Round(percent ?? decimal.Zero, digits);
