@@ -347,6 +347,8 @@ public class PositionPublishingService : IPositionPublishingService
 
         return "["
                + RenderUtils.PairToContent(RenderUtils.PropToContent("Ticker"), RenderUtils.PropToContent(ticker)) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Cap"),
+                   RenderUtils.PropToContent(FormatUtils.FormatCap(stocks[ticker].MarketCap))) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("Price"),
                    RenderUtils.PropToContent(FormatUtils.FormatPrice(stocks[ticker].Last))) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("Quantity"),
