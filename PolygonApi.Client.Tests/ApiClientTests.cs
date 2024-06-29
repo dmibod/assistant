@@ -24,6 +24,24 @@ public class ApiClientTests
     }
 
     [TestMethod]
+    public async Task TickerDetailsAsync_ReturnsExpectedResult()
+    {
+        // Arrange
+        var request = new TickerDetailsRequest
+        {
+            Ticker = "AAPL"
+        };
+        
+        // Act
+        var response = await client.TickerDetailsAsync(request);
+
+        // Assert
+        Assert.IsNotNull(response);
+        Assert.IsNotNull(response.Results);
+        Assert.IsTrue(response.Results.MarketCap > 0);
+    }
+
+    [TestMethod]
     public async Task PrevCloseAsync_ReturnsExpectedResult()
     {
         // Arrange

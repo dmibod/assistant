@@ -32,6 +32,19 @@ public class MarketDataService : IMarketDataService
         return response.AsAssetPrice();
     }
 
+
+    public async Task<double?> GetStockMarketCapAsync(string ticker)
+    {
+        this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.GetStockMarketCapAsync), ticker);
+
+        var response = await this.ApiClient.TickerDetailsAsync(new TickerDetailsRequest
+        {
+            Ticker = ticker
+        });
+
+        return response?.Results.MarketCap;
+    }
+
     public async Task<OptionChain?> GetOptionChainAsync(string ticker)
     {
         this.logger.LogInformation("{Method} with argument {Argument}", nameof(this.GetOptionChainAsync), ticker);

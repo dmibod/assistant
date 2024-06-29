@@ -2,5 +2,7 @@
 
 public class Stock : AssetPrice
 {
+    public double MarketCap { get; set; }
+    
     public DateTime LastRefresh { get; set; }
 }

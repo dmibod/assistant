@@ -14,6 +14,19 @@ public class ApiClient : IDisposable
         this.httpClient.BaseAddress = ApiUri;
     }
 
+    public async Task<TickerDetailsResponse?> TickerDetailsAsync(TickerDetailsRequest request)
+    {
+        var requestUri = $"/v3/reference/tickers/{request.Ticker}";
+
+        using var response = await this.httpClient.GetAsync(requestUri);
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        return JsonSerializer.Deserialize<TickerDetailsResponse>(content);
+    }
+
     public async Task<PrevCloseResponse?> PrevCloseAsync(PrevCloseRequest request)
     {
         var requestUri = $"/v2/aggs/ticker/{request.Ticker}/prev?adjusted=true";

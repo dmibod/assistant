@@ -61,6 +61,16 @@ public class RefreshService : IRefreshService
 
     private async Task UpdateStockAsync(Stock stock)
     {
+        var marketCap = await this.marketDataService.GetStockMarketCapAsync(stock.Ticker);
+        if (marketCap != null)
+        {
+            stock.MarketCap = marketCap.Value;
+        }
+        else
+        {
+            this.logger.LogWarning("{Method} execution {Message}", nameof(IMarketDataService.GetStockMarketCapAsync), $"{stock.Ticker} data is not obtained");
+        }
+
         var stockPrice = await this.marketDataService.GetStockPriceAsync(stock.Ticker);
         if (stockPrice != null)
         {
