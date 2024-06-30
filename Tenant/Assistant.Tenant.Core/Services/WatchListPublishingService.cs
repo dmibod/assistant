@@ -167,8 +167,13 @@ public class WatchListPublishingService : IWatchListPublishingService
                + RenderUtils.PairToContent(RenderUtils.PropToContent("Buy"), RenderUtils.PropToContent(FormatUtils.FormatPrice(item.BuyPrice), IsGreater(item.BuyPrice, price.Last) ? RenderUtils.RedStyle : RenderUtils.NoStyle)) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("Sell"), RenderUtils.PropToContent(FormatUtils.FormatPrice(item.SellPrice), IsGreater(price.Last, item.SellPrice) ? RenderUtils.RedStyle : RenderUtils.NoStyle)) + ","
                + RenderUtils.PairToContent(RenderUtils.PropToContent("Price"), RenderUtils.PropToContent(FormatUtils.FormatPrice(price.Last))) + ","
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("Cap"), RenderUtils.PropToContent(FormatUtils.FormatCap(price.MarketCap))) +
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Cap"), RenderUtils.PropToContent(FormatUtils.FormatCap(price.MarketCap), IsGreater(price.MarketCap, 1000_000_000) ? RenderUtils.NoStyle : RenderUtils.RedStyle)) +
                "]";
+    }
+
+    private static bool IsGreater(double? left, double? right)
+    {
+        return (left ?? 0) > (right ?? 0);
     }
 
     private static bool IsGreater(decimal? left, decimal? right)
