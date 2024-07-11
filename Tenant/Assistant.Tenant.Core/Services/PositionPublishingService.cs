@@ -78,8 +78,7 @@ public class PositionPublishingService : IPositionPublishingService
     private async Task PublishAsync(Board board)
     {
         var positions = (await this.positionService.FindAllAsync()).ToList();
-        var tickers = positions.Select(p => p.Type == AssetType.Stock ? p.Ticker : OptionUtils.GetStock(p.Ticker))
-            .Distinct().ToHashSet();
+        var tickers = positions.Select(p => p.Type == AssetType.Stock ? p.Ticker : OptionUtils.GetStock(p.Ticker)).Distinct().ToHashSet();
         var stocks = (await this.marketDataService.FindStockPricesAsync(tickers)).ToDictionary(stock => stock.Ticker);
         var expirations = new Dictionary<string, IEnumerable<AssetPrice>>();
 
@@ -137,9 +136,13 @@ public class PositionPublishingService : IPositionPublishingService
             new Lane { Name = name, Description = description });
     }
 
-    private async Task<int> PublishOptionsAsync(Board board, Lane account, IEnumerable<Lane> accountLanes,
+    private async Task<int> PublishOptionsAsync(
+        Board board, 
+        Lane account, 
+        IEnumerable<Lane> accountLanes,
         IDictionary<string, List<Position>> optionGroups,
-        IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations,
+        IDictionary<string, AssetPrice> stocks, 
+        IDictionary<string, IEnumerable<AssetPrice>> expirations,
         ProgressTracker tracker)
     {
         var singleOptionPositions = optionGroups.Where(g => string.IsNullOrEmpty(g.Key) || g.Value.Count == 1)
@@ -176,9 +179,14 @@ public class PositionPublishingService : IPositionPublishingService
         return singleOptionPositions.Count;
     }
 
-    private async Task<int> PublishCombosAsync(Board board, Lane account, IEnumerable<Lane> accountLanes,
-        IDictionary<string, List<Position>> optionGroups, IDictionary<string, AssetPrice> stocks,
-        IDictionary<string, IEnumerable<AssetPrice>> expirations, ProgressTracker tracker)
+    private async Task<int> PublishCombosAsync(
+        Board board, 
+        Lane account, 
+        IEnumerable<Lane> accountLanes,
+        IDictionary<string, List<Position>> optionGroups, 
+        IDictionary<string, AssetPrice> stocks,
+        IDictionary<string, IEnumerable<AssetPrice>> expirations, 
+        ProgressTracker tracker)
     {
         var comboOptionPositions = optionGroups.Where(g => !string.IsNullOrEmpty(g.Key) && g.Value.Count > 1).ToList();
 
@@ -218,8 +226,13 @@ public class PositionPublishingService : IPositionPublishingService
         return comboOptionPositions.Count;
     }
 
-    private async Task<int> PublishStocksAsync(Board board, Lane account, IEnumerable<Lane> accountLanes, IEnumerable<Position> positions,
-        IDictionary<string, AssetPrice> stocks, IDictionary<string, IEnumerable<AssetPrice>> expirations,
+    private async Task<int> PublishStocksAsync(
+        Board board, 
+        Lane account, 
+        IEnumerable<Lane> accountLanes, 
+        IEnumerable<Position> positions,
+        IDictionary<string, AssetPrice> stocks, 
+        IDictionary<string, IEnumerable<AssetPrice>> expirations,
         ProgressTracker tracker)
     {
         var stockPositions = positions.Where(p => p.Type == AssetType.Stock).ToList();
@@ -279,7 +292,11 @@ public class PositionPublishingService : IPositionPublishingService
             new Lane { Name = name, Description = description });
     }
 
-    private async Task<Card> GetOrCreateCardAsync(Board board, Lane lane, string name, string description,
+    private async Task<Card> GetOrCreateCardAsync(
+        Board board, 
+        Lane lane, 
+        string name, 
+        string description,
         IEnumerable<Card> cards)
     {
         var card = cards.FirstOrDefault(card => card.Name == name);
@@ -311,7 +328,9 @@ public class PositionPublishingService : IPositionPublishingService
         return size;
     }
 
-    private string LegToContent(Position leg, IDictionary<string, AssetPrice> stocks,
+    private string LegToContent(
+        Position leg, 
+        IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
         var label = $"{OptionUtils.GetSide(leg.Ticker)}${OptionUtils.GetStrike(leg.Ticker)}";
@@ -322,7 +341,9 @@ public class PositionPublishingService : IPositionPublishingService
                this.PriceToContent(leg, stocks, expirations, false, string.Empty, FontStyle);
     }
 
-    private string PositionToContent(IEnumerable<Position> legs, IDictionary<string, AssetPrice> stocks,
+    private string PositionToContent(
+        IEnumerable<Position> legs, 
+        IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
         var size = RevealComboSize(legs);
@@ -340,24 +361,27 @@ public class PositionPublishingService : IPositionPublishingService
                "]";
     }
 
-    private string StockPositionToContent(Position pos, IDictionary<string, AssetPrice> stocks,
+    private string StockPositionToContent(
+        Position pos, 
+        IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
         var ticker = pos.Ticker;
 
         return "["
                + RenderUtils.PairToContent(RenderUtils.PropToContent("Ticker"), RenderUtils.PropToContent(ticker)) + ","
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("Cap"),
-                   RenderUtils.PropToContent(FormatUtils.FormatCap(stocks[ticker].MarketCap))) + ","
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("Price"),
-                   RenderUtils.PropToContent(FormatUtils.FormatPrice(stocks[ticker].Last))) + ","
-               + RenderUtils.PairToContent(RenderUtils.PropToContent("Quantity"),
-                   RenderUtils.PropToContent(FormatUtils.FormatSize(pos.Quantity))) + ","
-               + this.PriceToContent(pos, stocks, expirations) +
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Cap"), RenderUtils.PropToContent(FormatUtils.FormatCap(stocks[ticker].MarketCap))) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Price"), RenderUtils.PropToContent(FormatUtils.FormatPrice(stocks[ticker].Last))) + ","
+               + this.PriceToContent(pos, stocks, expirations) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Quantity"), RenderUtils.PropToContent(FormatUtils.FormatSize(pos.Quantity))) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Price tot."), RenderUtils.PropToContent(FormatUtils.FormatPrice(stocks[ticker].Last * pos.Quantity))) + ","
+               + RenderUtils.PairToContent(RenderUtils.PropToContent("Cost tot."), RenderUtils.PropToContent(FormatUtils.FormatPrice(pos.AverageCost * pos.Quantity))) +
                "]";
     }
 
-    private string ShortPutToContent(Position pos, IDictionary<string, AssetPrice> stocks,
+    private string ShortPutToContent(
+        Position pos, 
+        IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
         var ticker = OptionUtils.GetStock(pos.Ticker);
@@ -422,7 +446,9 @@ public class PositionPublishingService : IPositionPublishingService
                "]";
     }
 
-    private string OptionPositionToContent(Position pos, IDictionary<string, AssetPrice> stocks,
+    private string OptionPositionToContent(
+        Position pos, 
+        IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
         if (pos.Quantity < decimal.Zero)
@@ -442,7 +468,9 @@ public class PositionPublishingService : IPositionPublishingService
                "]";
     }
 
-    private string PositionToContent(Position pos, IDictionary<string, AssetPrice> stocks,
+    private string PositionToContent(
+        Position pos, 
+        IDictionary<string, AssetPrice> stocks,
         IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
         return pos.Type == AssetType.Stock
@@ -450,7 +478,9 @@ public class PositionPublishingService : IPositionPublishingService
             : this.OptionPositionToContent(pos, stocks, expirations);
     }
 
-    private string PriceToContent(IEnumerable<Position> legs, IDictionary<string, IEnumerable<AssetPrice>> expirations)
+    private string PriceToContent(
+        IEnumerable<Position> legs, 
+        IDictionary<string, IEnumerable<AssetPrice>> expirations)
     {
         const string label = "Premium";
         var comboChange = new Tuple<decimal, decimal>(decimal.Zero, decimal.Zero);
@@ -491,8 +521,12 @@ public class PositionPublishingService : IPositionPublishingService
                 $"${Math.Round(comboChange.Item1, 2)} (${Math.Round(Math.Abs(comboChange.Item2), 2)})", style));
     }
 
-    private string PriceToContent(Position pos, IDictionary<string, AssetPrice> stocks,
-        IDictionary<string, IEnumerable<AssetPrice>> expirations, bool percents = true, string? label = null,
+    private string PriceToContent(
+        Position pos, 
+        IDictionary<string, AssetPrice> stocks,
+        IDictionary<string, IEnumerable<AssetPrice>> expirations, 
+        bool percents = true, 
+        string? label = null,
         IDictionary<string, string> extraValues = null)
     {
         label = label ?? "Cost";
@@ -530,7 +564,8 @@ public class PositionPublishingService : IPositionPublishingService
             RenderUtils.PropToContent($"${Math.Round(pos.AverageCost, 2)}"));
     }
 
-    private Tuple<decimal, decimal, decimal> GetOptionPriceChange(Position pos,
+    private Tuple<decimal, decimal, decimal> GetOptionPriceChange(
+        Position pos,
         IDictionary<string, IEnumerable<AssetPrice>> context)
     {
         var ticker = OptionUtils.GetStock(pos.Ticker);
@@ -568,13 +603,13 @@ public class PositionPublishingService : IPositionPublishingService
             CalculationUtils.Percent(diff / pos.AverageCost, 2));
     }
 
-    private static Tuple<decimal, decimal, decimal> GetStockPriceChange(Position pos,
+    private static Tuple<decimal, decimal, decimal> GetStockPriceChange(
+        Position pos,
         IDictionary<string, AssetPrice> stocks)
     {
         var ticker = pos.Ticker;
 
         var price = stocks.ContainsKey(ticker) ? stocks[ticker] : null;
-
         if (price == null)
         {
             return null;
@@ -586,7 +621,9 @@ public class PositionPublishingService : IPositionPublishingService
             CalculationUtils.Percent(diff / pos.AverageCost, 2));
     }
 
-    private static IDictionary<string, string> GetStyle(Position pos, decimal priceChange,
+    private static IDictionary<string, string> GetStyle(
+        Position pos, 
+        decimal priceChange,
         IDictionary<string, string> extraValues = null)
     {
         var isLong = pos.Quantity > decimal.Zero;
