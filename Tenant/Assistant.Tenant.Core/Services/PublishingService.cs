@@ -205,7 +205,7 @@ public class PublishingService : IPublishingService
             var laneTitle = $"${currentPrice} buy ${buyPrice} sell ${sellPrice}";
 
             var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, filterLane.Id,
-                new Lane { Name = group.Key, Description = laneTitle });
+                new Lane { Name = $"{group.Key}({FormatUtils.FormatCap(stockPrice?.MarketCap ?? 0.0)})", Description = laneTitle });
 
             foreach (var opInfo in group.OrderByDescending(op => op.AnnualRoi).Select(OpInfo))
             {
@@ -277,7 +277,7 @@ public class PublishingService : IPublishingService
             var laneTitle = $"${currentPrice} buy ${buyPrice} sell ${sellPrice}";
 
             var stocksLane = await this.kanbanService.CreateCardLaneAsync(board.Id, filterLane.Id,
-                new Lane { Name = group.Key, Description = laneTitle });
+                new Lane { Name = $"{group.Key}({FormatUtils.FormatCap(stockPrice?.MarketCap ?? 0.0)})", Description = laneTitle });
 
             foreach (var opInfo in group.OrderByDescending(op => op.AnnualRoi).Select(OpInfo))
             {
