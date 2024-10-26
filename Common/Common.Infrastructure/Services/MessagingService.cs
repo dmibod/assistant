@@ -60,17 +60,10 @@ public class MessagingService : BaseMessagingService
 internal static class MethodCache
 {
     private const string MethodName = nameof(IMessageHandler<object>.HandleAsync);
-    private static readonly IDictionary<Type, MethodInfo> Cache = new ConcurrentDictionary<Type, MethodInfo>();
+    private static readonly ConcurrentDictionary<Type, MethodInfo> Cache = new();
 
     public static MethodInfo GetMethod(Type serviceType)
     {
-        if (Cache.TryGetValue(serviceType, out var method))
-        {
-            return method;
-        }
-        
-        Cache.Add(serviceType, serviceType.GetMethod(MethodName)!);
-
-        return Cache[serviceType];
+        return Cache.GetOrAdd(serviceType, serviceTypeArg => serviceTypeArg.GetMethod(MethodName)!);
     }
 }
