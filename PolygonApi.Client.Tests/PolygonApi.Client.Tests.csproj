@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Common\Common.Core\Common.Core.csproj" />
       <ProjectReference Include="..\PolygonApi.Client\PolygonApi.Client.csproj" />
     </ItemGroup>
 

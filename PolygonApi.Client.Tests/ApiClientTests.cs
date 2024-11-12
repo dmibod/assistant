@@ -1,3 +1,5 @@
+using Common.Core.Utils;
+
 namespace PolygonApi.Client.Tests;
 
 using PolygonApi.Client;
@@ -120,5 +122,24 @@ public class ApiClientTests
 
         // Assert
         Assert.IsTrue(responses.Count > 0);
+    }
+    
+    [TestMethod]
+    public async Task SMAStream_ReturnsExpectedResult()
+    {
+        // Arrange
+        var request = new SMARequest
+        {
+            Ticker = "AAPL",
+            Timestamp = DateTimeUtils.Today().Add(TimeSpan.FromDays(-1)),
+            Size = 200,
+            Limit = 10
+        };
+        
+        // Act
+        var sma = client.SMAStream(request);
+
+        // Assert
+        Assert.IsTrue(sma.Count() > 0);
     }
 }

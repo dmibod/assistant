@@ -137,6 +137,36 @@ public class ApiClient : IDisposable
         }
     }
 
+    public IEnumerable<SMAResponse?> SMAStream(SMARequest request)
+    {
+        var requestUri = $"/v1/indicators/sma/{request.Ticker}?timestamp={request.Timestamp.Year}-{request.Timestamp.Month}-{request.Timestamp.Day}&timespan=day&adjusted=true&window={request.Size}&series_type=close&order=desc&limit={request.Limit}";
+
+        while (!string.IsNullOrEmpty(requestUri))
+        {
+            using var response = this.httpClient.GetAsync(requestUri).Result;
+
+            response.EnsureSuccessStatusCode();
+
+            var content = response.Content.ReadAsStringAsync().Result;
+
+            if (string.IsNullOrEmpty(content))
+            {
+                break;
+            }
+
+            var smaResponse = JsonSerializer.Deserialize<SMAResponse>(content);
+
+            if (smaResponse == null)
+            {
+                break;
+            }
+
+            requestUri = smaResponse.NextUrl;
+
+            yield return smaResponse;
+        }
+    }
+
     public void Dispose()
     {
         this.httpClient.Dispose();
